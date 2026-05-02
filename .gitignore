@@ -1,3 +1,23 @@
+# =============================================
+# SentraCore — Project-Specific
+# =============================================
+
+# Runtime data (machine-specific, auto-generated)
+engine/datastore/baseline.json
+
+# Flutter dashboard build artifacts
+dashboard/.dart_tool/
+dashboard/.flutter-plugins
+dashboard/.flutter-plugins-dependencies
+dashboard/.packages
+dashboard/build/
+dashboard/.metadata
+dashboard/windows/flutter/ephemeral/
+
+# =============================================
+# Python
+# =============================================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

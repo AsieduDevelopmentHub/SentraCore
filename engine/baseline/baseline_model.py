@@ -82,8 +82,8 @@ class MetricStats:
 
 
 @dataclass
-class BaselineStats:
-    """Collection of baseline statistics for all tracked metrics."""
+class SegmentStats:
+    """Statistics for a specific time segment."""
 
     cpu_percent: MetricStats = field(default_factory=MetricStats)
     memory_percent: MetricStats = field(default_factory=MetricStats)
@@ -97,7 +97,7 @@ class BaselineStats:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> BaselineStats:
+    def from_dict(cls, data: dict) -> SegmentStats:
         stats = cls()
         if "cpu_percent" in data:
             stats.cpu_percent = MetricStats.from_dict(data["cpu_percent"])
@@ -108,12 +108,36 @@ class BaselineStats:
         return stats
 
 
+@dataclass
+class BaselineStats:
+    """Collection of baseline statistics across all time segments."""
+
+    # Segments: "night", "morning", "afternoon", "evening", and "global"
+    segments: dict[str, SegmentStats] = field(default_factory=dict)
+
+    def __post_init__(self):
+        # Ensure default segments exist
+        default_segments = ["global", "night", "morning", "afternoon", "evening"]
+        for seg in default_segments:
+            if seg not in self.segments:
+                self.segments[seg] = SegmentStats()
+
+    def to_dict(self) -> dict:
+        return {k: v.to_dict() for k, v in self.segments.items()}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> BaselineStats:
+        segments = {k: SegmentStats.from_dict(v) for k, v in data.items()}
+        return cls(segments=segments)
+
+
 class BaselineModel:
     """
     Tracks normal system behavior and detects deviations.
 
     Uses Welford's online algorithm for numerically stable running
     statistics without storing all historical values.
+    Supports Time-of-Day segments to learn specific context patterns.
     """
 
     def __init__(
@@ -134,28 +158,47 @@ class BaselineModel:
 
     @property
     def is_ready(self) -> bool:
-        """Whether enough samples have been collected for reliable baseline."""
-        return self._stats.cpu_percent.count >= self._min_samples
+        """Whether enough samples have been collected for reliable baseline globally."""
+        return self._stats.segments["global"].cpu_percent.count >= self._min_samples
 
     @property
     def sample_count(self) -> int:
-        return self._stats.cpu_percent.count
+        return self._stats.segments["global"].cpu_percent.count
+
+    @staticmethod
+    def _get_segment_name(timestamp: float) -> str:
+        """Determine the time-of-day segment for a given timestamp."""
+        import datetime
+        dt = datetime.datetime.fromtimestamp(timestamp)
+        hour = dt.hour
+        if 0 <= hour < 6:
+            return "night"
+        elif 6 <= hour < 12:
+            return "morning"
+        elif 12 <= hour < 18:
+            return "afternoon"
+        else:
+            return "evening"
 
     def update(self, normalized: NormalizedSnapshot) -> None:
         """
         Update baseline statistics with a new normalized snapshot.
-
+        Updates both the global baseline and the specific time-of-day segment.
         Automatically persists to disk at configured intervals.
         """
-        self._stats.cpu_percent.update(normalized.cpu_percent_smoothed)
-        self._stats.memory_percent.update(normalized.memory_percent_smoothed)
-        self._stats.disk_ops_per_sec.update(normalized.disk_total_ops_per_sec)
+        segment = self._get_segment_name(normalized.timestamp)
+        
+        for seg_name in ("global", segment):
+            seg_stats = self._stats.segments[seg_name]
+            seg_stats.cpu_percent.update(normalized.cpu_percent_smoothed)
+            seg_stats.memory_percent.update(normalized.memory_percent_smoothed)
+            seg_stats.disk_ops_per_sec.update(normalized.disk_total_ops_per_sec)
 
         self._update_count += 1
         if self._update_count % self._persist_interval == 0:
             self.persist()
 
-    def is_deviated(self, metric: str, value: float) -> bool:
+    def is_deviated(self, metric: str, value: float, timestamp: float | None = None) -> bool:
         """
         Check if a value deviates significantly from the baseline.
 
@@ -164,6 +207,7 @@ class BaselineModel:
         Args:
             metric: One of "cpu_percent", "memory_percent", "disk_ops_per_sec".
             value: Current metric value to check.
+            timestamp: Timestamp to resolve specific segment. If None, uses global.
 
         Returns:
             True if value exceeds mean + sigma * std_dev.
@@ -171,8 +215,14 @@ class BaselineModel:
         if not self.is_ready:
             return False
 
-        stats = self._get_metric_stats(metric)
-        if stats is None:
+        segment = self._get_segment_name(timestamp) if timestamp else "global"
+        stats = self._get_metric_stats(metric, segment)
+        
+        # Fallback to global if segment lacks samples
+        if stats is None or stats.count < self._min_samples:
+            stats = self._get_metric_stats(metric, "global")
+            
+        if stats is None or stats.count < self._min_samples:
             return False
 
         # When std_dev is 0 (all identical readings), any value above mean is deviated
@@ -208,21 +258,25 @@ class BaselineModel:
                 data = json.loads(self._file.read_text(encoding="utf-8"))
                 stats = BaselineStats.from_dict(data)
                 logger.info(
-                    "Loaded baseline from %s (%d samples)",
+                    "Loaded baseline from %s (%d global samples)",
                     self._file,
-                    stats.cpu_percent.count,
+                    stats.segments["global"].cpu_percent.count,
                 )
                 return stats
             except (json.JSONDecodeError, KeyError, OSError) as exc:
                 logger.warning("Failed to load baseline, starting fresh: %s", exc)
         return BaselineStats()
 
-    def _get_metric_stats(self, metric: str) -> MetricStats | None:
+    def _get_metric_stats(self, metric: str, segment: str = "global") -> MetricStats | None:
         """Resolve metric name to its MetricStats instance."""
+        if segment not in self._stats.segments:
+            return None
+            
+        seg_stats = self._stats.segments[segment]
         mapping = {
-            "cpu_percent": self._stats.cpu_percent,
-            "memory_percent": self._stats.memory_percent,
-            "disk_ops_per_sec": self._stats.disk_ops_per_sec,
+            "cpu_percent": seg_stats.cpu_percent,
+            "memory_percent": seg_stats.memory_percent,
+            "disk_ops_per_sec": seg_stats.disk_ops_per_sec,
         }
         return mapping.get(metric)
 

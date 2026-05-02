@@ -79,12 +79,20 @@ class StressEngine:
         # Reference disk ops/sec for normalization (calibrated from baseline later)
         self._disk_ops_reference: float = 500.0
 
-    def compute(self, normalized: NormalizedSnapshot) -> StressResult:
+    def compute(
+        self, 
+        normalized: NormalizedSnapshot, 
+        trend: 'TrendResult' = None, 
+        anomaly: 'AnomalyResult' = None
+    ) -> StressResult:
         """
         Compute the system stress score from a normalized snapshot.
+        Incorporates trend and anomaly data if provided (Phase 2 Multi-State).
 
         Args:
             normalized: Processed telemetry data.
+            trend: Optional trend analysis result.
+            anomaly: Optional anomaly detection result.
 
         Returns:
             StressResult with score, level, and per-resource pressures.
@@ -94,6 +102,24 @@ class StressEngine:
         cpu_pressure = self._compute_cpu_pressure(normalized)
         memory_pressure = self._compute_memory_pressure(normalized)
         disk_pressure = self._compute_disk_pressure(normalized)
+
+        # ----- Incorporate Trend & Volatility (Multi-State Adjustments) -----
+        
+        if trend:
+            # If CPU is steadily growing, increase CPU pressure
+            if trend.is_cpu_growing:
+                cpu_pressure = min(100.0, cpu_pressure + (trend.cpu_slope * 10))
+            # If memory is leaking, increase memory pressure
+            if trend.is_memory_leaking:
+                memory_pressure = min(100.0, memory_pressure + (trend.memory_slope * 20))
+                
+        if anomaly and anomaly.is_sustained:
+            # Sustained anomalies boost overall pressure implicitly by boosting components
+            # based on their z-scores
+            if anomaly.cpu_z_score > 2.0:
+                cpu_pressure = min(100.0, cpu_pressure + 10.0)
+            if anomaly.memory_z_score > 2.0:
+                memory_pressure = min(100.0, memory_pressure + 10.0)
 
         # ----- Adaptive Weighting -----
 

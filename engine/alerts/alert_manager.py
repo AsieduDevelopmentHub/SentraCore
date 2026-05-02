@@ -14,7 +14,10 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from engine.events.event_logger import SystemEvent
 
 from engine.config import (
     ALERT_CONSECUTIVE_COUNT,

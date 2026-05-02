@@ -177,11 +177,13 @@ class AlertInfo {
   final int totalFired;
   final bool inCooldown;
   final int consecutiveHigh;
+  final RootCauseAnalysis? lastRootCause;
 
   AlertInfo({
     required this.totalFired,
     required this.inCooldown,
     required this.consecutiveHigh,
+    this.lastRootCause,
   });
 
   factory AlertInfo.fromJson(Map<String, dynamic> json) {
@@ -189,6 +191,35 @@ class AlertInfo {
       totalFired: json['total_fired'] ?? 0,
       inCooldown: json['in_cooldown'] ?? false,
       consecutiveHigh: json['consecutive_high'] ?? 0,
+      lastRootCause: json['last_alert'] != null && json['last_alert']['root_cause'] != null
+          ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
+          : null,
+    );
+  }
+}
+
+class RootCauseAnalysis {
+  final String primaryBottleneck;
+  final Map<String, dynamic>? suspectProcess;
+  final Map<String, dynamic>? triggerEvent;
+  final double confidenceScore;
+  final String summary;
+
+  RootCauseAnalysis({
+    required this.primaryBottleneck,
+    this.suspectProcess,
+    this.triggerEvent,
+    required this.confidenceScore,
+    required this.summary,
+  });
+
+  factory RootCauseAnalysis.fromJson(Map<String, dynamic> json) {
+    return RootCauseAnalysis(
+      primaryBottleneck: json['primary_bottleneck'] ?? 'unknown',
+      suspectProcess: json['suspect_process'],
+      triggerEvent: json['trigger_event'],
+      confidenceScore: (json['confidence_score'] ?? 0).toDouble(),
+      summary: json['summary'] ?? '',
     );
   }
 }

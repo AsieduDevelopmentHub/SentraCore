@@ -203,7 +203,8 @@ class SentraCoreEngine:
 
                 # 9. Evaluate alerts
                 top_procs = self.process_tracker.get_top_consumers(5)
-                self.alert_manager.evaluate(stress, top_procs)
+                recent_events = self.event_logger.get_recent_events(20)
+                self.alert_manager.evaluate(stress, top_procs, recent_events)
 
                 # 10. Broadcast via WebSocket
                 await self._broadcast_state()

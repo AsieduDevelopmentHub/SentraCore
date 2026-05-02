@@ -172,6 +172,16 @@ def create_app() -> FastAPI:
 
         return _engine.get_baseline()
 
+    @app.get("/api/v1/alerts")
+    async def get_alerts():
+        """Recent alerts with Root Cause Analysis."""
+        if _engine is None:
+            return {"error": "Engine not initialized"}
+
+        return {
+            "alerts": [a.to_dict() for a in _engine.alert_manager.get_recent_alerts()],
+        }
+
     # ----- WebSocket Endpoints -----
 
     @app.websocket("/ws/live")

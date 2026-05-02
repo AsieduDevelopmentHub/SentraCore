@@ -36,6 +36,7 @@ class Alert:
     level: str
     top_contributors: tuple[ProcessImpact, ...]
     message: str
+    root_cause: dict | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -44,11 +45,12 @@ class Alert:
             "level": self.level,
             "top_contributors": [c.to_dict() for c in self.top_contributors],
             "message": self.message,
+            "root_cause": self.root_cause,
         }
 
 
 # Type alias for alert callback functions
-AlertCallback = Callable[[Alert], None]
+AlertCallback = Callable[['Alert'], None]
 
 
 class AlertManager:
@@ -77,16 +79,25 @@ class AlertManager:
         self._last_alert_time: float = 0.0
         self._callbacks: list[AlertCallback] = []
         self._total_alerts: int = 0
+        self._alert_history = []
+        
+        from engine.intelligence.correlation_engine import CorrelationEngine
+        self._correlation_engine = CorrelationEngine()
 
     def register_callback(self, callback: AlertCallback) -> None:
         """Register a function to be called when an alert fires."""
         self._callbacks.append(callback)
         logger.debug("Alert callback registered. Total: %d", len(self._callbacks))
 
+    def get_recent_alerts(self, limit: int = 10) -> list[Alert]:
+        """Return the most recent fired alerts."""
+        return list(reversed(self._alert_history[-limit:]))
+
     def evaluate(
         self,
         stress: StressResult,
         top_processes: list[ProcessImpact],
+        recent_events: list['SystemEvent'] = None,
     ) -> Alert | None:
         """
         Evaluate whether an alert should fire based on current stress.
@@ -94,11 +105,13 @@ class AlertManager:
         Args:
             stress: Current stress score result.
             top_processes: Current top resource consumers.
+            recent_events: Recent system events for RCA correlation.
 
         Returns:
             Alert if one was triggered, None otherwise.
         """
         now = time.time()
+        recent_events = recent_events or []
 
         if stress.score >= self._threshold:
             self._consecutive_high += 1
@@ -114,6 +127,9 @@ class AlertManager:
         if (now - self._last_alert_time) < self._cooldown_sec:
             return None
 
+        # ----- Correlation & RCA (Phase 3) -----
+        rca = self._correlation_engine.analyze(stress, top_processes, recent_events)
+
         # ----- Fire Alert -----
         self._last_alert_time = now
         self._total_alerts += 1
@@ -126,7 +142,7 @@ class AlertManager:
         message = (
             f"System stress {stress.level} ({stress.score:.0f}/100) "
             f"sustained for {self._consecutive_high * 2}s. "
-            f"Top contributors: {contributors_str or 'N/A'}"
+            f"Root Cause: {rca.summary}"
         )
 
         alert = Alert(
@@ -135,7 +151,12 @@ class AlertManager:
             level=stress.level,
             top_contributors=tuple(top_processes[:5]),
             message=message,
+            root_cause=rca.to_dict(),
         )
+
+        self._alert_history.append(alert)
+        if len(self._alert_history) > 50:
+            self._alert_history.pop(0)
 
         # Notify all registered callbacks
         for callback in self._callbacks:

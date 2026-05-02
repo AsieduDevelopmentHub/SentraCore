@@ -98,6 +98,9 @@ class TestAlertManager:
         assert "stress_score" in d
         assert "top_contributors" in d
         assert "message" in d
+        assert "root_cause" in d
+        assert d["root_cause"] is not None
+        assert "primary_bottleneck" in d["root_cause"]
 
     def test_reset(self):
         mgr = AlertManager(threshold=70.0, consecutive_count=1, cooldown_sec=60.0)

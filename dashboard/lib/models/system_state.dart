@@ -1,5 +1,4 @@
-/// Data models mirroring the Python engine's API responses.
-
+// Data models mirroring the Python engine's API responses.
 class SystemState {
   final EngineInfo engine;
   final StressResult? stress;

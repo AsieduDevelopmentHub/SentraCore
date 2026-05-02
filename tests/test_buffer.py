@@ -2,8 +2,8 @@
 
 import time
 
-from app.buffer.time_series_buffer import TimeSeriesBuffer
-from app.collector.system_collector import SystemSnapshot
+from engine.buffer.time_series_buffer import TimeSeriesBuffer
+from engine.collector.system_collector import SystemSnapshot
 
 
 def _make_snapshot(cpu: float = 25.0, mem_pct: float = 50.0, ts: float | None = None) -> SystemSnapshot:

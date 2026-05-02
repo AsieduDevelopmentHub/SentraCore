@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 
 import psutil
 
-from app.config import MAX_PROCESSES_PER_SNAPSHOT
+from engine.config import MAX_PROCESSES_PER_SNAPSHOT
 
 logger = logging.getLogger(__name__)
 

@@ -16,13 +16,13 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
-from app.config import (
+from engine.config import (
     ALERT_CONSECUTIVE_COUNT,
     ALERT_COOLDOWN_SEC,
     ALERT_STRESS_THRESHOLD,
 )
-from app.process.process_tracker import ProcessImpact
-from app.stress.stress_engine import StressResult
+from engine.process.process_tracker import ProcessImpact
+from engine.stress.stress_engine import StressResult
 
 logger = logging.getLogger(__name__)
 

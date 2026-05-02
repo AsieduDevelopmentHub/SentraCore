@@ -2,9 +2,9 @@
 
 import time
 
-from app.alerts.alert_manager import Alert, AlertManager
-from app.process.process_tracker import ProcessImpact
-from app.stress.stress_engine import StressResult
+from engine.alerts.alert_manager import Alert, AlertManager
+from engine.process.process_tracker import ProcessImpact
+from engine.stress.stress_engine import StressResult
 
 
 def _make_stress(score: float, level: str = "high") -> StressResult:

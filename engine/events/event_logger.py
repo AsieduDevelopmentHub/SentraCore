@@ -14,14 +14,14 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 
-from app.collector.system_collector import SystemSnapshot
-from app.config import (
+from engine.collector.system_collector import SystemSnapshot
+from engine.config import (
     EVENT_CPU_SPIKE_THRESHOLD,
     EVENT_DISK_SPIKE_THRESHOLD,
     EVENT_MEMORY_PRESSURE_THRESHOLD,
     MAX_EVENTS,
 )
-from app.normalization.normalizer import NormalizedSnapshot
+from engine.normalization.normalizer import NormalizedSnapshot
 
 logger = logging.getLogger(__name__)
 

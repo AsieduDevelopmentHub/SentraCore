@@ -2,8 +2,8 @@
 
 import time
 
-from app.collector.system_collector import SystemSnapshot
-from app.normalization.normalizer import NormalizedSnapshot, Normalizer
+from engine.collector.system_collector import SystemSnapshot
+from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 
 
 def _make_snapshot(

@@ -15,8 +15,8 @@ import threading
 from collections import deque
 from typing import Any
 
-from app.collector.system_collector import SystemSnapshot
-from app.config import LONG_BUFFER_SIZE, SHORT_BUFFER_SIZE
+from engine.collector.system_collector import SystemSnapshot
+from engine.config import LONG_BUFFER_SIZE, SHORT_BUFFER_SIZE
 
 
 class TimeSeriesBuffer:

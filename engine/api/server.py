@@ -20,7 +20,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 if TYPE_CHECKING:
-    from app.alerts.alert_manager import Alert
+    from engine.alerts.alert_manager import Alert
 
 logger = logging.getLogger(__name__)
 

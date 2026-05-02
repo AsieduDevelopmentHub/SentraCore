@@ -1,7 +1,7 @@
 """Tests for StressEngine."""
 
-from app.normalization.normalizer import NormalizedSnapshot
-from app.stress.stress_engine import StressEngine, StressResult
+from engine.normalization.normalizer import NormalizedSnapshot
+from engine.stress.stress_engine import StressEngine, StressResult
 
 
 def _make_normalized(

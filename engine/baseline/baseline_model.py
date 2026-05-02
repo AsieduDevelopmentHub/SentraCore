@@ -16,14 +16,14 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from app.config import (
+from engine.config import (
     BASELINE_DEVIATION_SIGMA,
     BASELINE_FILE,
     BASELINE_MIN_SAMPLES,
     BASELINE_PERSIST_INTERVAL,
     DATASTORE_DIR,
 )
-from app.normalization.normalizer import NormalizedSnapshot
+from engine.normalization.normalizer import NormalizedSnapshot
 
 logger = logging.getLogger(__name__)
 

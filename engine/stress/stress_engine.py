@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from app.config import (
+from engine.config import (
     STRESS_HIGH_THRESHOLD,
     STRESS_LOW_THRESHOLD,
     STRESS_MODERATE_THRESHOLD,
@@ -23,7 +23,7 @@ from app.config import (
     STRESS_WEIGHT_DISK,
     STRESS_WEIGHT_MEMORY,
 )
-from app.normalization.normalizer import NormalizedSnapshot
+from engine.normalization.normalizer import NormalizedSnapshot
 
 logger = logging.getLogger(__name__)
 

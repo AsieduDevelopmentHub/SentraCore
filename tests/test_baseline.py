@@ -4,8 +4,8 @@ import json
 import tempfile
 from pathlib import Path
 
-from app.baseline.baseline_model import BaselineModel, BaselineStats, MetricStats
-from app.normalization.normalizer import NormalizedSnapshot
+from engine.baseline.baseline_model import BaselineModel, BaselineStats, MetricStats
+from engine.normalization.normalizer import NormalizedSnapshot
 
 
 def _make_normalized(cpu: float = 25.0, mem: float = 50.0, disk_ops: float = 100.0) -> NormalizedSnapshot:

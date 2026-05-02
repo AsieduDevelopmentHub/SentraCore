@@ -1,7 +1,7 @@
 """Tests for ProcessTracker."""
 
-from app.collector.system_collector import ProcessInfo
-from app.process.process_tracker import ProcessImpact, ProcessTracker
+from engine.collector.system_collector import ProcessInfo
+from engine.process.process_tracker import ProcessImpact, ProcessTracker
 
 
 def _make_proc(pid: int, name: str, cpu: float, mem: float) -> ProcessInfo:

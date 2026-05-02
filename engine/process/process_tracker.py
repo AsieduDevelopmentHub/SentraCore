@@ -13,8 +13,8 @@ import logging
 from collections import defaultdict, deque
 from dataclasses import dataclass
 
-from app.collector.system_collector import ProcessInfo
-from app.config import PROCESS_WINDOW_SIZE, TOP_PROCESSES_COUNT
+from engine.collector.system_collector import ProcessInfo
+from engine.config import PROCESS_WINDOW_SIZE, TOP_PROCESSES_COUNT
 
 logger = logging.getLogger(__name__)
 

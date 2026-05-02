@@ -26,17 +26,17 @@ import time
 
 import uvicorn
 
-from app import __app_name__, __version__
-from app.alerts.alert_manager import Alert, AlertManager
-from app.api.server import create_app, set_engine, ws_manager
-from app.baseline.baseline_model import BaselineModel
-from app.buffer.time_series_buffer import TimeSeriesBuffer
-from app.collector.system_collector import SystemCollector
-from app.config import API_HOST, API_PORT, COLLECTION_INTERVAL_SEC
-from app.events.event_logger import EventLogger
-from app.normalization.normalizer import NormalizedSnapshot, Normalizer
-from app.process.process_tracker import ProcessImpact, ProcessTracker
-from app.stress.stress_engine import StressEngine, StressResult
+from engine import __app_name__, __version__
+from engine.alerts.alert_manager import Alert, AlertManager
+from engine.api.server import create_app, set_engine, ws_manager
+from engine.baseline.baseline_model import BaselineModel
+from engine.buffer.time_series_buffer import TimeSeriesBuffer
+from engine.collector.system_collector import SystemCollector
+from engine.config import API_HOST, API_PORT, COLLECTION_INTERVAL_SEC
+from engine.events.event_logger import EventLogger
+from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
+from engine.process.process_tracker import ProcessImpact, ProcessTracker
+from engine.stress.stress_engine import StressEngine, StressResult
 
 logger = logging.getLogger(__name__)
 

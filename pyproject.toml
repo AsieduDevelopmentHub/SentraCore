@@ -39,10 +39,10 @@ dev = [
 ]
 
 [project.scripts]
-sentracore = "app.main:main"
+sentracore = "engine.main:main"
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+include = ["engine*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

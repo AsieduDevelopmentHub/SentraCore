@@ -2,7 +2,7 @@
 
 import time
 
-from app.collector.system_collector import ProcessInfo, SystemCollector, SystemSnapshot
+from engine.collector.system_collector import ProcessInfo, SystemCollector, SystemSnapshot
 
 
 class TestProcessInfo:

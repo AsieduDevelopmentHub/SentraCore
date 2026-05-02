@@ -15,8 +15,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from app.collector.system_collector import SystemSnapshot
-from app.config import EMA_ALPHA, MIN_SPIKE_READINGS
+from engine.collector.system_collector import SystemSnapshot
+from engine.config import EMA_ALPHA, MIN_SPIKE_READINGS
 
 logger = logging.getLogger(__name__)
 

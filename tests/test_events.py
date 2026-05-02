@@ -2,9 +2,9 @@
 
 import time
 
-from app.collector.system_collector import ProcessInfo, SystemSnapshot
-from app.events.event_logger import EventLogger, SystemEvent
-from app.normalization.normalizer import NormalizedSnapshot
+from engine.collector.system_collector import ProcessInfo, SystemSnapshot
+from engine.events.event_logger import EventLogger, SystemEvent
+from engine.normalization.normalizer import NormalizedSnapshot
 
 
 def _make_snapshot(procs=(), ts=None) -> SystemSnapshot:

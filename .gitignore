@@ -13,12 +13,24 @@ dashboard/.packages
 dashboard/build/
 dashboard/.metadata
 dashboard/windows/flutter/ephemeral/
+dashboard/windows/flutter/generated_config.cmake
+dashboard/windows/flutter/generated_plugins.cmake
+dashboard/windows/out/
+dashboard/*.iml
+dashboard/.idea/
+.pub-cache/
+.pub/
+**/doc/api/
 
 # =============================================
 # Python
 # =============================================
 
-# Byte-compiled / optimized / DLL files
+# Common temporary / OS files
+*.log
+*.class
+*.swp
+.DS_Store
 __pycache__/
 *.py[codz]
 *$py.class
@@ -28,20 +40,21 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
+# Distribution / packaging
+/build/
+/develop-eggs/
+/dist/
+/downloads/
+/eggs/
+/.eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
+/share/python-wheels/
+/*.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
@@ -49,8 +62,8 @@ MANIFEST
 # PyInstaller
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+/*.manifest
+/*.spec
 
 # Installer logs
 pip-log.txt
@@ -201,12 +214,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#   JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#   be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#   and can be added to the global gitignore or merged into this file.  For a more nuclear
-#   option (not recommended) you can uncomment the following to ignore the entire idea folder.
-# .idea/
+# PyCharm / IntelliJ
+.idea/
 
 # Abstra
 #   Abstra is an AI-powered process automation framework.
@@ -215,11 +224,7 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#   and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#   you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 

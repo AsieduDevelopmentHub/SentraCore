@@ -42,6 +42,19 @@ class AppTheme {
     }
   }
 
+  static Color stabilityColor(String state) {
+    switch (state) {
+      case 'stable':
+        return stressLow; // Green
+      case 'degraded':
+        return stressModerate; // Yellow
+      case 'critical':
+        return stressCritical; // Red
+      default:
+        return textMuted;
+    }
+  }
+
   // ── Theme Data ──
   static ThemeData get darkTheme {
     return ThemeData(

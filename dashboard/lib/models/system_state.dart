@@ -187,12 +187,14 @@ class AlertInfo {
   final int totalFired;
   final bool inCooldown;
   final int consecutiveHigh;
+  final String? lastMessage;
   final RootCauseAnalysis? lastRootCause;
 
   AlertInfo({
     required this.totalFired,
     required this.inCooldown,
     required this.consecutiveHigh,
+    this.lastMessage,
     this.lastRootCause,
   });
 
@@ -201,6 +203,7 @@ class AlertInfo {
       totalFired: json['total_fired'] ?? 0,
       inCooldown: json['in_cooldown'] ?? false,
       consecutiveHigh: json['consecutive_high'] ?? 0,
+      lastMessage: json['last_alert'] != null ? json['last_alert']['message'] : null,
       lastRootCause: json['last_alert'] != null && json['last_alert']['root_cause'] != null
           ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
           : null,

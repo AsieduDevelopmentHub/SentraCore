@@ -8,7 +8,9 @@ import 'package:sentracore_dashboard/widgets/event_timeline.dart';
 import 'package:sentracore_dashboard/widgets/metric_chart_card.dart';
 import 'package:sentracore_dashboard/widgets/process_table.dart';
 import 'package:sentracore_dashboard/widgets/resource_gauge.dart';
-import 'package:sentracore_dashboard/widgets/stress_indicator.dart';
+import 'package:sentracore_dashboard/widgets/stability_indicator.dart';
+import 'package:sentracore_dashboard/widgets/prediction_panel.dart';
+import 'package:sentracore_dashboard/widgets/rca_panel.dart';
 
 /// Main dashboard screen — real-time system intelligence overview.
 class DashboardScreen extends StatelessWidget {
@@ -82,8 +84,8 @@ class _DashboardBody extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Stress score — big, prominent
-                    const Expanded(flex: 2, child: StressIndicator()),
+                    // Stability score — big, prominent
+                    const Expanded(flex: 2, child: StabilityIndicator()),
                     const SizedBox(width: 16),
 
                     // Resource gauges
@@ -130,7 +132,19 @@ class _DashboardBody extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Row 2: Charts
+                // Row 2: Intelligence Panels (Prediction & RCA)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Expanded(child: PredictionPanel()),
+                    SizedBox(width: 16),
+                    Expanded(child: RcaPanel()),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Row 3: Charts
                 SizedBox(
                   height: 200,
                   child: Row(
@@ -157,10 +171,9 @@ class _DashboardBody extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: MetricChartCard(
-                          title: 'Stress Score',
-                          data: provider.stressHistory,
-                          color: AppTheme.stressColor(
-                              provider.stress?.level ?? 'low'),
+                          title: 'Stability Index',
+                          data: provider.stabilityHistory,
+                          color: AppTheme.stressLow,
                           maxY: 100,
                           suffix: '',
                         ),
@@ -171,7 +184,7 @@ class _DashboardBody extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Row 3: Process table + event timeline
+                // Row 4: Process table + event timeline
                 SizedBox(
                   height: 320,
                   child: Row(

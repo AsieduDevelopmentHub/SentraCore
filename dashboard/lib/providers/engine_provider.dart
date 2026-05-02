@@ -25,6 +25,8 @@ class EngineProvider extends ChangeNotifier {
 
   StressResult? get stress => _currentState?.stress;
   NormalizedData? get normalized => _currentState?.normalized;
+  PredictionResult? get prediction => _currentState?.prediction;
+  StabilityIndex? get stability => _currentState?.stability;
   EngineInfo? get engineInfo => _currentState?.engine;
 
   // ── History for Charts (last 60 data points = ~2 minutes) ──
@@ -34,11 +36,13 @@ class EngineProvider extends ChangeNotifier {
   final Queue<double> _memoryHistory = Queue();
   final Queue<double> _stressHistory = Queue();
   final Queue<double> _diskHistory = Queue();
+  final Queue<double> _stabilityHistory = Queue();
 
   List<double> get cpuHistory => _cpuHistory.toList();
   List<double> get memoryHistory => _memoryHistory.toList();
   List<double> get stressHistory => _stressHistory.toList();
   List<double> get diskHistory => _diskHistory.toList();
+  List<double> get stabilityHistory => _stabilityHistory.toList();
 
   // ── Processes ──
   List<ProcessImpact> _processes = [];
@@ -132,6 +136,9 @@ class EngineProvider extends ChangeNotifier {
     }
     if (state.stress != null) {
       _pushHistory(_stressHistory, state.stress!.score);
+    }
+    if (state.stability != null) {
+      _pushHistory(_stabilityHistory, state.stability!.score);
     }
 
     notifyListeners();

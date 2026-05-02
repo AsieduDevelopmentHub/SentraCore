@@ -141,7 +141,8 @@ class TestBaselineModel:
         baseline = model.get_baseline()
         assert baseline["ready"] is True
         assert "stats" in baseline
-        assert "cpu_percent" in baseline["stats"]
+        assert "global" in baseline["stats"]
+        assert "cpu_percent" in baseline["stats"]["global"]
 
     def test_reset(self):
         model = BaselineModel(

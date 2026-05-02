@@ -3,6 +3,8 @@ class SystemState {
   final EngineInfo engine;
   final StressResult? stress;
   final NormalizedData? normalized;
+  final PredictionResult? prediction;
+  final StabilityIndex? stability;
   final AlertInfo alert;
   final BufferInfo buffers;
 
@@ -10,6 +12,8 @@ class SystemState {
     required this.engine,
     this.stress,
     this.normalized,
+    this.prediction,
+    this.stability,
     required this.alert,
     required this.buffers,
   });
@@ -22,6 +26,12 @@ class SystemState {
           : null,
       normalized: json['normalized'] != null
           ? NormalizedData.fromJson(json['normalized'])
+          : null,
+      prediction: json['prediction'] != null
+          ? PredictionResult.fromJson(json['prediction'])
+          : null,
+      stability: json['stability'] != null
+          ? StabilityIndex.fromJson(json['stability'])
           : null,
       alert: AlertInfo.fromJson(json['alert'] ?? {}),
       buffers: BufferInfo.fromJson(json['buffers'] ?? {}),
@@ -306,6 +316,46 @@ class SystemEvent {
       eventType: json['event_type'] ?? 'unknown',
       severity: json['severity'] ?? 'info',
       details: Map<String, dynamic>.from(json['details'] ?? {}),
+    );
+  }
+}
+
+class PredictionResult {
+  final double? memoryExhaustionEtaSec;
+  final double? cpuCriticalEtaSec;
+  final double riskScore;
+
+  PredictionResult({
+    this.memoryExhaustionEtaSec,
+    this.cpuCriticalEtaSec,
+    required this.riskScore,
+  });
+
+  factory PredictionResult.fromJson(Map<String, dynamic> json) {
+    return PredictionResult(
+      memoryExhaustionEtaSec: json['memory_exhaustion_eta_sec']?.toDouble(),
+      cpuCriticalEtaSec: json['cpu_critical_eta_sec']?.toDouble(),
+      riskScore: (json['risk_score'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class StabilityIndex {
+  final double score;
+  final String state;
+  final Map<String, dynamic> components;
+
+  StabilityIndex({
+    required this.score,
+    required this.state,
+    required this.components,
+  });
+
+  factory StabilityIndex.fromJson(Map<String, dynamic> json) {
+    return StabilityIndex(
+      score: (json['score'] ?? 100).toDouble(),
+      state: json['state'] ?? 'unknown',
+      components: Map<String, dynamic>.from(json['components'] ?? {}),
     );
   }
 }

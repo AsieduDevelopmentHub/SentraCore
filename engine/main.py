@@ -39,6 +39,8 @@ from engine.process.process_tracker import ProcessImpact, ProcessTracker
 from engine.stress.stress_engine import StressEngine, StressResult
 from engine.intelligence.trend_analyzer import TrendAnalyzer, TrendResult
 from engine.intelligence.anomaly_detector import AnomalyDetector, AnomalyResult
+from engine.intelligence.prediction_engine import PredictionEngine, PredictionResult
+from engine.intelligence.stability_index import StabilityCalculator, StabilityIndex
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,9 @@ class SentraCoreEngine:
         self.event_logger = EventLogger()
         self.trend_analyzer = TrendAnalyzer()
         self.anomaly_detector = AnomalyDetector()
+        self.prediction_engine = PredictionEngine()
         self.stress_engine = StressEngine()
+        self.stability_calculator = StabilityCalculator()
         self.alert_manager = AlertManager()
 
         # Current state (updated each cycle)
@@ -68,6 +72,8 @@ class SentraCoreEngine:
         self._current_normalized: NormalizedSnapshot | None = None
         self._current_trend: TrendResult | None = None
         self._current_anomaly: AnomalyResult | None = None
+        self._current_prediction: PredictionResult | None = None
+        self._current_stability: StabilityIndex | None = None
         self._last_alert: Alert | None = None
 
         # Control
@@ -89,7 +95,9 @@ class SentraCoreEngine:
             "normalized": self._current_normalized.to_dict() if self._current_normalized else None,
             "trend": self._current_trend.to_dict() if self._current_trend else None,
             "anomaly": self._current_anomaly.to_dict() if self._current_anomaly else None,
+            "prediction": self._current_prediction.to_dict() if self._current_prediction else None,
             "stress": self._current_stress.to_dict() if self._current_stress else None,
+            "stability": self._current_stability.to_dict() if self._current_stability else None,
             "alert": {
                 "total_fired": self.alert_manager.total_alerts,
                 "in_cooldown": self.alert_manager.is_in_cooldown,
@@ -201,7 +209,14 @@ class SentraCoreEngine:
                 stress = self.stress_engine.compute(normalized, trend=trend, anomaly=anomaly)
                 self._current_stress = stress
 
-                # 9. Evaluate alerts
+                # 9. Phase 4: Prediction & Risk
+                prediction = self.prediction_engine.predict(trend, normalized)
+                self._current_prediction = prediction
+                
+                stability = self.stability_calculator.calculate(stress, prediction, anomaly)
+                self._current_stability = stability
+
+                # 10. Evaluate alerts
                 top_procs = self.process_tracker.get_top_consumers(5)
                 recent_events = self.event_logger.get_recent_events(20)
                 self.alert_manager.evaluate(stress, top_procs, recent_events)
@@ -212,17 +227,15 @@ class SentraCoreEngine:
                 # Periodic log
                 if cycle % 15 == 0:  # Every ~30 seconds
                     logger.info(
-                        "Cycle %d | Stress: %.0f (%s) | CPU: %.1f%% | Mem: %.1f%% | "
-                        "Disk: %.0f ops/s | Baseline: %s (%d samples) | Events: %d",
+                        "Cycle %d | Stability: %.0f/100 (%s) | Risk: %.0f%% | CPU: %.1f%% | Mem: %.1f%% | "
+                        "Baseline: %s",
                         cycle,
-                        stress.score,
-                        stress.level,
+                        stability.score,
+                        stability.state,
+                        prediction.risk_score,
                         normalized.cpu_percent_smoothed,
                         normalized.memory_percent_smoothed,
-                        normalized.disk_total_ops_per_sec,
                         "ready" if self.baseline.is_ready else "learning",
-                        self.baseline.sample_count,
-                        self.event_logger.event_count,
                     )
 
             except Exception as exc:

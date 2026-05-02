@@ -14,6 +14,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from engine.intelligence.trend_analyzer import TrendResult
+    from engine.intelligence.anomaly_detector import AnomalyResult
 
 from engine.config import (
     STRESS_HIGH_THRESHOLD,

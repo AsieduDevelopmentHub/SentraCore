@@ -59,10 +59,18 @@ class TrendAnalyzer:
 
     def analyze(self, buffer: TimeSeriesBuffer) -> TrendResult:
         """Analyze trends from the short-term buffer."""
-        # Get recent CPU and Memory data
-        cpu_data = buffer.get_recent_field("cpu_percent_smoothed", self._window_size)
-        mem_data = buffer.get_recent_field("memory_percent_smoothed", self._window_size)
-        timestamps = buffer.get_recent_field("timestamp", self._window_size)
+        # Get recent CPU and Memory data (SystemSnapshot fields)
+        try:
+            all_cpu = buffer.get_short_window_field("cpu_percent")
+            all_mem = buffer.get_short_window_field("memory_percent")
+            all_times = buffer.get_short_window_field("timestamp")
+        except AttributeError:
+            return TrendResult(0.0, 0.0, 0.0, 0.0)
+
+        # Slice to the requested window size
+        cpu_data = all_cpu[-self._window_size:]
+        mem_data = all_mem[-self._window_size:]
+        timestamps = all_times[-self._window_size:]
 
         if len(timestamps) < 2:
             return TrendResult(0.0, 0.0, 0.0, 0.0)

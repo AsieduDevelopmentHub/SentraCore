@@ -37,6 +37,8 @@ from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
 from engine.stress.stress_engine import StressEngine, StressResult
+from engine.intelligence.trend_analyzer import TrendAnalyzer, TrendResult
+from engine.intelligence.anomaly_detector import AnomalyDetector, AnomalyResult
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +58,16 @@ class SentraCoreEngine:
         self.baseline = BaselineModel()
         self.process_tracker = ProcessTracker()
         self.event_logger = EventLogger()
+        self.trend_analyzer = TrendAnalyzer()
+        self.anomaly_detector = AnomalyDetector()
         self.stress_engine = StressEngine()
         self.alert_manager = AlertManager()
 
         # Current state (updated each cycle)
         self._current_stress: StressResult | None = None
         self._current_normalized: NormalizedSnapshot | None = None
+        self._current_trend: TrendResult | None = None
+        self._current_anomaly: AnomalyResult | None = None
         self._last_alert: Alert | None = None
 
         # Control
@@ -81,6 +87,8 @@ class SentraCoreEngine:
             },
             "snapshot": latest.to_dict() if latest else None,
             "normalized": self._current_normalized.to_dict() if self._current_normalized else None,
+            "trend": self._current_trend.to_dict() if self._current_trend else None,
+            "anomaly": self._current_anomaly.to_dict() if self._current_anomaly else None,
             "stress": self._current_stress.to_dict() if self._current_stress else None,
             "alert": {
                 "total_fired": self.alert_manager.total_alerts,
@@ -182,15 +190,22 @@ class SentraCoreEngine:
                 # 6. Detect events
                 self.event_logger.analyze(snapshot, normalized)
 
-                # 7. Compute stress
-                stress = self.stress_engine.compute(normalized)
+                # 7. Intelligence Layer (Phase 2)
+                trend = self.trend_analyzer.analyze(self.buffer)
+                self._current_trend = trend
+                
+                anomaly = self.anomaly_detector.detect(normalized, self.baseline)
+                self._current_anomaly = anomaly
+
+                # 8. Compute stress (Multi-State)
+                stress = self.stress_engine.compute(normalized, trend=trend, anomaly=anomaly)
                 self._current_stress = stress
 
-                # 8. Evaluate alerts
+                # 9. Evaluate alerts
                 top_procs = self.process_tracker.get_top_consumers(5)
                 self.alert_manager.evaluate(stress, top_procs)
 
-                # 9. Broadcast via WebSocket
+                # 10. Broadcast via WebSocket
                 await self._broadcast_state()
 
                 # Periodic log

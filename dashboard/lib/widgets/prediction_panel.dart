@@ -25,7 +25,7 @@ class PredictionPanel extends StatelessWidget {
                 Text(
                   'Prediction & Forecasting',
                   style: TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryFor(context),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -34,17 +34,19 @@ class PredictionPanel extends StatelessWidget {
             ),
             Divider(height: 24, color: Theme.of(context).dividerColor),
             if (prediction == null)
-              _buildEmptyState()
+              _buildEmptyState(context)
             else ...[
-              _buildRiskScore(prediction.riskScore),
+              _buildRiskScore(context, prediction.riskScore),
               const SizedBox(height: 16),
               _buildEtaRow(
+                context,
                 'Memory Exhaustion',
                 prediction.memoryExhaustionEtaSec,
                 Icons.memory,
               ),
               const SizedBox(height: 8),
               _buildEtaRow(
+                context,
                 'CPU Saturation',
                 prediction.cpuCriticalEtaSec,
                 Icons.speed,
@@ -56,19 +58,19 @@ class PredictionPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Text(
           'Waiting for trend data...',
-          style: TextStyle(color: AppTheme.textMuted),
+          style: TextStyle(color: AppTheme.textMutedFor(context)),
         ),
       ),
     );
   }
 
-  Widget _buildRiskScore(double score) {
+  Widget _buildRiskScore(BuildContext context, double score) {
     Color color = AppTheme.stressLow;
     if (score > 60) {
       color = AppTheme.stressCritical;
@@ -83,7 +85,8 @@ class PredictionPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Degradation Risk',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                style: TextStyle(
+                    color: AppTheme.textSecondaryFor(context), fontSize: 12)),
             Text('${score.toStringAsFixed(0)}%',
                 style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           ],
@@ -93,7 +96,8 @@ class PredictionPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: score / 100,
-            backgroundColor: AppTheme.surfaceLight,
+            backgroundColor:
+                Theme.of(context).dividerColor.withValues(alpha: 0.2),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 6,
           ),
@@ -102,9 +106,10 @@ class PredictionPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildEtaRow(String label, double? etaSec, IconData icon) {
+  Widget _buildEtaRow(
+      BuildContext context, String label, double? etaSec, IconData icon) {
     String text = 'Stable';
-    Color color = AppTheme.textMuted;
+    Color color = AppTheme.textMutedFor(context);
 
     if (etaSec != null) {
       if (etaSec < 60) {
@@ -120,15 +125,16 @@ class PredictionPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
+        color: AppTheme.surfaceLightFor(context),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: AppTheme.textSecondary),
+          Icon(icon, size: 14, color: AppTheme.textSecondaryFor(context)),
           const SizedBox(width: 8),
           Text(label,
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+              style: TextStyle(
+                  color: AppTheme.textSecondaryFor(context), fontSize: 13)),
           const Spacer(),
           Text(
             text,

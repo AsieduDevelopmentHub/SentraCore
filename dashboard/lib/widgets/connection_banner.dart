@@ -39,7 +39,7 @@ class ConnectionBanner extends StatelessWidget {
           Text(
             'Make sure the engine is running: python -m engine.main',
             style: TextStyle(
-              color: AppTheme.textMuted,
+              color: AppTheme.textMutedFor(context),
               fontSize: 11,
             ),
           ),

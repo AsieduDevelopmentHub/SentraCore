@@ -152,4 +152,20 @@ class AppTheme {
               ? darkTextSecondary
               : lightTextSecondary)
           .withValues(alpha: 0.85);
+
+  // ---------------------------------------------------------------------------
+  // Backward-compatible getters (legacy)
+  //
+  // Many widgets in this codebase reference `AppTheme.textMuted`, `surfaceLight`,
+  // etc. These were historically "dark defaults". Keep them to avoid churn and
+  // migrate callsites gradually to the `...For(context)` methods for true
+  // dual-theme support.
+  // ---------------------------------------------------------------------------
+  static Color get background => darkBackground;
+  static Color get surface => darkSurface;
+  static Color get surfaceLight => darkSurfaceLight;
+  static Color get border => darkBorder;
+  static Color get textPrimary => darkTextPrimary;
+  static Color get textSecondary => darkTextSecondary;
+  static Color get textMuted => darkTextSecondary;
 }

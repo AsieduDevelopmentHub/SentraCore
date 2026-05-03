@@ -8,6 +8,7 @@ import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
+import 'package:sentracore_dashboard/widgets/top_status_bar.dart';
 
 /// Root shell with persistent navigation rail and page switching.
 class DashboardScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Column(
         children: [
           if (!provider.connected) const ConnectionBanner(),
+          const TopStatusBar(),
           Expanded(
             child: Row(
               children: [
@@ -78,7 +80,7 @@ class _SentraNavRail extends StatelessWidget {
     final stability = provider.stability;
     final stabilityColor = stability != null
         ? AppTheme.stabilityColor(stability.state)
-        : AppTheme.textMuted;
+        : AppTheme.textMutedFor(context);
     final stabilityScore = stability?.score.toStringAsFixed(0) ?? '--';
 
     return Container(
@@ -142,7 +144,6 @@ class _SentraNavRail extends StatelessWidget {
                     color: stabilityColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    fontFamily: 'Outfit',
                   ),
                 ),
                 Text(
@@ -237,7 +238,7 @@ class _SentraNavRail extends StatelessWidget {
           ),
           child: Icon(
             isSelected ? activeIcon : icon,
-            color: isSelected ? AppTheme.primary : AppTheme.textMuted,
+            color: isSelected ? AppTheme.primary : AppTheme.textMutedFor(context),
             size: 22,
           ),
         ),

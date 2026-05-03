@@ -25,7 +25,7 @@ class RcaPanel extends StatelessWidget {
                 Text(
                   'Root Cause Analysis',
                   style: TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryFor(context),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -34,21 +34,26 @@ class RcaPanel extends StatelessWidget {
             ),
             Divider(height: 24, color: Theme.of(context).dividerColor),
             if (rca == null)
-              _buildEmptyState()
+              _buildEmptyState(context)
             else ...[
-              _buildAlertBanner(provider.currentState?.alert.lastMessage ?? ''),
+              _buildAlertBanner(
+                  context, provider.currentState?.alert.lastMessage ?? ''),
               const SizedBox(height: 16),
               _buildDataRow(
-                  'Primary Bottleneck:', rca.primaryBottleneck.toUpperCase()),
+                  context,
+                  'Primary Bottleneck:',
+                  rca.primaryBottleneck.toUpperCase()),
               if (rca.suspectProcess != null) ...[
                 const SizedBox(height: 8),
-                _buildDataRow('Suspect Process:',
+                _buildDataRow(
+                    context,
+                    'Suspect Process:',
                     '${rca.suspectProcess!['name']} (PID: ${rca.suspectProcess!['pid']})'),
               ],
               if (rca.triggerEvent != null) ...[
                 const SizedBox(height: 8),
                 _buildDataRow(
-                    'Trigger Event:', rca.triggerEvent!['event_type']),
+                    context, 'Trigger Event:', rca.triggerEvent!['event_type']),
               ],
             ],
           ],
@@ -57,19 +62,19 @@ class RcaPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Text(
           'No recent alerts to analyze.',
-          style: TextStyle(color: AppTheme.textMuted),
+          style: TextStyle(color: AppTheme.textMutedFor(context)),
         ),
       ),
     );
   }
 
-  Widget _buildAlertBanner(String message) {
+  Widget _buildAlertBanner(BuildContext context, String message) {
     if (message.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -80,26 +85,29 @@ class RcaPanel extends StatelessWidget {
       ),
       child: Text(
         message,
-        style:
-            TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+        style: TextStyle(
+          color: AppTheme.textSecondaryFor(context),
+          fontSize: 13,
+          height: 1.4,
+        ),
       ),
     );
   }
 
-  Widget _buildDataRow(String label, String value) {
+  Widget _buildDataRow(BuildContext context, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 130,
           child: Text(label,
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+              style: const TextStyle(color: Colors.grey, fontSize: 13)),
         ),
         Expanded(
           child: Text(
             value,
             style: TextStyle(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryFor(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w500),
           ),

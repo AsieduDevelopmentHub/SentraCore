@@ -36,7 +36,7 @@ class MetricChartCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryFor(context),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -61,7 +61,7 @@ class MetricChartCard extends StatelessWidget {
                       child: Text(
                         'Collecting data...',
                         style: TextStyle(
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedFor(context),
                           fontSize: 11,
                         ),
                       ),
@@ -75,7 +75,9 @@ class MetricChartCard extends StatelessWidget {
                           drawVerticalLine: false,
                           horizontalInterval: maxY / 4,
                           getDrawingHorizontalLine: (value) => FlLine(
-                            color: AppTheme.border.withValues(alpha: 0.5),
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.5),
                             strokeWidth: 0.5,
                           ),
                         ),

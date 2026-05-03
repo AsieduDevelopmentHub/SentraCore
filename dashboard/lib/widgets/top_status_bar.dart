@@ -11,7 +11,7 @@ class TopStatusBar extends StatelessWidget {
     final provider = context.watch<EngineProvider>();
     final state = provider.currentState;
     final stability = provider.stability;
-    final risk = state?.prediction.riskScore;
+    final risk = state?.prediction?.riskScore;
     final trend = state?.trend;
 
     final stabilityState = (stability?.state ?? 'unknown').toLowerCase();

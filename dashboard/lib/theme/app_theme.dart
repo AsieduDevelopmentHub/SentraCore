@@ -89,11 +89,10 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: darkSurface,
-        elevation: 0,
+        elevation: 1,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: darkBorder, width: 1),
         ),
       ),
       dividerColor: darkBorder,
@@ -137,12 +136,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: lightSurface,
-        elevation: 0,
-        shadowColor: Colors.transparent,
+        elevation: 1,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: lightBorder, width: 1),
         ),
       ),
       dividerColor: lightBorder,

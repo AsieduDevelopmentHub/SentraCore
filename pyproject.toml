@@ -4,7 +4,7 @@ build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "sentracore"
-version = "0.1.0"
+version = "1.0.0"
 description = "Local system behavior intelligence layer — behavioral monitoring, anomaly detection, and root-cause analysis"
 readme = "README.md"
 license = {text = "MIT"}

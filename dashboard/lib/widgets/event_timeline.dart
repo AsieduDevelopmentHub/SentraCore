@@ -5,12 +5,20 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 /// Timeline of recent system events with severity-based coloring.
 class EventTimeline extends StatelessWidget {
-  const EventTimeline({super.key});
+  final String filter;
+  const EventTimeline({super.key, this.filter = ''});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EngineProvider>();
-    final events = provider.events;
+    final q = filter.trim().toLowerCase();
+    final events = q.isEmpty
+        ? provider.events
+        : provider.events.where((e) {
+            final type = e.eventType.toLowerCase();
+            final desc = e.description.toLowerCase();
+            return type.contains(q) || desc.contains(q);
+          }).toList();
 
     return Card(
       child: Padding(

@@ -19,6 +19,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  bool _navExpanded = false;
 
   static const _pages = [
     OverviewScreen(),
@@ -40,9 +41,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 // ── Left Navigation Rail ──
                 _SentraNavRail(
+                  expanded: _navExpanded,
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: (i) =>
                       setState(() => _selectedIndex = i),
+                  onToggleExpanded: () =>
+                      setState(() => _navExpanded = !_navExpanded),
                   provider: provider,
                 ),
                 // ── Vertical Divider ──
@@ -63,13 +67,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _SentraNavRail extends StatelessWidget {
+  final bool expanded;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+  final VoidCallback onToggleExpanded;
   final EngineProvider provider;
 
   const _SentraNavRail({
+    required this.expanded,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    required this.onToggleExpanded,
     required this.provider,
   });
 
@@ -81,8 +89,10 @@ class _SentraNavRail extends StatelessWidget {
         : AppTheme.textMutedFor(context);
     final stabilityScore = stability?.score.toStringAsFixed(0) ?? '--';
 
-    return Container(
-      width: 72,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      width: expanded ? 232 : 72,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -95,6 +105,45 @@ class _SentraNavRail extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 0),
+            child: Row(
+              children: [
+                if (expanded) ...[
+                  IconButton(
+                    tooltip: 'Collapse',
+                    onPressed: onToggleExpanded,
+                    icon: Icon(
+                      Icons.chevron_left_rounded,
+                      color: AppTheme.textMutedFor(context),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    'SentraCore',
+                    style: TextStyle(
+                      color: AppTheme.textPrimaryFor(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ] else ...[
+                  IconButton(
+                    tooltip: 'Expand',
+                    onPressed: onToggleExpanded,
+                    icon: Icon(
+                      Icons.menu_rounded,
+                      color: AppTheme.textMutedFor(context),
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (!expanded) const SizedBox(height: 6),
           // Logo — flat frame, no gradient (design.md calm tone)
           Container(
             width: 44,
@@ -193,34 +242,54 @@ class _SentraNavRail extends StatelessWidget {
   Widget _navItem(BuildContext context, int index, IconData icon,
       IconData activeIcon, String label) {
     final isSelected = selectedIndex == index;
-    return Tooltip(
-      message: label,
-      preferBelow: false,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onDestinationSelected(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? AppTheme.primary.withValues(alpha: 0.3)
-                  : Colors.transparent,
+    final content = InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => onDestinationSelected(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        margin: EdgeInsets.symmetric(
+            vertical: 4, horizontal: expanded ? 10 : 8),
+        padding: EdgeInsets.symmetric(
+          vertical: 10,
+          horizontal: expanded ? 12 : 0,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment:
+              expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              color:
+                  isSelected ? AppTheme.primary : AppTheme.textMutedFor(context),
+              size: 22,
             ),
-          ),
-          child: Icon(
-            isSelected ? activeIcon : icon,
-            color: isSelected ? AppTheme.primary : AppTheme.textMutedFor(context),
-            size: 22,
-          ),
+            if (expanded) ...[
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? AppTheme.textPrimaryFor(context)
+                      : AppTheme.textSecondaryFor(context),
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
+
+    return expanded
+        ? content
+        : Tooltip(message: label, preferBelow: false, child: content);
   }
 }

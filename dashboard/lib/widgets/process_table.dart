@@ -5,12 +5,18 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 /// Table showing top processes ranked by sustained system impact.
 class ProcessTable extends StatelessWidget {
-  const ProcessTable({super.key});
+  final String filter;
+  const ProcessTable({super.key, this.filter = ''});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EngineProvider>();
-    final processes = provider.processes;
+    final q = filter.trim().toLowerCase();
+    final processes = q.isEmpty
+        ? provider.processes
+        : provider.processes
+            .where((p) => p.name.toLowerCase().contains(q))
+            .toList();
 
     return Card(
       child: Padding(

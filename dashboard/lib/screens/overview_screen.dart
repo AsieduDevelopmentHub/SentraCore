@@ -12,8 +12,22 @@ import 'package:sentracore_dashboard/widgets/event_timeline.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 /// Screen 1: At-a-glance overview of current system health.
-class OverviewScreen extends StatelessWidget {
+class OverviewScreen extends StatefulWidget {
   const OverviewScreen({super.key});
+
+  @override
+  State<OverviewScreen> createState() => _OverviewScreenState();
+}
+
+class _OverviewScreenState extends State<OverviewScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,22 +35,26 @@ class OverviewScreen extends StatelessWidget {
 
     return Column(
       children: [
-        _OverviewChrome(provider: provider),
+        _OverviewChrome(
+          provider: provider,
+          controller: _searchController,
+          onQueryChanged: (v) => setState(() => _query = v),
+        ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ResponsiveRowColumn(
-                  spacing: 12,
+                  spacing: 14,
                   children: [
                     const SizedBox(width: 220, child: StabilityIndicator()),
                     Expanded(
                       child: Column(
                         children: [
                           ResponsiveRowColumn(
-                            spacing: 12,
+                            spacing: 14,
                             useIntrinsicHeight: false,
                             children: [
                               Expanded(
@@ -79,24 +97,24 @@ class OverviewScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           _StatsStrip(provider: provider),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 const ResponsiveRowColumn(
-                  spacing: 12,
+                  spacing: 14,
                   children: [
                     Expanded(child: PredictionPanel()),
                     Expanded(child: RcaPanel()),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 ResponsiveRowColumn(
-                  spacing: 12,
+                  spacing: 14,
                   useIntrinsicHeight: false,
                   children: [
                     Expanded(
@@ -137,17 +155,19 @@ class OverviewScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const ResponsiveRowColumn(
-                  spacing: 12,
+                const SizedBox(height: 18),
+                ResponsiveRowColumn(
+                  spacing: 14,
                   useIntrinsicHeight: false,
                   children: [
                     Expanded(
                         flex: 3,
-                        child: SizedBox(height: 300, child: ProcessTable())),
+                        child: SizedBox(
+                            height: 300, child: ProcessTable(filter: _query))),
                     Expanded(
                         flex: 2,
-                        child: SizedBox(height: 300, child: EventTimeline())),
+                        child: SizedBox(
+                            height: 300, child: EventTimeline(filter: _query))),
                   ],
                 ),
               ],
@@ -165,7 +185,13 @@ class OverviewScreen extends StatelessWidget {
 /// Primary overview chrome: title row (search, engine meta) + intelligence strip.
 class _OverviewChrome extends StatelessWidget {
   final EngineProvider provider;
-  const _OverviewChrome({required this.provider});
+  final TextEditingController controller;
+  final ValueChanged<String> onQueryChanged;
+  const _OverviewChrome({
+    required this.provider,
+    required this.controller,
+    required this.onQueryChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -216,32 +242,24 @@ class _OverviewChrome extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 420),
-                      child: Container(
+                      child: SizedBox(
                         height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceLightFor(context),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: divider.withValues(alpha: 0.9),
+                        child: TextField(
+                          controller: controller,
+                          onChanged: onQueryChanged,
+                          style: TextStyle(
+                            color: AppTheme.textPrimaryFor(context),
+                            fontSize: 13,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.search_rounded,
-                              size: 18,
-                              color: AppTheme.textMutedFor(context),
+                          decoration: InputDecoration(
+                            hintText: 'Search processes, events…',
+                            prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Search processes, events…',
-                              style: TextStyle(
-                                color: AppTheme.textMutedFor(context),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

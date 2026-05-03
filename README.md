@@ -43,8 +43,8 @@ SentraCore is structured as two decoupled layers communicating over a local WebS
 
 ```
 Flutter Dashboard (Windows Desktop)
-         ↕  WebSocket (ws://localhost:8000/ws/live)
-         ↕  REST API  (http://localhost:8000/api/v1/)
+         ↕  WebSocket (ws://localhost:8740/ws/live)
+         ↕  REST API  (http://localhost:8740/api/v1/)
 Python Engine (Headless Background Process)
     ├── SystemCollector      (psutil telemetry)
     ├── Normalizer           (EMA smoothing)

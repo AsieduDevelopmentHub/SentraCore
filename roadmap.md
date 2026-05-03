@@ -6,6 +6,10 @@ SentraCore is a local system behavior intelligence layer that evolves from a lig
 
 This roadmap defines a structured path from MVP to production-ready system without premature complexity.
 
+## Current alignment
+
+The repository currently contains implementations for the modules described across Phases 1–6 (engine, API/WebSockets, Flutter dashboard, build scripts, and installer). Treat this document as the **design/feature roadmap reference**, and keep it updated as features change.
+
 ---
 
 # 🟢 PHASE 1 — CORE MONITORING ENGINE (MVP FOUNDATION)

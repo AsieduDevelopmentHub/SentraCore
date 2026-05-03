@@ -49,7 +49,7 @@ The dashboard requires the engine to be running before it can display data. In a
 flutter run -d windows
 ```
 
-The dashboard will automatically connect to `ws://localhost:8000/ws/live` and begin displaying live system data.
+The dashboard will automatically connect to `ws://localhost:8740/ws/live` and begin displaying live system data.
 
 ---
 

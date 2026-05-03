@@ -244,3 +244,6 @@ __marimo__/
 
 # Logs
 *.logs
+
+# Design
+design.md

@@ -53,11 +53,11 @@ On startup, the engine will:
 
 | Endpoint | Description |
 |---|---|
-| `GET http://localhost:8000/api/v1/state` | Full current system state snapshot |
-| `GET http://localhost:8000/api/v1/processes` | Top processes by sustained impact |
-| `GET http://localhost:8000/api/v1/events` | Recent system events |
-| `GET http://localhost:8000/api/v1/alerts` | Alert history with Root Cause Analysis |
-| `WS ws://localhost:8000/ws/live` | Real-time state broadcast (WebSocket) |
+| `GET http://localhost:8740/api/v1/status` | Full current system state snapshot |
+| `GET http://localhost:8740/api/v1/processes` | Top processes by sustained impact |
+| `GET http://localhost:8740/api/v1/events` | Recent system events |
+| `GET http://localhost:8740/api/v1/alerts` | Alert history with Root Cause Analysis |
+| `WS ws://localhost:8740/ws/live` | Real-time state broadcast (WebSocket) |
 
 ---
 

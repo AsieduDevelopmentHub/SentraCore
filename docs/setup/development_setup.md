@@ -66,8 +66,8 @@ The engine must be started as a module from the repository root so that all inte
 ```
 
 The engine will start and expose:
-- **REST API:** `http://localhost:8000/api/v1/`
-- **WebSocket (live state):** `ws://localhost:8000/ws/live`
+- **REST API:** `http://localhost:8740/api/v1/`
+- **WebSocket (live state):** `ws://localhost:8740/ws/live`
 
 ### 4. Run the Test Suite
 

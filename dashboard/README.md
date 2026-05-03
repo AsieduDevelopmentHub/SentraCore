@@ -1,17 +1,40 @@
-# sentracore_dashboard
+# SentraCore Dashboard (Flutter / Windows)
 
-A new Flutter project.
+The SentraCore dashboard is a Flutter Windows desktop UI that connects to the local Python engine and renders real-time system intelligence:
 
-## Getting Started
+- Live system state stream (WebSocket)
+- Status/health/process/event queries (REST)
+- Stability Index, stress, predictions, and root cause panels
 
-This project is a starting point for a Flutter application.
+## Connectivity
 
-A few resources to get you started if this is your first Flutter project:
+By default the engine runs on:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- REST: `http://127.0.0.1:8740/api/v1/`
+- WebSocket: `ws://127.0.0.1:8740/ws/live`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+If you change the engine port, update `EngineService` in `lib/services/engine_service.dart` (or make it configurable via settings).
+
+## Running locally
+
+From the repository root, start the engine:
+
+```powershell
+.venv\Scripts\python -m engine.main
+```
+
+Then in a second terminal:
+
+```powershell
+cd dashboard
+flutter pub get
+flutter run -d windows
+```
+
+## Quality checks
+
+```powershell
+cd dashboard
+flutter analyze
+flutter test
+```

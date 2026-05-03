@@ -1,40 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// SentraCore design system — Modern high-density palette inspired by digital mockups.
+/// SentraCore design system — matches `design.md`.
 class AppTheme {
   AppTheme._();
 
-  // ── Dark Theme Colors (Mockup Style) ──
-  static const Color darkBackground = Color(0xFF040911);
-  static const Color darkSurface = Color(0xFF0C141F);
-  static const Color darkSurfaceLight = Color(0xFF161F2C);
-  static const Color darkBorder = Color(0xFF1E293B);
+  // ── Core palette ──
+  // Dark mode
+  static const Color darkBackground = Color(0xFF0F1115);
+  static const Color darkSurface = Color(0xFF161A20); // secondary background
+  static const Color darkSurfaceLight = Color(0xFF1B2029);
+  static const Color darkBorder = Color(0xFF232A36);
 
-  static const Color primary = Color(0xFF00D1FF); // Neon Cyan
-  static const Color accent = Color(0xFFA259FF); // Vibrant Purple
-  static const Color success = Color(0xFF00FF94); // Neon Green
-  static const Color warning = Color(0xFFFFB800); // Amber
-  static const Color error = Color(0xFFFF4D4D); // Bright Red
-  static const Color info = Color(0xFF0085FF); // Deep Blue
-
-  static const Color darkTextPrimary = Color(0xFFF8FAFC);
-  static const Color darkTextSecondary = Color(0xFF94A3B8);
-  static const Color darkTextMuted = Color(0xFF475569);
-
-  // ── Light Theme Colors ──
-  static const Color lightBackground = Color(0xFFF1F5F9);
+  // Light mode
+  static const Color lightBackground = Color(0xFFF7F9FC);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  static const Color lightTextPrimary = Color(0xFF0F172A);
-  static const Color lightTextSecondary = Color(0xFF475569);
-  static const Color lightTextMuted = Color(0xFF94A3B8);
+  static const Color lightSurfaceLight = Color(0xFFF2F5FA);
+  static const Color lightBorder = Color(0xFFE6EAF2);
 
-  // ── Stress Level Colors (Vibrant) ──
-  static const Color stressLow = success;
+  // Text
+  static const Color darkTextPrimary = Color(0xFFE6E8EB);
+  static const Color darkTextSecondary = Color(0xFF9AA3AF);
+  static const Color lightTextPrimary = Color(0xFF1F2937);
+  static const Color lightTextSecondary = Color(0xFF6B7280);
+
+  // Accent
+  static const Color primary = Color(0xFF3AA0FF); // soft blue
+  static const Color accent = Color(0xFF5FD1C2); // teal
+
+  // State colors (shared)
+  static const Color stable = Color(0xFF22C55E);
+  static const Color warning = Color(0xFFEAB308);
+  static const Color elevated = Color(0xFFF97316);
+  static const Color critical = Color(0xFFEF4444);
+
+  // Back-compat for existing widgets
+  static const Color success = stable;
+  static const Color error = critical;
+  static const Color info = primary;
+  static const Color stressLow = stable;
   static const Color stressModerate = warning;
-  static const Color stressHigh = Color(0xFFFF7A00);
-  static const Color stressCritical = error;
+  static const Color stressHigh = elevated;
+  static const Color stressCritical = critical;
 
   static Color stressColor(String level) {
     switch (level) {
@@ -54,11 +61,11 @@ class AppTheme {
   static Color stabilityColor(String state) {
     switch (state) {
       case 'stable':
-        return stressLow;
+        return stable;
       case 'degraded':
-        return stressModerate;
+        return warning;
       case 'critical':
-        return stressCritical;
+        return critical;
       default:
         return Colors.grey;
     }
@@ -74,9 +81,9 @@ class AppTheme {
         surface: darkSurface,
         primary: primary,
         secondary: accent,
-        error: error,
+        error: critical,
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).apply(
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
         bodyColor: darkTextPrimary,
         displayColor: darkTextPrimary,
       ),
@@ -85,8 +92,8 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: darkBorder, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: darkBorder, width: 1),
         ),
       ),
       dividerColor: darkBorder,
@@ -104,19 +111,19 @@ class AppTheme {
         surface: lightSurface,
         primary: primary,
         secondary: accent,
-        error: error,
+        error: critical,
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme).apply(
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).apply(
         bodyColor: lightTextPrimary,
         displayColor: lightTextPrimary,
       ),
       cardTheme: CardThemeData(
         color: lightSurface,
-        elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.05),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: lightBorder, width: 1),
         ),
       ),
@@ -125,12 +132,24 @@ class AppTheme {
     );
   }
 
-  // Helper for dynamic colors based on brightness
-  static Color get background => darkBackground;
-  static Color get surface => darkSurface;
-  static Color get surfaceLight => darkSurfaceLight;
-  static Color get border => darkBorder;
-  static Color get textPrimary => darkTextPrimary;
-  static Color get textSecondary => darkTextSecondary;
-  static Color get textMuted => darkTextMuted;
+  static Color surfaceLightFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkSurfaceLight
+          : lightSurfaceLight;
+
+  static Color textPrimaryFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkTextPrimary
+          : lightTextPrimary;
+
+  static Color textSecondaryFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkTextSecondary
+          : lightTextSecondary;
+
+  static Color textMutedFor(BuildContext context) =>
+      (Theme.of(context).brightness == Brightness.dark
+              ? darkTextSecondary
+              : lightTextSecondary)
+          .withValues(alpha: 0.85);
 }

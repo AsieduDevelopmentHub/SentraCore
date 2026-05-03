@@ -169,6 +169,7 @@ class _SentraNavRail extends StatelessWidget {
       message: label,
       preferBelow: false,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => onDestinationSelected(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

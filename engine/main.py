@@ -31,7 +31,7 @@ from engine.api.server import create_app, set_engine, ws_manager
 from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import SystemCollector
-from engine.config import API_HOST, API_PORT, COLLECTION_INTERVAL_SEC
+from engine.config import API_HOST, API_PORT, COLLECTION_INTERVAL_SEC, DATASTORE_DIR
 from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
@@ -273,8 +273,6 @@ def _configure_logging() -> None:
     """Configure structured logging for the engine."""
     # When packaged with PyInstaller + --noconsole, sys.stdout/sys.stderr can be None.
     # In that case, log to a file so the engine can still start and we can diagnose issues.
-    from pathlib import Path
-
     log_format = "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
     datefmt = "%H:%M:%S"
 
@@ -282,7 +280,7 @@ def _configure_logging() -> None:
     if getattr(sys, "stdout", None) is not None:
         handlers.append(logging.StreamHandler(sys.stdout))
     else:
-        log_dir = Path(__file__).parent / "datastore" / "logs"
+        log_dir = DATASTORE_DIR / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(log_dir / "engine.log", encoding="utf-8"))
 

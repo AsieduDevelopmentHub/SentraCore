@@ -5,6 +5,9 @@ All tunable constants and system-wide settings are defined here.
 Modules import from this file to ensure consistent behavior across the engine.
 """
 
+from __future__ import annotations
+
+import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -14,8 +17,42 @@ from pathlib import Path
 # Root directory of the app package
 APP_DIR = Path(__file__).parent
 
-# Persistent data storage directory
-DATASTORE_DIR = APP_DIR / "datastore"
+def _writable_datastore_dir() -> Path:
+    """
+    Resolve a writable datastore directory.
+
+    - Dev mode: using `engine/datastore/` is fine.
+    - Installed mode (e.g. under Program Files): we must not write into the install dir.
+
+    Order:
+    1) SENTRACORE_DATA_DIR (explicit override)
+    2) Local package datastore if it can be created/written
+    3) %LOCALAPPDATA%/SentraCore/datastore (Windows)
+    4) ~/.local/share/SentraCore/datastore (fallback)
+    """
+    override = os.environ.get("SENTRACORE_DATA_DIR")
+    if override:
+        return Path(override)
+
+    local = APP_DIR / "datastore"
+    try:
+        local.mkdir(parents=True, exist_ok=True)
+        test = local / ".write_test"
+        test.write_text("ok", encoding="utf-8")
+        test.unlink(missing_ok=True)
+        return local
+    except OSError:
+        pass
+
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    if local_appdata:
+        return Path(local_appdata) / "SentraCore" / "datastore"
+
+    return Path.home() / ".local" / "share" / "SentraCore" / "datastore"
+
+
+# Persistent data storage directory (writable)
+DATASTORE_DIR = _writable_datastore_dir()
 
 # Baseline model persistence file
 BASELINE_FILE = DATASTORE_DIR / "baseline.json"

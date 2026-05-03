@@ -29,7 +29,7 @@ class ProcessTable extends StatelessWidget {
                     Text(
                       'Process Intelligence',
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryFor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -38,7 +38,8 @@ class ProcessTable extends StatelessWidget {
                 ),
                 Text(
                   'Ranked by sustained impact',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                  style: TextStyle(
+                      fontSize: 10, color: AppTheme.textMutedFor(context)),
                 ),
               ],
             ),
@@ -66,7 +67,7 @@ class ProcessTable extends StatelessWidget {
                       child: Text(
                         'Waiting for process data...',
                         style: TextStyle(
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedFor(context),
                           fontSize: 11,
                         ),
                       ),
@@ -109,7 +110,7 @@ class ProcessTable extends StatelessWidget {
                                   '${proc.avgCpuPercent.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _cpuColor(proc.avgCpuPercent),
+                                    color: _cpuColor(context, proc.avgCpuPercent),
                                   ),
                                 ),
                               ),
@@ -121,7 +122,7 @@ class ProcessTable extends StatelessWidget {
                                   '${proc.avgMemoryPercent.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _memColor(proc.avgMemoryPercent),
+                                    color: _memColor(context, proc.avgMemoryPercent),
                                   ),
                                 ),
                               ),
@@ -161,16 +162,16 @@ class ProcessTable extends StatelessWidget {
     );
   }
 
-  Color _cpuColor(double value) {
+  Color _cpuColor(BuildContext context, double value) {
     if (value > 60) return AppTheme.error;
     if (value > 30) return AppTheme.warning;
-    return AppTheme.textSecondary;
+    return AppTheme.textSecondaryFor(context);
   }
 
-  Color _memColor(double value) {
+  Color _memColor(BuildContext context, double value) {
     if (value > 50) return AppTheme.error;
     if (value > 25) return AppTheme.warning;
-    return AppTheme.textSecondary;
+    return AppTheme.textSecondaryFor(context);
   }
 
   Color _impactColor(double score) {
@@ -194,7 +195,7 @@ class _ColHeader extends StatelessWidget {
         text,
         style: TextStyle(
           fontSize: 10,
-          color: AppTheme.textMuted,
+          color: AppTheme.textMutedFor(context),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),

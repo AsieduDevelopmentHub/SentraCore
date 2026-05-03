@@ -23,7 +23,7 @@ class StressIndicator extends StatelessWidget {
             Text(
               'System Stress',
               style: TextStyle(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryFor(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -43,7 +43,8 @@ class StressIndicator extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: score / 100,
                       strokeWidth: 8,
-                      backgroundColor: AppTheme.surfaceLight,
+                      backgroundColor:
+                          Theme.of(context).dividerColor.withValues(alpha: 0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                       strokeCap: StrokeCap.round,
                     ),
@@ -63,7 +64,7 @@ class StressIndicator extends StatelessWidget {
                         '/100',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedFor(context),
                         ),
                       ),
                     ],
@@ -128,7 +129,8 @@ class _PressureBar extends StatelessWidget {
           width: 52,
           child: Text(
             label,
-            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+            style:
+                TextStyle(fontSize: 11, color: AppTheme.textSecondaryFor(context)),
           ),
         ),
         Expanded(
@@ -136,7 +138,8 @@ class _PressureBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: value / 100,
-              backgroundColor: AppTheme.surfaceLight,
+              backgroundColor:
+                  Theme.of(context).dividerColor.withValues(alpha: 0.2),
               valueColor:
                   AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
               minHeight: 4,
@@ -148,7 +151,7 @@ class _PressureBar extends StatelessWidget {
           width: 32,
           child: Text(
             '${value.toStringAsFixed(0)}%',
-            style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            style: TextStyle(fontSize: 10, color: AppTheme.textMutedFor(context)),
             textAlign: TextAlign.right,
           ),
         ),

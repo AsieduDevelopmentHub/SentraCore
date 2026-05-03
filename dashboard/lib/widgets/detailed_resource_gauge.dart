@@ -48,7 +48,7 @@ class DetailedResourceGauge extends StatelessWidget {
                     Text(
                       label.toUpperCase(),
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryFor(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.0,
@@ -73,7 +73,6 @@ class DetailedResourceGauge extends StatelessWidget {
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
                           color: Theme.of(context).textTheme.bodyLarge?.color,
-                          fontFamily: 'Outfit',
                           height: 1,
                         ),
                       ),
@@ -82,7 +81,7 @@ class DetailedResourceGauge extends StatelessWidget {
                         Text(
                           subtitle!.toUpperCase(),
                           style: TextStyle(
-                            color: AppTheme.textMuted,
+                            color: AppTheme.textMutedFor(context),
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,

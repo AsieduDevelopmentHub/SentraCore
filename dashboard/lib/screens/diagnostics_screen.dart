@@ -52,7 +52,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen>
                       fontSize: 16,
                       fontWeight: FontWeight.w600)),
               Text('Event log and alert history with root cause analysis',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  style: TextStyle(
+                      color: AppTheme.textMutedFor(context), fontSize: 11)),
             ]),
             const Spacer(),
             _AlertCountBadge(provider: provider),
@@ -60,11 +61,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen>
         ),
         // Tabs
         Container(
-          color: AppTheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppTheme.primary,
-            unselectedLabelColor: AppTheme.textMuted,
+            unselectedLabelColor: AppTheme.textMutedFor(context),
             indicatorColor: AppTheme.primary,
             indicatorSize: TabBarIndicatorSize.label,
             labelStyle:
@@ -177,11 +178,12 @@ class _EventLogTab extends StatelessWidget {
         // Filter chips
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: AppTheme.surfaceLight,
+          color: AppTheme.surfaceLightFor(context),
           child: Row(
             children: [
               Text('Filter: ',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  style: TextStyle(
+                      color: AppTheme.textMutedFor(context), fontSize: 11)),
               const SizedBox(width: 8),
               for (final sev in ['all', 'info', 'warning', 'critical'])
                 _FilterChip(
@@ -191,7 +193,8 @@ class _EventLogTab extends StatelessWidget {
                 ),
               const Spacer(),
               Text('${filtered.length} events',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  style: TextStyle(
+                      color: AppTheme.textMutedFor(context), fontSize: 11)),
             ],
           ),
         ),
@@ -200,7 +203,8 @@ class _EventLogTab extends StatelessWidget {
           child: filtered.isEmpty
               ? Center(
                   child: Text('No events to display.',
-                      style: TextStyle(color: AppTheme.textMuted)))
+                      style:
+                          TextStyle(color: AppTheme.textMutedFor(context))))
               : ListView.builder(
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
@@ -227,7 +231,7 @@ class _FilterChip extends StatelessWidget {
       'critical' => AppTheme.error,
       'warning' => AppTheme.warning,
       'info' => AppTheme.info,
-      _ => AppTheme.textSecondary,
+      _ => AppTheme.textSecondaryFor(context),
     };
     return GestureDetector(
       onTap: onTap,
@@ -238,12 +242,13 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? color : AppTheme.border),
+          border: Border.all(
+              color: isSelected ? color : Theme.of(context).dividerColor),
         ),
         child: Text(
           label.toUpperCase(),
           style: TextStyle(
-              color: isSelected ? color : AppTheme.textMuted,
+              color: isSelected ? color : AppTheme.textMutedFor(context),
               fontSize: 10,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5),
@@ -289,7 +294,7 @@ class _EventRow extends StatelessWidget {
                 Row(children: [
                   Text(event.eventType,
                       style: TextStyle(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryFor(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
@@ -309,7 +314,8 @@ class _EventRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(event.description,
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 11),
+                          color: AppTheme.textSecondaryFor(context),
+                          fontSize: 11),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis),
                 ],
@@ -320,7 +326,7 @@ class _EventRow extends StatelessWidget {
           Text(
             _formatTime(event.timestamp),
             style: TextStyle(
-                color: AppTheme.textMuted,
+                color: AppTheme.textMutedFor(context),
                 fontSize: 10,
                 fontFamily: 'monospace'),
           ),
@@ -354,9 +360,11 @@ class _AlertsRcaTab extends StatelessWidget {
           Icon(Icons.check_circle_outline, size: 48, color: AppTheme.accent),
           const SizedBox(height: 12),
           Text('No alerts have been fired.',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
+              style: TextStyle(
+                  color: AppTheme.textSecondaryFor(context), fontSize: 14)),
           Text('The system is operating within normal parameters.',
-              style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+              style: TextStyle(
+                  color: AppTheme.textMutedFor(context), fontSize: 12)),
         ]),
       );
     }
@@ -397,7 +405,7 @@ class _AlertSummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text('Alert Summary',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontSize: 14,
                       fontWeight: FontWeight.w600)),
             ]),
@@ -410,7 +418,9 @@ class _AlertSummaryCard extends StatelessWidget {
                 _AlertStat('Consecutive High', '${alert.consecutiveHigh}',
                     AppTheme.warning),
                 _AlertStat('Cooldown', alert.inCooldown ? 'Active' : 'Inactive',
-                    alert.inCooldown ? AppTheme.info : AppTheme.textMuted),
+                    alert.inCooldown
+                        ? AppTheme.info
+                        : AppTheme.textMutedFor(context)),
               ],
             ),
           ],
@@ -428,7 +438,8 @@ class _AlertStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(children: [
-        Text(label, style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+        Text(label,
+            style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(
@@ -454,7 +465,7 @@ class _RcaDetailCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text('Root Cause Analysis',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontSize: 14,
                       fontWeight: FontWeight.w600)),
               const Spacer(),
@@ -487,7 +498,7 @@ class _RcaDetailCard extends StatelessWidget {
                 ),
                 child: Text(message,
                     style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryFor(context),
                         fontSize: 12,
                         height: 1.5)),
               ),
@@ -496,14 +507,16 @@ class _RcaDetailCard extends StatelessWidget {
             // Summary
             Text('Summary',
                 style: TextStyle(
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedFor(context),
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5)),
             const SizedBox(height: 4),
             Text(rca.summary,
                 style: TextStyle(
-                    color: AppTheme.textPrimary, fontSize: 13, height: 1.5)),
+                    color: AppTheme.textPrimaryFor(context),
+                    fontSize: 13,
+                    height: 1.5)),
             const SizedBox(height: 16),
             // Detail grid
             ResponsiveRowColumn(
@@ -574,7 +587,7 @@ class _RcaField extends StatelessWidget {
             const SizedBox(width: 5),
             Text(label,
                 style: TextStyle(
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedFor(context),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5)),

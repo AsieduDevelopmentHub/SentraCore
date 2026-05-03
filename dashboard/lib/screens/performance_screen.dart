@@ -138,11 +138,12 @@ class _PerformanceHeader extends StatelessWidget {
             children: [
               Text('Performance',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontSize: 16,
                       fontWeight: FontWeight.w600)),
               Text('60-second rolling history with trend analysis',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  style: TextStyle(
+                      color: AppTheme.textMutedFor(context), fontSize: 11)),
             ],
           ),
           const Spacer(),
@@ -159,7 +160,9 @@ class _PerformanceHeader extends StatelessWidget {
               const SizedBox(width: 6),
               Text('Live — 2s interval',
                   style:
-                      TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                      TextStyle(
+                          color: AppTheme.textSecondaryFor(context),
+                          fontSize: 11)),
             ]),
           ),
         ],
@@ -211,7 +214,7 @@ class _DetailedChart extends StatelessWidget {
               children: [
                 Text(title,
                     style: TextStyle(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryFor(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
                 Text(
@@ -230,7 +233,8 @@ class _DetailedChart extends StatelessWidget {
               child: data.length < 2
                   ? Center(
                       child: Text('Collecting data...',
-                          style: TextStyle(color: AppTheme.textMuted)))
+                          style:
+                              TextStyle(color: AppTheme.textMutedFor(context))))
                   : LineChart(
                       LineChartData(
                         minY: 0,
@@ -240,7 +244,9 @@ class _DetailedChart extends StatelessWidget {
                           drawVerticalLine: false,
                           horizontalInterval: maxY / 5,
                           getDrawingHorizontalLine: (v) => FlLine(
-                            color: AppTheme.border.withValues(alpha: 0.5),
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.5),
                             strokeWidth: 0.5,
                           ),
                         ),
@@ -252,7 +258,9 @@ class _DetailedChart extends StatelessWidget {
                               getTitlesWidget: (v, _) => Text(
                                 v.toStringAsFixed(0),
                                 style: TextStyle(
-                                    color: AppTheme.textMuted, fontSize: 9),
+                                  color: AppTheme.textMutedFor(context),
+                                  fontSize: 9,
+                                ),
                               ),
                             ),
                           ),
@@ -266,11 +274,13 @@ class _DetailedChart extends StatelessWidget {
                         borderData: FlBorderData(
                           show: true,
                           border: Border(
-                              bottom: BorderSide(
-                                  color:
-                                      AppTheme.border.withValues(alpha: 0.5))),
+                            bottom: BorderSide(
+                              color: Theme.of(context)
+                                  .dividerColor
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
                         ),
-                        clipData: const FlClipData.all(),
                         lineTouchData: LineTouchData(
                           enabled: true,
                           touchTooltipData: LineTouchTooltipData(
@@ -278,9 +288,10 @@ class _DetailedChart extends StatelessWidget {
                                 .map((s) => LineTooltipItem(
                                       '${s.y.toStringAsFixed(1)}$unit',
                                       TextStyle(
-                                          color: color,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12),
+                                        color: color,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
                                     ))
                                 .toList(),
                           ),
@@ -301,13 +312,16 @@ class _DetailedChart extends StatelessWidget {
                                   ),
                                 ),
                               ])
-                            : null,
+                            : ExtraLinesData(horizontalLines: const []),
                         lineBarsData: [
                           LineChartBarData(
                             spots: List.generate(
-                                data.length,
-                                (i) => FlSpot(
-                                    i.toDouble(), data[i].clamp(0, maxY))),
+                              data.length,
+                              (i) => FlSpot(
+                                i.toDouble(),
+                                data[i].clamp(0, maxY),
+                              ),
+                            ),
                             isCurved: true,
                             curveSmoothness: 0.25,
                             color: color,
@@ -321,14 +335,13 @@ class _DetailedChart extends StatelessWidget {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   color.withValues(alpha: 0.2),
-                                  color.withValues(alpha: 0.0)
+                                  color.withValues(alpha: 0.0),
                                 ],
                               ),
                             ),
                           ),
                         ],
                       ),
-                      duration: const Duration(milliseconds: 100),
                     ),
             ),
             const SizedBox(height: 12),
@@ -357,7 +370,9 @@ class _MiniStat extends StatelessWidget {
     return Column(children: [
       Text(label,
           style: TextStyle(
-              color: AppTheme.textMuted, fontSize: 9, letterSpacing: 0.5)),
+              color: AppTheme.textMutedFor(context),
+              fontSize: 9,
+              letterSpacing: 0.5)),
       const SizedBox(height: 2),
       Text(value,
           style: TextStyle(
@@ -385,13 +400,14 @@ class _TrendCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text('Trend Analysis',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
             if (trend == null)
-              Text('No data', style: TextStyle(color: AppTheme.textMuted))
+              Text('No data',
+                  style: TextStyle(color: AppTheme.textMutedFor(context)))
             else ...[
               _TrendRow('CPU Slope', trend.cpuSlope, '%/s'),
               const SizedBox(height: 8),
@@ -424,7 +440,8 @@ class _TrendRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            style: TextStyle(
+                color: AppTheme.textSecondaryFor(context), fontSize: 12)),
         Row(children: [
           Icon(isPositive ? Icons.trending_up : Icons.trending_down,
               size: 13, color: color),
@@ -450,7 +467,8 @@ class _MetricBar extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Text(label,
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+            style: TextStyle(
+                color: AppTheme.textSecondaryFor(context), fontSize: 11)),
         Text(value.toStringAsFixed(2),
             style: TextStyle(
                 color: color, fontSize: 11, fontWeight: FontWeight.w600)),
@@ -460,7 +478,8 @@ class _MetricBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(2),
         child: LinearProgressIndicator(
           value: (value / maxValue).clamp(0, 1),
-          backgroundColor: AppTheme.surfaceLight,
+          backgroundColor:
+              Theme.of(context).dividerColor.withValues(alpha: 0.2),
           valueColor:
               AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
           minHeight: 4,
@@ -489,13 +508,14 @@ class _AnomalyCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text('Anomaly Detection',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
             if (anomaly == null)
-              Text('No data', style: TextStyle(color: AppTheme.textMuted))
+              Text('No data',
+                  style: TextStyle(color: AppTheme.textMutedFor(context)))
             else ...[
               _MetricBar('CPU Z-Score', anomaly.cpuZScore, 4, AppTheme.primary),
               const SizedBox(height: 8),
@@ -508,7 +528,9 @@ class _AnomalyCard extends StatelessWidget {
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Anomaly Level',
                     style:
-                        TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                        TextStyle(
+                            color: AppTheme.textSecondaryFor(context),
+                            fontSize: 12)),
                 _LevelBadge(anomaly.level),
               ]),
             ],
@@ -530,7 +552,7 @@ class _LevelBadge extends StatelessWidget {
       'elevated' => AppTheme.info,
       'high' => AppTheme.warning,
       'severe' => AppTheme.error,
-      _ => AppTheme.textMuted,
+      _ => AppTheme.textMutedFor(context),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -567,18 +589,21 @@ class _StressCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text('Stress Engine',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
             if (stress == null)
-              Text('No data', style: TextStyle(color: AppTheme.textMuted))
+              Text('No data',
+                  style: TextStyle(color: AppTheme.textMutedFor(context)))
             else ...[
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Score',
                     style:
-                        TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                        TextStyle(
+                            color: AppTheme.textSecondaryFor(context),
+                            fontSize: 12)),
                 Text(stress.score.toStringAsFixed(1),
                     style: TextStyle(
                         color: AppTheme.stressColor(stress.level),

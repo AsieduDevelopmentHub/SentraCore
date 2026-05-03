@@ -40,7 +40,7 @@ class ResourceGauge extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryFor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -80,7 +80,7 @@ class ResourceGauge extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryFor(context),
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -90,7 +90,7 @@ class ResourceGauge extends StatelessWidget {
                     suffix,
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppTheme.textMuted,
+                      color: AppTheme.textMutedFor(context),
                     ),
                   ),
                 ),
@@ -104,7 +104,8 @@ class ResourceGauge extends StatelessWidget {
               borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(
                 value: (value / 100).clamp(0, 1),
-                backgroundColor: AppTheme.surfaceLight,
+                backgroundColor:
+                    Theme.of(context).dividerColor.withValues(alpha: 0.2),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   isSpiking ? AppTheme.error : color,
                 ),

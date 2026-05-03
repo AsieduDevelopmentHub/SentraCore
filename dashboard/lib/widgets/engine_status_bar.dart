@@ -37,7 +37,7 @@ class EngineStatusBar extends StatelessWidget {
               label: '${provider.currentState!.alert.totalFired}',
               color: provider.currentState!.alert.totalFired > 0
                   ? AppTheme.error
-                  : AppTheme.textMuted,
+                  : AppTheme.textMutedFor(context),
             ),
             const SizedBox(width: 8),
           ],

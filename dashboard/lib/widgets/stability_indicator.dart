@@ -70,7 +70,6 @@ class StabilityIndicator extends StatelessWidget {
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
                           color: Theme.of(context).textTheme.bodyLarge?.color,
-                          fontFamily: 'Outfit',
                           height: 1,
                         ),
                       ),
@@ -79,7 +78,7 @@ class StabilityIndicator extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedFor(context),
                           letterSpacing: 2,
                         ),
                       ),
@@ -152,7 +151,7 @@ class _PenaltyRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textMuted,
+                color: AppTheme.textMutedFor(context),
                 letterSpacing: 0.5,
               ),
             ),
@@ -162,7 +161,6 @@ class _PenaltyRow extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 color: color,
-                fontFamily: 'Outfit',
               ),
             ),
           ],

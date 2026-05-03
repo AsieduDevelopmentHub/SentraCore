@@ -98,6 +98,24 @@ class AppTheme {
       ),
       dividerColor: darkBorder,
       iconTheme: const IconThemeData(color: darkTextSecondary, size: 20),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurfaceLight,
+        hintStyle: TextStyle(color: darkTextSecondary.withValues(alpha: 0.85)),
+        prefixIconColor: darkTextSecondary.withValues(alpha: 0.85),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primary),
+        ),
+      ),
     );
   }
 
@@ -129,6 +147,24 @@ class AppTheme {
       ),
       dividerColor: lightBorder,
       iconTheme: const IconThemeData(color: lightTextSecondary, size: 20),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: lightSurfaceLight,
+        hintStyle: TextStyle(color: lightTextSecondary.withValues(alpha: 0.85)),
+        prefixIconColor: lightTextSecondary.withValues(alpha: 0.85),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: lightBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: lightBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primary),
+        ),
+      ),
     );
   }
 
@@ -153,19 +189,5 @@ class AppTheme {
               : lightTextSecondary)
           .withValues(alpha: 0.85);
 
-  // ---------------------------------------------------------------------------
-  // Backward-compatible getters (legacy)
-  //
-  // Many widgets in this codebase reference `AppTheme.textMuted`, `surfaceLight`,
-  // etc. These were historically "dark defaults". Keep them to avoid churn and
-  // migrate callsites gradually to the `...For(context)` methods for true
-  // dual-theme support.
-  // ---------------------------------------------------------------------------
-  static Color get background => darkBackground;
-  static Color get surface => darkSurface;
-  static Color get surfaceLight => darkSurfaceLight;
-  static Color get border => darkBorder;
-  static Color get textPrimary => darkTextPrimary;
-  static Color get textSecondary => darkTextSecondary;
-  static Color get textMuted => darkTextSecondary;
+  // No legacy theme accessors — keep all callsites context-aware.
 }

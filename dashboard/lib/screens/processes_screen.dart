@@ -44,7 +44,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600)),
                 Text('Ranked by sustained system impact',
-                    style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                    style: TextStyle(
+                        color: AppTheme.textMutedFor(context), fontSize: 11)),
               ]),
               const Spacer(),
               // Process count badge
@@ -52,13 +53,15 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
+                  color: AppTheme.surfaceLightFor(context),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppTheme.border),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Text('${provider.processes.length} tracked',
                     style:
-                        TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                        TextStyle(
+                            color: AppTheme.textSecondaryFor(context),
+                            fontSize: 11)),
               ),
               const SizedBox(width: 12),
               // Search filter
@@ -68,11 +71,13 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   decoration: InputDecoration(
                     hintText: 'Filter by name...',
                     hintStyle:
-                        TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        TextStyle(
+                            color: AppTheme.textMutedFor(context), fontSize: 12),
                     prefixIcon:
-                        Icon(Icons.search, size: 16, color: AppTheme.textMuted),
+                        Icon(Icons.search,
+                            size: 16, color: AppTheme.textMutedFor(context)),
                     filled: true,
-                    fillColor: AppTheme.surfaceLight,
+                    fillColor: AppTheme.surfaceLightFor(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
@@ -89,7 +94,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                  style: TextStyle(
+                      color: AppTheme.textPrimaryFor(context), fontSize: 12),
                   onChanged: (v) => setState(() => _filter = v),
                 ),
               ),
@@ -105,7 +111,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
           child: processes.isEmpty
               ? Center(
                   child: Text('No process data yet.',
-                      style: TextStyle(color: AppTheme.textMuted)))
+                      style:
+                          TextStyle(color: AppTheme.textMutedFor(context))))
               : _ProcessDataTable(
                   processes: processes,
                   sortColumnIndex: _sortColumnIndex,
@@ -165,7 +172,7 @@ class _ProcessSummaryStrip extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      color: AppTheme.surfaceLight,
+      color: AppTheme.surfaceLightFor(context),
       child: Row(
         children: [
           _SummaryChip(
@@ -200,7 +207,7 @@ class _SummaryChip extends StatelessWidget {
       Icon(Icons.circle, size: 6, color: color),
       const SizedBox(width: 6),
       Text('$label: ',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
       Text(value,
           style: TextStyle(
               color: color, fontSize: 11, fontWeight: FontWeight.w600)),
@@ -227,12 +234,13 @@ class _ProcessDataTable extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          headingRowColor: WidgetStateProperty.all(AppTheme.surfaceLight),
+          headingRowColor:
+              WidgetStateProperty.all(AppTheme.surfaceLightFor(context)),
           dataRowColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.hovered)) {
-              return AppTheme.surfaceLight;
+              return AppTheme.surfaceLightFor(context);
             }
-            return AppTheme.background;
+            return Theme.of(context).scaffoldBackgroundColor;
           }),
           columnSpacing: 20,
           horizontalMargin: 20,
@@ -241,7 +249,7 @@ class _ProcessDataTable extends StatelessWidget {
           sortColumnIndex: sortColumnIndex,
           sortAscending: sortAscending,
           headingTextStyle: TextStyle(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryFor(context),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5),
@@ -258,13 +266,13 @@ class _ProcessDataTable extends StatelessWidget {
                 onSort: onSort),
             const DataColumn(label: Text('SEVERITY')),
           ],
-          rows: processes.map((p) => _buildRow(p)).toList(),
+          rows: processes.map((p) => _buildRow(context, p)).toList(),
         ),
       ),
     );
   }
 
-  DataRow _buildRow(ProcessImpact p) {
+  DataRow _buildRow(BuildContext context, ProcessImpact p) {
     final severity = _severity(p.impactScore);
     return DataRow(cells: [
       // Process name
@@ -277,13 +285,14 @@ class _ProcessDataTable extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
             child: Text(p.name,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                style: TextStyle(
+                    color: AppTheme.textPrimaryFor(context), fontSize: 12),
                 overflow: TextOverflow.ellipsis)),
       ])),
       // PID
       DataCell(Text('${p.pid}',
           style: TextStyle(
-              color: AppTheme.textMuted,
+              color: AppTheme.textMutedFor(context),
               fontSize: 11,
               fontFamily: 'monospace'))),
       // CPU impact with bar
@@ -341,7 +350,8 @@ class _BarCell extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: (value / maxVal).clamp(0, 1),
-              backgroundColor: AppTheme.surfaceLight,
+              backgroundColor:
+                  Theme.of(context).dividerColor.withValues(alpha: 0.2),
               valueColor:
                   AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
               minHeight: 3,

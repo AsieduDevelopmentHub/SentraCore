@@ -228,7 +228,7 @@ class _StatsStrip extends StatelessWidget {
               provider.engineInfo?.baselineReady == true ? 'READY' : 'LEARNING',
               provider.engineInfo?.baselineReady == true
                   ? AppTheme.success
-                  : AppTheme.textMuted),
+                  : AppTheme.textMutedFor(context)),
         ],
       ),
     );
@@ -249,7 +249,7 @@ class _Stat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: AppTheme.textMuted,
+            color: AppTheme.textMutedFor(context),
             fontSize: 9,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
@@ -262,7 +262,6 @@ class _Stat extends StatelessWidget {
             color: color,
             fontSize: 13,
             fontWeight: FontWeight.w900,
-            fontFamily: 'Outfit',
           ),
         ),
       ],
@@ -314,7 +313,7 @@ class _ScreenHeader extends StatelessWidget {
               Text(
                 subtitle,
                 style: TextStyle(
-                  color: AppTheme.textMuted,
+                  color: AppTheme.textMutedFor(context),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -338,11 +337,13 @@ class _ScreenHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(Icons.search_rounded,
-                      size: 16, color: AppTheme.textMuted),
+                              size: 16, color: AppTheme.textMutedFor(context)),
                   const SizedBox(width: 8),
                   Text(
                     'Search...',
-                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            style: TextStyle(
+                                color: AppTheme.textMutedFor(context),
+                                fontSize: 12),
                   ),
                 ],
               ),

@@ -33,7 +33,7 @@ class EventTimeline extends StatelessWidget {
                     Text(
                       'Event Timeline',
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryFor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -42,7 +42,8 @@ class EventTimeline extends StatelessWidget {
                 ),
                 Text(
                   '${events.length} events',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                  style: TextStyle(
+                      fontSize: 10, color: AppTheme.textMutedFor(context)),
                 ),
               ],
             ),
@@ -56,7 +57,7 @@ class EventTimeline extends StatelessWidget {
                       child: Text(
                         'No events yet...',
                         style: TextStyle(
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedFor(context),
                           fontSize: 11,
                         ),
                       ),
@@ -137,7 +138,7 @@ class _EventTile extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryFor(context),
                           ),
                         ),
                       ],
@@ -146,7 +147,7 @@ class _EventTile extends StatelessWidget {
                       timeStr,
                       style: TextStyle(
                         fontSize: 9,
-                        color: AppTheme.textMuted,
+                        color: AppTheme.textMutedFor(context),
                       ),
                     ),
                   ],

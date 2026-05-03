@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/sentra_panel.dart';
 
 /// Panel displaying predictive forecasting and time-to-exhaustion.
 class PredictionPanel extends StatelessWidget {
@@ -12,48 +13,33 @@ class PredictionPanel extends StatelessWidget {
     final provider = context.watch<EngineProvider>();
     final prediction = provider.prediction;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.online_prediction, size: 18, color: AppTheme.info),
-                const SizedBox(width: 8),
-                Text(
-                  'Prediction & Forecasting',
-                  style: TextStyle(
-                    color: AppTheme.textPrimaryFor(context),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+    return SentraPanel(
+      title: 'Prediction & forecasting',
+      titleIcon: Icons.online_prediction_outlined,
+      iconColor: AppTheme.info,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (prediction == null)
+            _buildEmptyState(context)
+          else ...[
+            _buildRiskScore(context, prediction.riskScore),
+            const SizedBox(height: 16),
+            _buildEtaRow(
+              context,
+              'Memory exhaustion',
+              prediction.memoryExhaustionEtaSec,
+              Icons.memory_outlined,
             ),
-            Divider(height: 24, color: Theme.of(context).dividerColor),
-            if (prediction == null)
-              _buildEmptyState(context)
-            else ...[
-              _buildRiskScore(context, prediction.riskScore),
-              const SizedBox(height: 16),
-              _buildEtaRow(
-                context,
-                'Memory Exhaustion',
-                prediction.memoryExhaustionEtaSec,
-                Icons.memory,
-              ),
-              const SizedBox(height: 8),
-              _buildEtaRow(
-                context,
-                'CPU Saturation',
-                prediction.cpuCriticalEtaSec,
-                Icons.speed,
-              ),
-            ],
+            const SizedBox(height: 8),
+            _buildEtaRow(
+              context,
+              'CPU saturation',
+              prediction.cpuCriticalEtaSec,
+              Icons.speed_outlined,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -61,10 +47,13 @@ class PredictionPanel extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(vertical: 28),
         child: Text(
-          'Waiting for trend data...',
-          style: TextStyle(color: AppTheme.textMutedFor(context)),
+          'Waiting for trend data…',
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -84,16 +73,27 @@ class PredictionPanel extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Degradation Risk',
-                style: TextStyle(
-                    color: AppTheme.textSecondaryFor(context), fontSize: 12)),
-            Text('${score.toStringAsFixed(0)}%',
-                style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Text(
+              'Degradation risk',
+              style: TextStyle(
+                color: AppTheme.textSecondaryFor(context),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              '${score.toStringAsFixed(0)}%',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
             value: score / 100,
             backgroundColor:
@@ -107,7 +107,11 @@ class PredictionPanel extends StatelessWidget {
   }
 
   Widget _buildEtaRow(
-      BuildContext context, String label, double? etaSec, IconData icon) {
+    BuildContext context,
+    String label,
+    double? etaSec,
+    IconData icon,
+  ) {
     String text = 'Stable';
     Color color = AppTheme.textMutedFor(context);
 
@@ -123,19 +127,28 @@ class PredictionPanel extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.surfaceLightFor(context),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.85),
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: AppTheme.textSecondaryFor(context)),
-          const SizedBox(width: 8),
-          Text(label,
+          Icon(icon, size: 16, color: AppTheme.textSecondaryFor(context)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
               style: TextStyle(
-                  color: AppTheme.textSecondaryFor(context), fontSize: 13)),
-          const Spacer(),
+                color: AppTheme.textSecondaryFor(context),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           Text(
             text,
             style: TextStyle(

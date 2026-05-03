@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/sentra_panel.dart';
 
 /// Panel displaying Root Cause Analysis for the most recent alert.
 class RcaPanel extends StatelessWidget {
@@ -12,52 +13,44 @@ class RcaPanel extends StatelessWidget {
     final provider = context.watch<EngineProvider>();
     final rca = provider.currentState?.alert.lastRootCause;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.search, size: 18, color: AppTheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Root Cause Analysis',
-                  style: TextStyle(
-                    color: AppTheme.textPrimaryFor(context),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+    return SentraPanel(
+      title: 'Root cause analysis',
+      titleIcon: Icons.troubleshoot_outlined,
+      iconColor: AppTheme.primary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (rca == null)
+            _buildEmptyState(context)
+          else ...[
+            _buildAlertBanner(
+              context,
+              provider.currentState?.alert.lastMessage ?? '',
             ),
-            Divider(height: 24, color: Theme.of(context).dividerColor),
-            if (rca == null)
-              _buildEmptyState(context)
-            else ...[
-              _buildAlertBanner(
-                  context, provider.currentState?.alert.lastMessage ?? ''),
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            _buildDataRow(
+              context,
+              'Primary bottleneck',
+              rca.primaryBottleneck.toUpperCase(),
+            ),
+            if (rca.suspectProcess != null) ...[
+              const SizedBox(height: 10),
               _buildDataRow(
-                  context,
-                  'Primary Bottleneck:',
-                  rca.primaryBottleneck.toUpperCase()),
-              if (rca.suspectProcess != null) ...[
-                const SizedBox(height: 8),
-                _buildDataRow(
-                    context,
-                    'Suspect Process:',
-                    '${rca.suspectProcess!['name']} (PID: ${rca.suspectProcess!['pid']})'),
-              ],
-              if (rca.triggerEvent != null) ...[
-                const SizedBox(height: 8),
-                _buildDataRow(
-                    context, 'Trigger Event:', rca.triggerEvent!['event_type']),
-              ],
+                context,
+                'Suspect process',
+                '${rca.suspectProcess!['name']} (PID: ${rca.suspectProcess!['pid']})',
+              ),
+            ],
+            if (rca.triggerEvent != null) ...[
+              const SizedBox(height: 10),
+              _buildDataRow(
+                context,
+                'Trigger event',
+                rca.triggerEvent!['event_type'],
+              ),
             ],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -65,10 +58,13 @@ class RcaPanel extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(vertical: 28),
         child: Text(
           'No recent alerts to analyze.',
-          style: TextStyle(color: AppTheme.textMutedFor(context)),
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -78,17 +74,20 @@ class RcaPanel extends StatelessWidget {
     if (message.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.error.withValues(alpha: 0.1),
-        border: Border(left: BorderSide(color: AppTheme.error, width: 4)),
+        color: AppTheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(color: AppTheme.error, width: 3),
+        ),
       ),
       child: Text(
         message,
         style: TextStyle(
           color: AppTheme.textSecondaryFor(context),
           fontSize: 13,
-          height: 1.4,
+          height: 1.45,
         ),
       ),
     );
@@ -99,17 +98,25 @@ class RcaPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 130,
-          child: Text(label,
-              style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          width: 132,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.textMutedFor(context),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         Expanded(
           child: Text(
             value,
             style: TextStyle(
-                color: AppTheme.textPrimaryFor(context),
-                fontSize: 13,
-                fontWeight: FontWeight.w500),
+              color: AppTheme.textPrimaryFor(context),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
           ),
         ),
       ],

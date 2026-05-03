@@ -8,7 +8,6 @@ import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
-import 'package:sentracore_dashboard/widgets/top_status_bar.dart';
 
 /// Root shell with persistent navigation rail and page switching.
 class DashboardScreen extends StatefulWidget {
@@ -36,7 +35,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Column(
         children: [
           if (!provider.connected) const ConnectionBanner(),
-          const TopStatusBar(),
           Expanded(
             child: Row(
               children: [
@@ -97,30 +95,19 @@ class _SentraNavRail extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          // Logo / brand mark
+          // Logo — flat frame, no gradient (design.md calm tone)
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.primary,
-                  AppTheme.primary.withValues(alpha: 0.6),
-                ],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Theme.of(context).dividerColor,
               ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: AppTheme.surfaceLightFor(context),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(9),
               child: Image.asset(
                 'assets/brandmark.jpeg',
                 fit: BoxFit.cover,
@@ -196,15 +183,6 @@ class _SentraNavRail extends StatelessWidget {
             decoration: BoxDecoration(
               color: provider.connected ? AppTheme.success : AppTheme.error,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      (provider.connected ? AppTheme.success : AppTheme.error)
-                          .withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                )
-              ],
             ),
           ),
         ],

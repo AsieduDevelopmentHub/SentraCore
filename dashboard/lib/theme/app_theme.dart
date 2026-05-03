@@ -88,8 +88,10 @@ class AppTheme {
         displayColor: darkTextPrimary,
       ),
       cardTheme: CardThemeData(
-        color: darkSurface,
-        elevation: 1,
+        // Slightly brighter than scaffold for clearer separation.
+        color: darkSurfaceLight,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.35),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -123,7 +125,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: lightBackground,
+      // Slightly darker than card surface for clear separation.
+      scaffoldBackgroundColor: const Color(0xFFF3F6FB),
       colorScheme: const ColorScheme.light(
         surface: lightSurface,
         primary: primary,
@@ -136,8 +139,8 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: lightSurface,
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.06),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

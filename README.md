@@ -125,4 +125,4 @@ SentraCore is built around five principles:
 
 ## License
 
-To be defined.
+Apache License.

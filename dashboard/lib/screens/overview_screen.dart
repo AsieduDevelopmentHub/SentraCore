@@ -585,96 +585,98 @@ class _StatsStrip extends StatelessWidget {
     final trend = provider.currentState?.trend;
     final anomaly = provider.currentState?.anomaly;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          final children = [
-            _Stat(
-              'CPU slope',
-              trend != null
-                  ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s'
-                  : '—',
-              AppTheme.primary,
-            ),
-            _Stat(
-              'Memory slope',
-              trend != null
-                  ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s'
-                  : '—',
-              AppTheme.accent,
-            ),
-            _Stat(
-                'Anomaly', anomaly?.level.toUpperCase() ?? '—', AppTheme.info),
-            _Stat(
-              'Alerts',
-              '${provider.currentState?.alert.totalFired ?? 0}',
-              AppTheme.warning,
-            ),
-            _Stat(
-              'Baseline',
-              provider.engineInfo?.baselineReady == true ? 'Ready' : 'Learning',
-              provider.engineInfo?.baselineReady == true
-                  ? AppTheme.success
-                  : AppTheme.textMutedFor(context),
-            ),
-          ];
+    return LayoutBuilder(
+      builder: (context, c) {
+        final tiles = [
+          _StatTile(
+            label: 'CPU slope',
+            value: trend != null
+                ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s'
+                : '—',
+            valueColor: AppTheme.primary,
+          ),
+          _StatTile(
+            label: 'Memory slope',
+            value: trend != null
+                ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s'
+                : '—',
+            valueColor: AppTheme.accent,
+          ),
+          _StatTile(
+            label: 'Anomaly',
+            value: anomaly?.level.toUpperCase() ?? '—',
+            valueColor: AppTheme.info,
+          ),
+          _StatTile(
+            label: 'Alerts',
+            value: '${provider.currentState?.alert.totalFired ?? 0}',
+            valueColor: AppTheme.warning,
+          ),
+          _StatTile(
+            label: 'Baseline',
+            value: provider.engineInfo?.baselineReady == true
+                ? 'READY'
+                : 'LEARNING',
+            valueColor: provider.engineInfo?.baselineReady == true
+                ? AppTheme.success
+                : AppTheme.textMutedFor(context),
+          ),
+        ];
 
-          // Grid-like wrap: encourages 2 rows (3 + 2) on typical widths,
-          // which visually balances the tall Stability card next to it.
-          final itemWidth = c.maxWidth >= 900 ? 220.0 : 180.0;
-          return Wrap(
-            spacing: 18,
-            runSpacing: 12,
-            children: [
-              for (final s in children)
-                SizedBox(
-                  width: itemWidth,
-                  child: s,
-                ),
-            ],
-          );
-        },
-      ),
+        // Aim for 3 + 2 on typical widths.
+        final itemWidth = c.maxWidth >= 900 ? 210.0 : 180.0;
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: [
+            for (final t in tiles) SizedBox(width: itemWidth, child: t),
+          ],
+        );
+      },
     );
   }
 }
 
-class _Stat extends StatelessWidget {
+class _StatTile extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
-  const _Stat(this.label, this.value, this.color);
+  final Color valueColor;
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: AppTheme.textMutedFor(context),
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
-          ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

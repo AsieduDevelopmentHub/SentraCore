@@ -43,8 +43,9 @@ class StressIndicator extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: score / 100,
                       strokeWidth: 8,
-                      backgroundColor:
-                          Theme.of(context).dividerColor.withValues(alpha: 0.15),
+                      backgroundColor: Theme.of(context)
+                          .dividerColor
+                          .withValues(alpha: 0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                       strokeCap: StrokeCap.round,
                     ),
@@ -129,8 +130,8 @@ class _PressureBar extends StatelessWidget {
           width: 52,
           child: Text(
             label,
-            style:
-                TextStyle(fontSize: 11, color: AppTheme.textSecondaryFor(context)),
+            style: TextStyle(
+                fontSize: 11, color: AppTheme.textSecondaryFor(context)),
           ),
         ),
         Expanded(
@@ -151,7 +152,8 @@ class _PressureBar extends StatelessWidget {
           width: 32,
           child: Text(
             '${value.toStringAsFixed(0)}%',
-            style: TextStyle(fontSize: 10, color: AppTheme.textMutedFor(context)),
+            style:
+                TextStyle(fontSize: 10, color: AppTheme.textMutedFor(context)),
             textAlign: TextAlign.right,
           ),
         ),

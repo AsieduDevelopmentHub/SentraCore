@@ -159,10 +159,8 @@ class _PerformanceHeader extends StatelessWidget {
               Icon(Icons.circle, size: 6, color: AppTheme.accent),
               const SizedBox(width: 6),
               Text('Live — 2s interval',
-                  style:
-                      TextStyle(
-                          color: AppTheme.textSecondaryFor(context),
-                          fontSize: 11)),
+                  style: TextStyle(
+                      color: AppTheme.textSecondaryFor(context), fontSize: 11)),
             ]),
           ),
         ],
@@ -527,10 +525,9 @@ class _AnomalyCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Anomaly Level',
-                    style:
-                        TextStyle(
-                            color: AppTheme.textSecondaryFor(context),
-                            fontSize: 12)),
+                    style: TextStyle(
+                        color: AppTheme.textSecondaryFor(context),
+                        fontSize: 12)),
                 _LevelBadge(anomaly.level),
               ]),
             ],
@@ -600,10 +597,9 @@ class _StressCard extends StatelessWidget {
             else ...[
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Score',
-                    style:
-                        TextStyle(
-                            color: AppTheme.textSecondaryFor(context),
-                            fontSize: 12)),
+                    style: TextStyle(
+                        color: AppTheme.textSecondaryFor(context),
+                        fontSize: 12)),
                 Text(stress.score.toStringAsFixed(1),
                     style: TextStyle(
                         color: AppTheme.stressColor(stress.level),

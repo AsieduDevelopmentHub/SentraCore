@@ -58,10 +58,9 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Text('${provider.processes.length} tracked',
-                    style:
-                        TextStyle(
-                            color: AppTheme.textSecondaryFor(context),
-                            fontSize: 11)),
+                    style: TextStyle(
+                        color: AppTheme.textSecondaryFor(context),
+                        fontSize: 11)),
               ),
               const SizedBox(width: 12),
               // Search filter
@@ -70,12 +69,10 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Filter by name...',
-                    hintStyle:
-                        TextStyle(
-                            color: AppTheme.textMutedFor(context), fontSize: 12),
-                    prefixIcon:
-                        Icon(Icons.search,
-                            size: 16, color: AppTheme.textMutedFor(context)),
+                    hintStyle: TextStyle(
+                        color: AppTheme.textMutedFor(context), fontSize: 12),
+                    prefixIcon: Icon(Icons.search,
+                        size: 16, color: AppTheme.textMutedFor(context)),
                     filled: true,
                     fillColor: AppTheme.surfaceLightFor(context),
                     border: OutlineInputBorder(
@@ -111,8 +108,7 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
           child: processes.isEmpty
               ? Center(
                   child: Text('No process data yet.',
-                      style:
-                          TextStyle(color: AppTheme.textMutedFor(context))))
+                      style: TextStyle(color: AppTheme.textMutedFor(context))))
               : _ProcessDataTable(
                   processes: processes,
                   sortColumnIndex: _sortColumnIndex,
@@ -207,7 +203,8 @@ class _SummaryChip extends StatelessWidget {
       Icon(Icons.circle, size: 6, color: color),
       const SizedBox(width: 6),
       Text('$label: ',
-          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
+          style:
+              TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
       Text(value,
           style: TextStyle(
               color: color, fontSize: 11, fontWeight: FontWeight.w600)),

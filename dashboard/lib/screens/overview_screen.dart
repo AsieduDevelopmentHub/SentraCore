@@ -198,105 +198,128 @@ class _OverviewChrome extends StatelessWidget {
     final divider = Theme.of(context).dividerColor;
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(bottom: BorderSide(color: divider)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final compact = c.maxWidth < 980;
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(bottom: BorderSide(color: divider)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'System overview',
-                      style: TextStyle(
-                        color: onSurface,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.3,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Real-time health, risk, and intelligence summary',
-                      style: TextStyle(
-                        color: AppTheme.textSecondaryFor(context),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 40),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: SizedBox(
-                        height: 40,
-                        child: TextField(
-                          controller: controller,
-                          onChanged: onQueryChanged,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'System overview',
                           style: TextStyle(
-                            color: AppTheme.textPrimaryFor(context),
-                            fontSize: 13,
+                            color: onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
+                            height: 1.15,
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'Search processes, events…',
-                            prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Real-time health, risk, and intelligence summary',
+                          style: TextStyle(
+                            color: AppTheme.textSecondaryFor(context),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 40),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: SizedBox(
+                            height: 40,
+                            child: TextField(
+                              controller: controller,
+                              onChanged: onQueryChanged,
+                              style: TextStyle(
+                                color: AppTheme.textPrimaryFor(context),
+                                fontSize: 13,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Search processes, events…',
+                                prefixIcon:
+                                    const Icon(Icons.search_rounded, size: 18),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (!compact && provider.engineInfo != null) ...[
+                              _HeaderChip(
+                                icon: Icons.tag_outlined,
+                                label: 'v${provider.engineInfo!.version}',
+                                color: AppTheme.primary,
+                              ),
+                              _HeaderChip(
+                                icon: Icons.timeline_outlined,
+                                label:
+                                    '${provider.engineInfo!.uptimeSamples} samples',
+                                color: AppTheme.accent,
+                              ),
+                            ],
+                            SizedBox(
+                              width: compact ? 44 : null,
+                              child: _LiveConnectionPill(
+                                  connected: provider.connected),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      AppTheme.surfaceLightFor(context).withValues(alpha: 0.55),
+                  border: Border(
+                    top: BorderSide(color: divider.withValues(alpha: 0.65)),
                   ),
                 ),
-                const SizedBox(width: 24),
-                if (provider.engineInfo != null) ...[
-                  _HeaderChip(
-                    icon: Icons.tag_outlined,
-                    label: 'v${provider.engineInfo!.version}',
-                    color: AppTheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  _HeaderChip(
-                    icon: Icons.timeline_outlined,
-                    label:
-                        '${provider.engineInfo!.uptimeSamples.toString()} samples',
-                    color: AppTheme.accent,
-                  ),
-                ],
-                const SizedBox(width: 16),
-                _LiveConnectionPill(connected: provider.connected),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceLightFor(context).withValues(alpha: 0.55),
-              border: Border(
-                top: BorderSide(color: divider.withValues(alpha: 0.65)),
+                child: _IntelStrip(provider: provider),
               ),
-            ),
-            child: _IntelStrip(provider: provider),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -327,8 +350,7 @@ class _IntelStrip extends StatelessWidget {
     final slope = _maxAbsSlope(trend?.cpuSlope, trend?.memorySlope);
     final trendText = switch (slope) {
       null => '—',
-      final s =>
-        s.abs() < 0.001 ? 'Flat' : (s > 0 ? 'Rising' : 'Falling'),
+      final s => s.abs() < 0.001 ? 'Flat' : (s > 0 ? 'Rising' : 'Falling'),
     };
 
     final pressure = _primaryPressureLabel(provider);
@@ -341,8 +363,8 @@ class _IntelStrip extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _IntelKV(
-                  'State', stateLabel, valueColor: stateColor, emphasize: true),
+              _IntelKV('State', stateLabel,
+                  valueColor: stateColor, emphasize: true),
               _IntelKV(
                 'Stability',
                 stability != null ? stability.score.toStringAsFixed(0) : '—',
@@ -572,7 +594,6 @@ class _StatsStrip extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, c) {
-          final wide = c.maxWidth >= 860;
           final children = [
             _Stat(
               'CPU slope',
@@ -588,7 +609,8 @@ class _StatsStrip extends StatelessWidget {
                   : '—',
               AppTheme.accent,
             ),
-            _Stat('Anomaly', anomaly?.level.toUpperCase() ?? '—', AppTheme.info),
+            _Stat(
+                'Anomaly', anomaly?.level.toUpperCase() ?? '—', AppTheme.info),
             _Stat(
               'Alerts',
               '${provider.currentState?.alert.totalFired ?? 0}',
@@ -603,21 +625,19 @@ class _StatsStrip extends StatelessWidget {
             ),
           ];
 
-          if (wide) {
-            return Row(
-              children: [
-                for (final s in children) ...[
-                  Expanded(child: Center(child: s)),
-                ],
-              ],
-            );
-          }
-
+          // Grid-like wrap: encourages 2 rows (3 + 2) on typical widths,
+          // which visually balances the tall Stability card next to it.
+          final itemWidth = c.maxWidth >= 900 ? 220.0 : 180.0;
           return Wrap(
             spacing: 18,
-            runSpacing: 10,
-            alignment: WrapAlignment.spaceBetween,
-            children: children,
+            runSpacing: 12,
+            children: [
+              for (final s in children)
+                SizedBox(
+                  width: itemWidth,
+                  child: s,
+                ),
+            ],
           );
         },
       ),

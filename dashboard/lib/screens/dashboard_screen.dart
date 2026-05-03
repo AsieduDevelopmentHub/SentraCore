@@ -105,37 +105,6 @@ class _SentraNavRail extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 4),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: expanded ? 'Collapse' : 'Expand',
-                  onPressed: onToggleExpanded,
-                  icon: Icon(
-                    expanded
-                        ? Icons.chevron_left_rounded
-                        : Icons.menu_rounded,
-                    color: AppTheme.textMutedFor(context),
-                    size: 22,
-                  ),
-                ),
-                if (expanded) ...[
-                  const SizedBox(width: 2),
-                  Text(
-                    'SentraCore',
-                    style: TextStyle(
-                      color: AppTheme.textPrimaryFor(context),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
           // Logo — flat frame, no gradient (design.md calm tone)
           Container(
             width: 44,
@@ -157,6 +126,35 @@ class _SentraNavRail extends StatelessWidget {
                   color: AppTheme.textMutedFor(context),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 4),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: expanded ? 'Collapse' : 'Expand',
+                  onPressed: onToggleExpanded,
+                  icon: Icon(
+                    expanded ? Icons.chevron_left_rounded : Icons.menu_rounded,
+                    color: AppTheme.textMutedFor(context),
+                    size: 22,
+                  ),
+                ),
+                if (expanded) ...[
+                  const SizedBox(width: 2),
+                  Text(
+                    'SentraCore',
+                    style: TextStyle(
+                      color: AppTheme.textPrimaryFor(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -244,8 +242,8 @@ class _SentraNavRail extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        margin: EdgeInsets.symmetric(
-            vertical: 4, horizontal: expanded ? 10 : 8),
+        margin:
+            EdgeInsets.symmetric(vertical: 4, horizontal: expanded ? 10 : 8),
         padding: EdgeInsets.symmetric(
           vertical: 10,
           horizontal: expanded ? 12 : 0,
@@ -262,8 +260,9 @@ class _SentraNavRail extends StatelessWidget {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color:
-                  isSelected ? AppTheme.primary : AppTheme.textMutedFor(context),
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.textMutedFor(context),
               size: 22,
             ),
             if (expanded) ...[

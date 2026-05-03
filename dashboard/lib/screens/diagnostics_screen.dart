@@ -203,8 +203,7 @@ class _EventLogTab extends StatelessWidget {
           child: filtered.isEmpty
               ? Center(
                   child: Text('No events to display.',
-                      style:
-                          TextStyle(color: AppTheme.textMutedFor(context))))
+                      style: TextStyle(color: AppTheme.textMutedFor(context))))
               : ListView.builder(
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
@@ -417,7 +416,9 @@ class _AlertSummaryCard extends StatelessWidget {
                     'Total Fired', '${alert.totalFired}', AppTheme.error),
                 _AlertStat('Consecutive High', '${alert.consecutiveHigh}',
                     AppTheme.warning),
-                _AlertStat('Cooldown', alert.inCooldown ? 'Active' : 'Inactive',
+                _AlertStat(
+                    'Cooldown',
+                    alert.inCooldown ? 'Active' : 'Inactive',
                     alert.inCooldown
                         ? AppTheme.info
                         : AppTheme.textMutedFor(context)),
@@ -439,7 +440,8 @@ class _AlertStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(children: [
         Text(label,
-            style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
+            style:
+                TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11)),
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(

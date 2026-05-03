@@ -32,7 +32,9 @@ class ResponsiveRowColumn extends StatelessWidget {
             final isLast = i == children.length - 1;
             if (!isLast) {
               // Don't add spacing after explicit spacing widgets.
-              if (child is SizedBox && child.width != null && child.child == null) {
+              if (child is SizedBox &&
+                  child.width != null &&
+                  child.child == null) {
                 continue;
               }
               rowChildren.add(SizedBox(width: spacing));

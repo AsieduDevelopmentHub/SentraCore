@@ -116,7 +116,8 @@ class ProcessTable extends StatelessWidget {
                                   '${proc.avgCpuPercent.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _cpuColor(context, proc.avgCpuPercent),
+                                    color:
+                                        _cpuColor(context, proc.avgCpuPercent),
                                   ),
                                 ),
                               ),
@@ -128,7 +129,8 @@ class ProcessTable extends StatelessWidget {
                                   '${proc.avgMemoryPercent.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _memColor(context, proc.avgMemoryPercent),
+                                    color: _memColor(
+                                        context, proc.avgMemoryPercent),
                                   ),
                                 ),
                               ),

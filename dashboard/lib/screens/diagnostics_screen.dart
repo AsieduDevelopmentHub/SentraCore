@@ -39,15 +39,16 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen>
         // Header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: const BoxDecoration(
-            color: AppTheme.surface,
-            border: Border(bottom: BorderSide(color: AppTheme.border)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor)),
           ),
           child: Row(children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Diagnostics',
                   style: TextStyle(
-                      color: AppTheme.textPrimary,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                       fontSize: 16,
                       fontWeight: FontWeight.w600)),
               Text('Event log and alert history with root cause analysis',
@@ -271,8 +272,10 @@ class _EventRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppTheme.border, width: 0.5)),
+      decoration: BoxDecoration(
+        border: Border(
+            bottom:
+                BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +401,7 @@ class _AlertSummaryCard extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w600)),
             ]),
-            const Divider(color: AppTheme.border, height: 20),
+            Divider(color: Theme.of(context).dividerColor, height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -471,7 +474,7 @@ class _RcaDetailCard extends StatelessWidget {
                         fontWeight: FontWeight.w600)),
               ),
             ]),
-            const Divider(color: AppTheme.border, height: 20),
+            Divider(color: Theme.of(context).dividerColor, height: 20),
             // Alert message
             if (message.isNotEmpty) ...[
               Container(

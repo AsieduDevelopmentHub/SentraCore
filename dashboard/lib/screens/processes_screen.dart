@@ -30,16 +30,17 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
         // Header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: const BoxDecoration(
-            color: AppTheme.surface,
-            border: Border(bottom: BorderSide(color: AppTheme.border)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor)),
           ),
           child: Row(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Processes',
                     style: TextStyle(
-                        color: AppTheme.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w600)),
                 Text('Ranked by sustained system impact',
@@ -74,11 +75,13 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                     fillColor: AppTheme.surfaceLight,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppTheme.border),
+                      borderSide:
+                          BorderSide(color: Theme.of(context).dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppTheme.border),
+                      borderSide:
+                          BorderSide(color: Theme.of(context).dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),

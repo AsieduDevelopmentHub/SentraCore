@@ -188,41 +188,46 @@ class _StatsStrip extends StatelessWidget {
     final anomaly = provider.currentState?.anomaly;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.border),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _Stat(
-              'CPU Slope',
+              'CPU SLOPE',
               trend != null
                   ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s'
                   : '--',
               AppTheme.primary),
           _StatDivider(),
           _Stat(
-              'Mem Slope',
+              'MEM SLOPE',
               trend != null
                   ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s'
                   : '--',
               AppTheme.accent),
           _StatDivider(),
-          _Stat('Anomaly', anomaly?.level.toUpperCase() ?? '--', AppTheme.info),
+          _Stat('ANOMALY', anomaly?.level.toUpperCase() ?? '--', AppTheme.info),
           _StatDivider(),
-          _Stat(
-              'Alerts Fired',
-              '${provider.currentState?.alert.totalFired ?? 0}',
+          _Stat('ALERTS', '${provider.currentState?.alert.totalFired ?? 0}',
               AppTheme.warning),
           _StatDivider(),
           _Stat(
-              'Baseline',
+              'BASELINE',
               provider.engineInfo?.baselineReady == true ? 'READY' : 'LEARNING',
               provider.engineInfo?.baselineReady == true
-                  ? AppTheme.accent
+                  ? AppTheme.success
                   : AppTheme.textMuted),
         ],
       ),
@@ -241,11 +246,25 @@ class _Stat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
-        const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
-                color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppTheme.textMuted,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Outfit',
+          ),
+        ),
       ],
     );
   }
@@ -253,8 +272,10 @@ class _Stat extends StatelessWidget {
 
 class _StatDivider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 28, color: AppTheme.border);
+  Widget build(BuildContext context) => Container(
+      width: 1,
+      height: 24,
+      color: Theme.of(context).dividerColor.withValues(alpha: 0.5));
 }
 
 /// Shared screen header bar.
@@ -268,35 +289,82 @@ class _ScreenHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border:
+            Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: Row(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600)),
-              Text(subtitle,
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: AppTheme.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
+          ),
+          const SizedBox(width: 48),
+          // Search placeholder
+          Expanded(
+            child: Container(
+              height: 36,
+              constraints: const BoxConstraints(maxWidth: 400),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color:
+                        Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search_rounded,
+                      size: 16, color: AppTheme.textMuted),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Search...',
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
           ),
           const Spacer(),
           if (provider.engineInfo != null) ...[
-            _HeaderChip(Icons.timer_outlined,
-                'v${provider.engineInfo!.version}', AppTheme.info),
-            const SizedBox(width: 8),
+            _HeaderChip(Icons.terminal_rounded,
+                'v${provider.engineInfo!.version}', AppTheme.primary),
+            const SizedBox(width: 12),
             _HeaderChip(
-                Icons.data_usage,
-                '${provider.engineInfo!.uptimeSamples} samples',
-                AppTheme.textSecondary),
+                Icons.analytics_outlined,
+                '${provider.engineInfo!.uptimeSamples} SAMPLES',
+                AppTheme.accent),
           ],
+          const SizedBox(width: 16),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+            child: Icon(Icons.person_outline_rounded,
+                size: 18, color: AppTheme.primary),
+          ),
         ],
       ),
     );
@@ -312,17 +380,25 @@ class _HeaderChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(color: color, fontSize: 11)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );

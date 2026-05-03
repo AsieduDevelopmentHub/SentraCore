@@ -126,9 +126,10 @@ class _PerformanceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border:
+            Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: Row(
         children: [
@@ -388,7 +389,7 @@ class _TrendCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
-            const Divider(color: AppTheme.border, height: 20),
+            Divider(color: Theme.of(context).dividerColor, height: 20),
             if (trend == null)
               Text('No data', style: TextStyle(color: AppTheme.textMuted))
             else ...[
@@ -492,7 +493,7 @@ class _AnomalyCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
-            const Divider(color: AppTheme.border, height: 20),
+            Divider(color: Theme.of(context).dividerColor, height: 20),
             if (anomaly == null)
               Text('No data', style: TextStyle(color: AppTheme.textMuted))
             else ...[
@@ -570,7 +571,7 @@ class _StressCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ]),
-            const Divider(color: AppTheme.border, height: 20),
+            Divider(color: Theme.of(context).dividerColor, height: 20),
             if (stress == null)
               Text('No data', style: TextStyle(color: AppTheme.textMuted))
             else ...[

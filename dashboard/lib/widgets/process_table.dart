@@ -24,7 +24,7 @@ class ProcessTable extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.apps, size: 16, color: AppTheme.primary),
+                    Icon(Icons.apps, size: 16, color: AppTheme.primary),
                     const SizedBox(width: 6),
                     Text(
                       'Process Intelligence',
@@ -57,7 +57,7 @@ class ProcessTable extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(color: AppTheme.border, height: 12),
+            Divider(color: Theme.of(context).dividerColor, height: 12),
 
             // Process rows
             Expanded(
@@ -73,8 +73,8 @@ class ProcessTable extends StatelessWidget {
                     )
                   : ListView.separated(
                       itemCount: processes.length.clamp(0, 10),
-                      separatorBuilder: (_, __) => const Divider(
-                        color: AppTheme.border,
+                      separatorBuilder: (_, __) => Divider(
+                        color: Theme.of(context).dividerColor,
                         height: 1,
                       ),
                       itemBuilder: (context, index) {
@@ -91,9 +91,12 @@ class ProcessTable extends StatelessWidget {
                                 flex: 3,
                                 child: Text(
                                   proc.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.textPrimary,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),

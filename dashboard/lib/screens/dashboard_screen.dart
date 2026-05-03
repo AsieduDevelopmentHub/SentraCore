@@ -7,6 +7,7 @@ import 'package:sentracore_dashboard/screens/processes_screen.dart';
 import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
+import 'package:sentracore_dashboard/providers/settings_provider.dart';
 
 /// Root shell with persistent navigation rail and page switching.
 class DashboardScreen extends StatefulWidget {
@@ -45,10 +46,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   provider: provider,
                 ),
                 // ── Vertical Divider ──
-                const VerticalDivider(
+                VerticalDivider(
                   width: 1,
                   thickness: 1,
-                  color: AppTheme.border,
+                  color: Theme.of(context).dividerColor,
                 ),
                 // ── Page Content ──
                 Expanded(child: _pages[_selectedIndex]),
@@ -82,33 +83,56 @@ class _SentraNavRail extends StatelessWidget {
 
     return Container(
       width: 72,
-      color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: Theme.of(context).dividerColor,
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
           const SizedBox(height: 12),
           // Logo / brand mark
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-              image: const DecorationImage(
-                image: AssetImage('assets/brandmark.jpeg'),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.primary,
+                  AppTheme.primary.withValues(alpha: 0.6),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/brandmark.jpeg',
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           // Stability mini-score
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
             decoration: BoxDecoration(
               color: stabilityColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: stabilityColor.withValues(alpha: 0.25)),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: stabilityColor.withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [
@@ -116,43 +140,68 @@ class _SentraNavRail extends StatelessWidget {
                   stabilityScore,
                   style: TextStyle(
                     color: stabilityColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Outfit',
                   ),
                 ),
                 Text(
-                  'STA',
+                  'HEALTH',
                   style: TextStyle(
-                      color: AppTheme.textMuted, fontSize: 8, letterSpacing: 1),
+                    color: stabilityColor.withValues(alpha: 0.7),
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Divider(color: AppTheme.border, indent: 8, endIndent: 8),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Divider(color: Theme.of(context).dividerColor),
+          ),
+          const SizedBox(height: 8),
           // Nav items
-          _navItem(context, 0, Icons.dashboard_outlined, Icons.dashboard,
-              'Overview'),
-          _navItem(context, 1, Icons.show_chart_outlined, Icons.show_chart,
-              'Performance'),
-          _navItem(
-              context, 2, Icons.memory_outlined, Icons.memory, 'Processes'),
-          _navItem(context, 3, Icons.bug_report_outlined, Icons.bug_report,
-              'Diagnostics'),
+          _navItem(context, 0, Icons.grid_view_outlined,
+              Icons.grid_view_rounded, 'Overview'),
+          _navItem(context, 1, Icons.analytics_outlined,
+              Icons.analytics_rounded, 'Performance'),
+          _navItem(context, 2, Icons.layers_outlined, Icons.layers_rounded,
+              'Processes'),
+          _navItem(context, 3, Icons.troubleshoot_outlined,
+              Icons.troubleshoot_rounded, 'Diagnostics'),
           const Spacer(),
+          // Theme Toggle
+          Consumer<SettingsProvider>(
+            builder: (context, settings, _) => IconButton(
+              onPressed: () => settings.toggleTheme(),
+              icon: Icon(
+                settings.isDarkMode
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined,
+                color: Theme.of(context).iconTheme.color,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           // Connection status dot
           Container(
             width: 8,
             height: 8,
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: provider.connected ? AppTheme.accent : AppTheme.error,
+              color: provider.connected ? AppTheme.success : AppTheme.error,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (provider.connected ? AppTheme.accent : AppTheme.error)
-                      .withValues(alpha: 0.5),
-                  blurRadius: 6,
+                  color:
+                      (provider.connected ? AppTheme.success : AppTheme.error)
+                          .withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  spreadRadius: 1,
                 )
               ],
             ),

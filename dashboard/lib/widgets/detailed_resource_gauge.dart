@@ -27,7 +27,7 @@ class DetailedResourceGauge extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -36,15 +36,22 @@ class DetailedResourceGauge extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(icon, size: 14, color: activeColor),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: activeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(icon, size: 14, color: activeColor),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      label,
+                      label.toUpperCase(),
                       style: TextStyle(
                         color: AppTheme.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ],
@@ -52,9 +59,9 @@ class DetailedResourceGauge extends StatelessWidget {
                 if (isSpiking) _SpikeBadge(),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
                   child: Column(
@@ -63,49 +70,59 @@ class DetailedResourceGauge extends StatelessWidget {
                       Text(
                         '${displayValue.toStringAsFixed(1)}%',
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                          fontFamily: 'Outfit',
+                          height: 1,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       if (subtitle != null)
                         Text(
-                          subtitle!,
+                          subtitle!.toUpperCase(),
                           style: TextStyle(
-                              color: AppTheme.textMuted, fontSize: 10),
+                            color: AppTheme.textMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                     ],
                   ),
                 ),
                 // Compact circular gauge
                 SizedBox(
-                  width: 36,
-                  height: 36,
+                  width: 44,
+                  height: 44,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       CircularProgressIndicator(
                         value: displayValue / 100,
-                        strokeWidth: 4,
-                        backgroundColor: AppTheme.surfaceLight,
+                        strokeWidth: 4.5,
+                        backgroundColor: Theme.of(context)
+                            .dividerColor
+                            .withValues(alpha: 0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(activeColor),
                         strokeCap: StrokeCap.round,
                       ),
                       Icon(icon,
-                          size: 10, color: activeColor.withValues(alpha: 0.5)),
+                          size: 12, color: activeColor.withValues(alpha: 0.4)),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: displayValue / 100,
-                backgroundColor: AppTheme.surfaceLight,
+                backgroundColor:
+                    Theme.of(context).dividerColor.withValues(alpha: 0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(activeColor),
-                minHeight: 4,
+                minHeight: 5,
               ),
             ),
           ],
@@ -119,10 +136,10 @@ class _SpikeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppTheme.error.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
       ),
       child: const Text(
@@ -130,7 +147,7 @@ class _SpikeBadge extends StatelessWidget {
         style: TextStyle(
           color: AppTheme.error,
           fontSize: 8,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
           letterSpacing: 0.5,
         ),
       ),

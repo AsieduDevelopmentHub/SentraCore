@@ -32,7 +32,7 @@ class PredictionPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 24, color: AppTheme.border),
+            Divider(height: 24, color: Theme.of(context).dividerColor),
             if (prediction == null)
               _buildEmptyState()
             else ...[

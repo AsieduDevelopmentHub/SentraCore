@@ -17,33 +17,46 @@ class StabilityIndicator extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text(
-              'System Stability',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.security_rounded, size: 14, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'SYSTEM STABILITY',
+                  style: TextStyle(
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withValues(alpha: 0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Circular stability gauge
             SizedBox(
-              width: 120,
-              height: 120,
+              width: 140,
+              height: 140,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
                     child: CircularProgressIndicator(
                       value: score / 100,
-                      strokeWidth: 8,
-                      backgroundColor: AppTheme.surfaceLight,
+                      strokeWidth: 10,
+                      backgroundColor:
+                          Theme.of(context).dividerColor.withValues(alpha: 0.1),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                       strokeCap: StrokeCap.round,
                     ),
@@ -54,16 +67,20 @@ class StabilityIndicator extends StatelessWidget {
                       Text(
                         score.toStringAsFixed(0),
                         style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          color: color,
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                          fontFamily: 'Outfit',
+                          height: 1,
                         ),
                       ),
                       Text(
-                        '/100',
+                        'INDEX',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
                           color: AppTheme.textMuted,
+                          letterSpacing: 2,
                         ),
                       ),
                     ],
@@ -72,38 +89,41 @@ class StabilityIndicator extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
             // State badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withValues(alpha: 0.3)),
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: 0.2)),
               ),
               child: Text(
                 state.toUpperCase(),
                 style: TextStyle(
                   color: color,
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
                 ),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            Divider(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
 
             // Penalty breakdown
             if (stability != null) ...[
-              _PenaltyBar('Stress', stability.components['stress_penalty'] ?? 0,
+              _PenaltyRow('STRESS', stability.components['stress_penalty'] ?? 0,
                   AppTheme.error),
-              const SizedBox(height: 4),
-              _PenaltyBar('Risk', stability.components['risk_penalty'] ?? 0,
+              const SizedBox(height: 12),
+              _PenaltyRow('RISK', stability.components['risk_penalty'] ?? 0,
                   AppTheme.warning),
-              const SizedBox(height: 4),
-              _PenaltyBar('Anomaly',
+              const SizedBox(height: 12),
+              _PenaltyRow('ANOMALY',
                   stability.components['anomaly_penalty'] ?? 0, AppTheme.info),
             ],
           ],
@@ -113,43 +133,49 @@ class StabilityIndicator extends StatelessWidget {
   }
 }
 
-class _PenaltyBar extends StatelessWidget {
+class _PenaltyRow extends StatelessWidget {
   final String label;
   final double value;
   final Color color;
 
-  const _PenaltyBar(this.label, this.value, this.color);
+  const _PenaltyRow(this.label, this.value, this.color);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        SizedBox(
-          width: 52,
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-          ),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: value / 100, // Show penalty size out of 100
-              backgroundColor: AppTheme.surfaceLight,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
-              minHeight: 4,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textMuted,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
+            Text(
+              '-${value.toStringAsFixed(0)}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: color,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        SizedBox(
-          width: 32,
-          child: Text(
-            '-${value.toStringAsFixed(0)}',
-            style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-            textAlign: TextAlign.right,
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: value / 100,
+            backgroundColor:
+                Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+            minHeight: 4,
           ),
         ),
       ],

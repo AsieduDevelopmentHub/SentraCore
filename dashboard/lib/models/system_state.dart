@@ -3,6 +3,8 @@ class SystemState {
   final EngineInfo engine;
   final StressResult? stress;
   final NormalizedData? normalized;
+  final TrendResult? trend;
+  final AnomalyResult? anomaly;
   final PredictionResult? prediction;
   final StabilityIndex? stability;
   final AlertInfo alert;
@@ -12,6 +14,8 @@ class SystemState {
     required this.engine,
     this.stress,
     this.normalized,
+    this.trend,
+    this.anomaly,
     this.prediction,
     this.stability,
     required this.alert,
@@ -27,6 +31,8 @@ class SystemState {
       normalized: json['normalized'] != null
           ? NormalizedData.fromJson(json['normalized'])
           : null,
+      trend: json['trend'] != null ? TrendResult.fromJson(json['trend']) : null,
+      anomaly: json['anomaly'] != null ? AnomalyResult.fromJson(json['anomaly']) : null,
       prediction: json['prediction'] != null
           ? PredictionResult.fromJson(json['prediction'])
           : null,
@@ -275,6 +281,10 @@ class ProcessImpact {
   final double currentMemoryPercent;
   final double impactScore;
 
+  // Convenience getters used by the processes screen.
+  double get cpuImpact => currentCpuPercent;
+  double get memoryPercent => currentMemoryPercent;
+
   ProcessImpact({
     required this.pid,
     required this.name,
@@ -304,21 +314,25 @@ class SystemEvent {
   final double timestamp;
   final String eventType;
   final String severity;
+  final String description;
   final Map<String, dynamic> details;
 
   SystemEvent({
     required this.timestamp,
     required this.eventType,
     required this.severity,
+    required this.description,
     required this.details,
   });
 
   factory SystemEvent.fromJson(Map<String, dynamic> json) {
+    final details = Map<String, dynamic>.from(json['details'] ?? {});
     return SystemEvent(
       timestamp: (json['timestamp'] ?? 0).toDouble(),
       eventType: json['event_type'] ?? 'unknown',
       severity: json['severity'] ?? 'info',
-      details: Map<String, dynamic>.from(json['details'] ?? {}),
+      description: details['description'] as String? ?? details['message'] as String? ?? '',
+      details: details,
     );
   }
 }
@@ -359,6 +373,54 @@ class StabilityIndex {
       score: (json['score'] ?? 100).toDouble(),
       state: json['state'] ?? 'unknown',
       components: Map<String, dynamic>.from(json['components'] ?? {}),
+    );
+  }
+}
+
+/// Trend analysis result from the Python TrendAnalyzer.
+class TrendResult {
+  final double cpuSlope;
+  final double memorySlope;
+  final double cpuVolatility;
+  final double memoryVolatility;
+
+  TrendResult({
+    required this.cpuSlope,
+    required this.memorySlope,
+    required this.cpuVolatility,
+    required this.memoryVolatility,
+  });
+
+  factory TrendResult.fromJson(Map<String, dynamic> json) {
+    return TrendResult(
+      cpuSlope: (json['cpu_slope'] ?? 0).toDouble(),
+      memorySlope: (json['memory_slope'] ?? 0).toDouble(),
+      cpuVolatility: (json['cpu_volatility'] ?? 0).toDouble(),
+      memoryVolatility: (json['memory_volatility'] ?? 0).toDouble(),
+    );
+  }
+}
+
+/// Anomaly detection result from the Python AnomalyDetector.
+class AnomalyResult {
+  final double cpuZScore;
+  final double memoryZScore;
+  final double diskZScore;
+  final String level;
+
+  AnomalyResult({
+    required this.cpuZScore,
+    required this.memoryZScore,
+    required this.diskZScore,
+    required this.level,
+  });
+
+  factory AnomalyResult.fromJson(Map<String, dynamic> json) {
+    return AnomalyResult(
+      cpuZScore: (json['cpu_z_score'] ?? json['cpu_zscore'] ?? 0).toDouble().abs(),
+      memoryZScore: (json['memory_z_score'] ?? json['memory_zscore'] ?? 0).toDouble().abs(),
+      diskZScore: (json['disk_z_score'] ?? json['disk_zscore'] ?? 0).toDouble().abs(),
+      level: json['level'] ?? 'normal',
     );
   }
 }

@@ -1,212 +1,186 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
+import 'package:sentracore_dashboard/screens/overview_screen.dart';
+import 'package:sentracore_dashboard/screens/performance_screen.dart';
+import 'package:sentracore_dashboard/screens/processes_screen.dart';
+import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
-import 'package:sentracore_dashboard/widgets/engine_status_bar.dart';
-import 'package:sentracore_dashboard/widgets/event_timeline.dart';
-import 'package:sentracore_dashboard/widgets/metric_chart_card.dart';
-import 'package:sentracore_dashboard/widgets/process_table.dart';
-import 'package:sentracore_dashboard/widgets/resource_gauge.dart';
-import 'package:sentracore_dashboard/widgets/stability_indicator.dart';
-import 'package:sentracore_dashboard/widgets/prediction_panel.dart';
-import 'package:sentracore_dashboard/widgets/rca_panel.dart';
 
-/// Main dashboard screen — real-time system intelligence overview.
-class DashboardScreen extends StatelessWidget {
+/// Root shell with persistent navigation rail and page switching.
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.monitor_heart_outlined,
-                color: AppTheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text('SentraCore'),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceLight,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: Text(
-                'v0.1.0',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: const [EngineStatusBar()],
-      ),
-      body: const _DashboardBody(),
-    );
-  }
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardBody extends StatelessWidget {
-  const _DashboardBody();
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
+  static const _pages = [
+    OverviewScreen(),
+    PerformanceScreen(),
+    ProcessesScreen(),
+    DiagnosticsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EngineProvider>();
 
-    return Column(
-      children: [
-        // Connection banner
-        if (!provider.connected) const ConnectionBanner(),
-
-        // Main content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      body: Column(
+        children: [
+          if (!provider.connected) const ConnectionBanner(),
+          Expanded(
+            child: Row(
               children: [
-                // Row 1: Stress indicator + resource gauges
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Stability score — big, prominent
-                    const Expanded(flex: 2, child: StabilityIndicator()),
-                    const SizedBox(width: 16),
-
-                    // Resource gauges
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ResourceGauge(
-                              label: 'CPU',
-                              value: provider.normalized?.cpu.smoothed ?? 0,
-                              isSpiking: provider.normalized?.cpu.spiking ?? false,
-                              color: AppTheme.primary,
-                              icon: Icons.memory,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ResourceGauge(
-                              label: 'Memory',
-                              value: provider.normalized?.memory.smoothed ?? 0,
-                              isSpiking: provider.normalized?.memory.spiking ?? false,
-                              color: AppTheme.accent,
-                              icon: Icons.storage,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ResourceGauge(
-                              label: 'Disk I/O',
-                              value: _diskPercent(provider),
-                              isSpiking: provider.normalized?.diskIo.spiking ?? false,
-                              color: AppTheme.warning,
-                              icon: Icons.disc_full_outlined,
-                              suffix: 'ops/s',
-                              rawValue: provider.normalized?.diskIo.totalOpsPerSec,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // ── Left Navigation Rail ──
+                _SentraNavRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+                  provider: provider,
                 ),
-
-                const SizedBox(height: 16),
-
-                // Row 2: Intelligence Panels (Prediction & RCA)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Expanded(child: PredictionPanel()),
-                    SizedBox(width: 16),
-                    Expanded(child: RcaPanel()),
-                  ],
+                // ── Vertical Divider ──
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: AppTheme.border,
                 ),
+                // ── Page Content ──
+                Expanded(child: _pages[_selectedIndex]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                const SizedBox(height: 16),
+class _SentraNavRail extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final EngineProvider provider;
 
-                // Row 3: Charts
-                SizedBox(
-                  height: 200,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: MetricChartCard(
-                          title: 'CPU Usage',
-                          data: provider.cpuHistory,
-                          color: AppTheme.primary,
-                          maxY: 100,
-                          suffix: '%',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: MetricChartCard(
-                          title: 'Memory Usage',
-                          data: provider.memoryHistory,
-                          color: AppTheme.accent,
-                          maxY: 100,
-                          suffix: '%',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: MetricChartCard(
-                          title: 'Stability Index',
-                          data: provider.stabilityHistory,
-                          color: AppTheme.stressLow,
-                          maxY: 100,
-                          suffix: '',
-                        ),
-                      ),
-                    ],
+  const _SentraNavRail({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.provider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stability = provider.stability;
+    final stabilityColor = stability != null
+        ? AppTheme.stabilityColor(stability.state)
+        : AppTheme.textMuted;
+    final stabilityScore = stability?.score.toStringAsFixed(0) ?? '--';
+
+    return Container(
+      width: 72,
+      color: AppTheme.surface,
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          // Logo / brand mark
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+            ),
+            child: const Icon(Icons.monitor_heart_outlined, color: AppTheme.primary, size: 20),
+          ),
+          const SizedBox(height: 20),
+          // Stability mini-score
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            decoration: BoxDecoration(
+              color: stabilityColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: stabilityColor.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  stabilityScore,
+                  style: TextStyle(
+                    color: stabilityColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Row 4: Process table + event timeline
-                SizedBox(
-                  height: 320,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Expanded(flex: 3, child: ProcessTable()),
-                      SizedBox(width: 16),
-                      Expanded(flex: 2, child: EventTimeline()),
-                    ],
-                  ),
+                Text(
+                  'STA',
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 8, letterSpacing: 1),
                 ),
               ],
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          const Divider(color: AppTheme.border, indent: 8, endIndent: 8),
+          // Nav items
+          _navItem(context, 0, Icons.dashboard_outlined, Icons.dashboard, 'Overview'),
+          _navItem(context, 1, Icons.show_chart_outlined, Icons.show_chart, 'Performance'),
+          _navItem(context, 2, Icons.memory_outlined, Icons.memory, 'Processes'),
+          _navItem(context, 3, Icons.bug_report_outlined, Icons.bug_report, 'Diagnostics'),
+          const Spacer(),
+          // Connection status dot
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: provider.connected ? AppTheme.accent : AppTheme.error,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (provider.connected ? AppTheme.accent : AppTheme.error)
+                      .withValues(alpha: 0.5),
+                  blurRadius: 6,
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  double _diskPercent(EngineProvider provider) {
-    final ops = provider.normalized?.diskIo.totalOpsPerSec ?? 0;
-    // Normalize to 0-100 range (500 ops/sec = 100%)
-    return (ops / 500 * 100).clamp(0, 100);
+  Widget _navItem(BuildContext context, int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = selectedIndex == index;
+    return Tooltip(
+      message: label,
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: () => onDestinationSelected(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? AppTheme.primary.withValues(alpha: 0.3)
+                  : Colors.transparent,
+            ),
+          ),
+          child: Icon(
+            isSelected ? activeIcon : icon,
+            color: isSelected ? AppTheme.primary : AppTheme.textMuted,
+            size: 22,
+          ),
+        ),
+      ),
+    );
   }
 }

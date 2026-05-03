@@ -511,35 +511,45 @@ class _LiveConnectionPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = connected ? AppTheme.stable : AppTheme.critical;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: c,
-              shape: BoxShape.circle,
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 118;
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 12,
+            vertical: 8,
           ),
-          const SizedBox(width: 8),
-          Text(
-            connected ? 'Engine live' : 'Offline',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimaryFor(context),
-            ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Theme.of(context).dividerColor),
+            color: Theme.of(context).colorScheme.surface,
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: c,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              if (!compact) ...[
+                const SizedBox(width: 8),
+                Text(
+                  connected ? 'Engine live' : 'Offline',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimaryFor(context),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -554,41 +564,62 @@ class _StatsStrip extends StatelessWidget {
     final anomaly = provider.currentState?.anomaly;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _Stat(
+      child: LayoutBuilder(
+        builder: (context, c) {
+          final wide = c.maxWidth >= 860;
+          final children = [
+            _Stat(
               'CPU slope',
               trend != null
                   ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s'
                   : '—',
-              AppTheme.primary),
-          _StatDivider(),
-          _Stat(
+              AppTheme.primary,
+            ),
+            _Stat(
               'Memory slope',
               trend != null
                   ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s'
                   : '—',
-              AppTheme.accent),
-          _StatDivider(),
-          _Stat('Anomaly', anomaly?.level.toUpperCase() ?? '—', AppTheme.info),
-          _StatDivider(),
-          _Stat('Alerts', '${provider.currentState?.alert.totalFired ?? 0}',
-              AppTheme.warning),
-          _StatDivider(),
-          _Stat(
+              AppTheme.accent,
+            ),
+            _Stat('Anomaly', anomaly?.level.toUpperCase() ?? '—', AppTheme.info),
+            _Stat(
+              'Alerts',
+              '${provider.currentState?.alert.totalFired ?? 0}',
+              AppTheme.warning,
+            ),
+            _Stat(
               'Baseline',
               provider.engineInfo?.baselineReady == true ? 'Ready' : 'Learning',
               provider.engineInfo?.baselineReady == true
                   ? AppTheme.success
-                  : AppTheme.textMutedFor(context)),
-        ],
+                  : AppTheme.textMutedFor(context),
+            ),
+          ];
+
+          if (wide) {
+            return Row(
+              children: [
+                for (final s in children) ...[
+                  Expanded(child: Center(child: s)),
+                ],
+              ],
+            );
+          }
+
+          return Wrap(
+            spacing: 18,
+            runSpacing: 10,
+            alignment: WrapAlignment.spaceBetween,
+            children: children,
+          );
+        },
       ),
     );
   }
@@ -628,11 +659,4 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _StatDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 24,
-        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-      );
-}
+// _StatDivider removed (stats strip now uses Wrap/Expanded layout).

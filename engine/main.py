@@ -271,11 +271,26 @@ class SentraCoreEngine:
 
 def _configure_logging() -> None:
     """Configure structured logging for the engine."""
+    # When packaged with PyInstaller + --noconsole, sys.stdout/sys.stderr can be None.
+    # In that case, log to a file so the engine can still start and we can diagnose issues.
+    from pathlib import Path
+
+    log_format = "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
+    datefmt = "%H:%M:%S"
+
+    handlers: list[logging.Handler] = []
+    if getattr(sys, "stdout", None) is not None:
+        handlers.append(logging.StreamHandler(sys.stdout))
+    else:
+        log_dir = Path(__file__).parent / "datastore" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(log_dir / "engine.log", encoding="utf-8"))
+
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
+        format=log_format,
+        datefmt=datefmt,
+        handlers=handlers,
     )
     # Reduce noise from third-party loggers
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
@@ -287,15 +302,12 @@ def main() -> None:
     """Entry point for SentraCore engine."""
     _configure_logging()
 
-    print(f"\n{'=' * 60}")
-    print(f"  {__app_name__} v{__version__}")
-    print("  Local System Behavior Intelligence Layer")
-    print(f"{'=' * 60}")
-    print(f"  API:       http://{API_HOST}:{API_PORT}")
-    print(f"  Docs:      http://{API_HOST}:{API_PORT}/docs")
-    print(f"  WebSocket: ws://{API_HOST}:{API_PORT}/ws/live")
-    print(f"  Interval:  {COLLECTION_INTERVAL_SEC}s")
-    print(f"{'=' * 60}\n")
+    # Avoid print() in packaged --noconsole builds (stdout may be None).
+    logger.info("%s v%s", __app_name__, __version__)
+    logger.info("API: http://%s:%s", API_HOST, API_PORT)
+    logger.info("Docs: http://%s:%s/docs", API_HOST, API_PORT)
+    logger.info("WebSocket: ws://%s:%s/ws/live", API_HOST, API_PORT)
+    logger.info("Interval: %ss", COLLECTION_INTERVAL_SEC)
 
     # Create engine and register with API
     engine = SentraCoreEngine()
@@ -305,12 +317,17 @@ def main() -> None:
     app = create_app()
 
     # Configure uvicorn
+    # In --noconsole builds, uvicorn's default logging configuration can crash because
+    # it assumes sys.stderr is a stream with .isatty(). Disable uvicorn's log config
+    # and rely on our own engine logging (file-backed when no console).
+    safe_stream = getattr(sys, "stderr", None) is not None
     config = uvicorn.Config(
         app=app,
         host=API_HOST,
         port=API_PORT,
         log_level="warning",
         access_log=False,
+        log_config=None if not safe_stream else uvicorn.config.LOGGING_CONFIG,
     )
     server = uvicorn.Server(config)
 
@@ -350,7 +367,7 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
 
-    print(f"\n{__app_name__} shut down cleanly.")
+    logger.info("%s shut down cleanly.", __app_name__)
 
 
 if __name__ == "__main__":

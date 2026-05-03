@@ -23,9 +23,25 @@ class ResponsiveRowColumn extends StatelessWidget {
         final isWide = constraints.maxWidth >= breakpoint;
 
         if (isWide) {
+          // Wide: Row with consistent horizontal spacing between children.
+          // Keep existing spacers if caller provided them explicitly.
+          final rowChildren = <Widget>[];
+          for (var i = 0; i < children.length; i++) {
+            final child = children[i];
+            rowChildren.add(child);
+            final isLast = i == children.length - 1;
+            if (!isLast) {
+              // Don't add spacing after explicit spacing widgets.
+              if (child is SizedBox && child.width != null && child.child == null) {
+                continue;
+              }
+              rowChildren.add(SizedBox(width: spacing));
+            }
+          }
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
+            children: rowChildren,
           );
         } else {
           // Narrow: Stack vertically.

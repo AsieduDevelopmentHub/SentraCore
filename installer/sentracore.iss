@@ -8,7 +8,8 @@ OutputDir=..\dist
 OutputBaseFilename=SentraCore_Setup_v1.0
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=compiler:SetupClassicIcon.ico
+; Use the same brandmark icon as the dashboard
+SetupIconFile=..\dashboard\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\sentracore_dashboard.exe
 
 [Files]

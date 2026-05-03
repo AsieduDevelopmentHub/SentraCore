@@ -106,19 +106,21 @@ class _SentraNavRail extends StatelessWidget {
         children: [
           const SizedBox(height: 12),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 0),
+            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 4),
             child: Row(
               children: [
-                if (expanded) ...[
-                  IconButton(
-                    tooltip: 'Collapse',
-                    onPressed: onToggleExpanded,
-                    icon: Icon(
-                      Icons.chevron_left_rounded,
-                      color: AppTheme.textMutedFor(context),
-                      size: 22,
-                    ),
+                IconButton(
+                  tooltip: expanded ? 'Collapse' : 'Expand',
+                  onPressed: onToggleExpanded,
+                  icon: Icon(
+                    expanded
+                        ? Icons.chevron_left_rounded
+                        : Icons.menu_rounded,
+                    color: AppTheme.textMutedFor(context),
+                    size: 22,
                   ),
+                ),
+                if (expanded) ...[
                   const SizedBox(width: 2),
                   Text(
                     'SentraCore',
@@ -129,21 +131,11 @@ class _SentraNavRail extends StatelessWidget {
                       letterSpacing: -0.2,
                     ),
                   ),
-                ] else ...[
-                  IconButton(
-                    tooltip: 'Expand',
-                    onPressed: onToggleExpanded,
-                    icon: Icon(
-                      Icons.menu_rounded,
-                      color: AppTheme.textMutedFor(context),
-                      size: 22,
-                    ),
-                  ),
                 ],
               ],
             ),
           ),
-          if (!expanded) const SizedBox(height: 6),
+          const SizedBox(height: 8),
           // Logo — flat frame, no gradient (design.md calm tone)
           Container(
             width: 44,
@@ -160,6 +152,10 @@ class _SentraNavRail extends StatelessWidget {
               child: Image.asset(
                 'assets/brandmark.jpeg',
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.shield_outlined,
+                  color: AppTheme.textMutedFor(context),
+                ),
               ),
             ),
           ),

@@ -192,9 +192,8 @@ class _EventTile extends StatelessWidget {
     return type
         .replaceAll('_', ' ')
         .split(' ')
-        .map((w) => w.isNotEmpty
-            ? '${w[0].toUpperCase()}${w.substring(1)}'
-            : '')
+        .map(
+            (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '')
         .join(' ');
   }
 }

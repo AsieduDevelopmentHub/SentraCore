@@ -35,7 +35,6 @@ def _make_normalized(
 
 
 class TestStressEngine:
-
     def test_low_stress(self):
         engine = StressEngine()
         result = engine.compute(_make_normalized(cpu=10.0, mem_pct=30.0, disk_ops=10.0))
@@ -46,24 +45,33 @@ class TestStressEngine:
 
     def test_moderate_stress(self):
         engine = StressEngine()
-        result = engine.compute(_make_normalized(cpu=50.0, mem_pct=60.0, disk_ops=200.0))
+        result = engine.compute(
+            _make_normalized(cpu=50.0, mem_pct=60.0, disk_ops=200.0)
+        )
 
         assert 30 <= result.score <= 70
         assert result.level in ("moderate", "high")
 
     def test_high_stress(self):
         engine = StressEngine()
-        result = engine.compute(_make_normalized(
-            cpu=90.0, mem_pct=90.0, mem_available=1_600_000_000,
-            mem_total=16_000_000_000, disk_ops=800.0
-        ))
+        result = engine.compute(
+            _make_normalized(
+                cpu=90.0,
+                mem_pct=90.0,
+                mem_available=1_600_000_000,
+                mem_total=16_000_000_000,
+                disk_ops=800.0,
+            )
+        )
 
         assert result.score > 60
         assert result.level in ("high", "critical")
 
     def test_score_bounded(self):
         engine = StressEngine()
-        result = engine.compute(_make_normalized(cpu=100.0, mem_pct=99.0, disk_ops=5000.0))
+        result = engine.compute(
+            _make_normalized(cpu=100.0, mem_pct=99.0, disk_ops=5000.0)
+        )
 
         assert 0 <= result.score <= 100
 

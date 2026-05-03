@@ -41,8 +41,8 @@ SHORT_WINDOW_SEC: int = 300
 LONG_WINDOW_SEC: int = 3600
 
 # Computed buffer sizes based on collection interval
-SHORT_BUFFER_SIZE: int = int(SHORT_WINDOW_SEC / COLLECTION_INTERVAL_SEC)   # 150
-LONG_BUFFER_SIZE: int = int(LONG_WINDOW_SEC / COLLECTION_INTERVAL_SEC)     # 1800
+SHORT_BUFFER_SIZE: int = int(SHORT_WINDOW_SEC / COLLECTION_INTERVAL_SEC)  # 150
+LONG_BUFFER_SIZE: int = int(LONG_WINDOW_SEC / COLLECTION_INTERVAL_SEC)  # 1800
 
 # ---------------------------------------------------------------------------
 # Data Normalization

@@ -1,7 +1,5 @@
 """Tests for AlertManager."""
 
-import time
-
 from engine.alerts.alert_manager import Alert, AlertManager
 from engine.process.process_tracker import ProcessImpact
 from engine.stress.stress_engine import StressResult
@@ -9,24 +7,31 @@ from engine.stress.stress_engine import StressResult
 
 def _make_stress(score: float, level: str = "high") -> StressResult:
     return StressResult(
-        score=score, level=level,
-        cpu_pressure=score, memory_pressure=score * 0.5, disk_pressure=score * 0.3,
+        score=score,
+        level=level,
+        cpu_pressure=score,
+        memory_pressure=score * 0.5,
+        disk_pressure=score * 0.3,
         weights={"cpu": 0.4, "memory": 0.35, "disk": 0.25},
     )
 
 
 def _make_process(name: str = "test.exe") -> ProcessImpact:
     return ProcessImpact(
-        pid=1, name=name,
-        avg_cpu_percent=30.0, avg_memory_percent=10.0,
-        peak_cpu_percent=50.0, peak_memory_percent=15.0,
-        current_cpu_percent=30.0, current_memory_percent=10.0,
-        sample_count=5, impact_score=22.0,
+        pid=1,
+        name=name,
+        avg_cpu_percent=30.0,
+        avg_memory_percent=10.0,
+        peak_cpu_percent=50.0,
+        peak_memory_percent=15.0,
+        current_cpu_percent=30.0,
+        current_memory_percent=10.0,
+        sample_count=5,
+        impact_score=22.0,
     )
 
 
 class TestAlertManager:
-
     def test_no_alert_on_low_stress(self):
         mgr = AlertManager(threshold=70.0, consecutive_count=3)
         result = mgr.evaluate(_make_stress(30.0, "low"), [_make_process()])

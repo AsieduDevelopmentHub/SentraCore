@@ -1,14 +1,15 @@
 """Tests for BaselineModel."""
 
-import json
 import tempfile
 from pathlib import Path
 
-from engine.baseline.baseline_model import BaselineModel, BaselineStats, MetricStats
+from engine.baseline.baseline_model import BaselineModel, MetricStats
 from engine.normalization.normalizer import NormalizedSnapshot
 
 
-def _make_normalized(cpu: float = 25.0, mem: float = 50.0, disk_ops: float = 100.0) -> NormalizedSnapshot:
+def _make_normalized(
+    cpu: float = 25.0, mem: float = 50.0, disk_ops: float = 100.0
+) -> NormalizedSnapshot:
     return NormalizedSnapshot(
         timestamp=1.0,
         cpu_percent_smoothed=cpu,
@@ -32,7 +33,6 @@ def _make_normalized(cpu: float = 25.0, mem: float = 50.0, disk_ops: float = 100
 
 
 class TestMetricStats:
-
     def test_welford_mean(self):
         stats = MetricStats()
         for v in [10.0, 20.0, 30.0]:
@@ -69,7 +69,6 @@ class TestMetricStats:
 
 
 class TestBaselineModel:
-
     def test_not_ready_initially(self):
         model = BaselineModel(
             baseline_file=Path(tempfile.mktemp(suffix=".json")),

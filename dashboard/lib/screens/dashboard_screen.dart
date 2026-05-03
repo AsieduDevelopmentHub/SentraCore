@@ -40,7 +40,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // ── Left Navigation Rail ──
                 _SentraNavRail(
                   selectedIndex: _selectedIndex,
-                  onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+                  onDestinationSelected: (i) =>
+                      setState(() => _selectedIndex = i),
                   provider: provider,
                 ),
                 // ── Vertical Divider ──
@@ -92,9 +93,13 @@ class _SentraNavRail extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+              image: const DecorationImage(
+                image: AssetImage('assets/brandmark.jpeg'),
+                fit: BoxFit.cover,
+              ),
             ),
-            child: const Icon(Icons.monitor_heart_outlined, color: AppTheme.primary, size: 20),
           ),
           const SizedBox(height: 20),
           // Stability mini-score
@@ -117,7 +122,8 @@ class _SentraNavRail extends StatelessWidget {
                 ),
                 Text(
                   'STA',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 8, letterSpacing: 1),
+                  style: TextStyle(
+                      color: AppTheme.textMuted, fontSize: 8, letterSpacing: 1),
                 ),
               ],
             ),
@@ -125,10 +131,14 @@ class _SentraNavRail extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(color: AppTheme.border, indent: 8, endIndent: 8),
           // Nav items
-          _navItem(context, 0, Icons.dashboard_outlined, Icons.dashboard, 'Overview'),
-          _navItem(context, 1, Icons.show_chart_outlined, Icons.show_chart, 'Performance'),
-          _navItem(context, 2, Icons.memory_outlined, Icons.memory, 'Processes'),
-          _navItem(context, 3, Icons.bug_report_outlined, Icons.bug_report, 'Diagnostics'),
+          _navItem(context, 0, Icons.dashboard_outlined, Icons.dashboard,
+              'Overview'),
+          _navItem(context, 1, Icons.show_chart_outlined, Icons.show_chart,
+              'Performance'),
+          _navItem(
+              context, 2, Icons.memory_outlined, Icons.memory, 'Processes'),
+          _navItem(context, 3, Icons.bug_report_outlined, Icons.bug_report,
+              'Diagnostics'),
           const Spacer(),
           // Connection status dot
           Container(
@@ -152,7 +162,8 @@ class _SentraNavRail extends StatelessWidget {
     );
   }
 
-  Widget _navItem(BuildContext context, int index, IconData icon, IconData activeIcon, String label) {
+  Widget _navItem(BuildContext context, int index, IconData icon,
+      IconData activeIcon, String label) {
     final isSelected = selectedIndex == index;
     return Tooltip(
       message: label,

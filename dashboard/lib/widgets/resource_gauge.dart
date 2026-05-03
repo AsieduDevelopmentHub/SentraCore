@@ -49,7 +49,8 @@ class ResourceGauge extends StatelessWidget {
                 ),
                 if (isSpiking)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppTheme.error.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),

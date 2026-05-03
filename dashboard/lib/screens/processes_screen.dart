@@ -37,19 +37,27 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
           child: Row(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Processes', style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-                Text('Ranked by sustained system impact', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                Text('Processes',
+                    style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600)),
+                Text('Ranked by sustained system impact',
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
               ]),
               const Spacer(),
               // Process count badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceLight,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppTheme.border),
                 ),
-                child: Text('${provider.processes.length} tracked', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                child: Text('${provider.processes.length} tracked',
+                    style:
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
               ),
               const SizedBox(width: 12),
               // Search filter
@@ -58,8 +66,10 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Filter by name...',
-                    hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                    prefixIcon: Icon(Icons.search, size: 16, color: AppTheme.textMuted),
+                    hintStyle:
+                        TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                    prefixIcon:
+                        Icon(Icons.search, size: 16, color: AppTheme.textMuted),
                     filled: true,
                     fillColor: AppTheme.surfaceLight,
                     border: OutlineInputBorder(
@@ -90,7 +100,9 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
         // Table
         Expanded(
           child: processes.isEmpty
-              ? Center(child: Text('No process data yet.', style: TextStyle(color: AppTheme.textMuted)))
+              ? Center(
+                  child: Text('No process data yet.',
+                      style: TextStyle(color: AppTheme.textMuted)))
               : _ProcessDataTable(
                   processes: processes,
                   sortColumnIndex: _sortColumnIndex,
@@ -141,20 +153,32 @@ class _ProcessSummaryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (provider.processes.isEmpty) return const SizedBox.shrink();
 
-    final topCpu = provider.processes.reduce((a, b) => a.cpuImpact > b.cpuImpact ? a : b);
-    final topMem = provider.processes.reduce((a, b) => a.memoryPercent > b.memoryPercent ? a : b);
-    final topImpact = provider.processes.reduce((a, b) => a.impactScore > b.impactScore ? a : b);
+    final topCpu =
+        provider.processes.reduce((a, b) => a.cpuImpact > b.cpuImpact ? a : b);
+    final topMem = provider.processes
+        .reduce((a, b) => a.memoryPercent > b.memoryPercent ? a : b);
+    final topImpact = provider.processes
+        .reduce((a, b) => a.impactScore > b.impactScore ? a : b);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       color: AppTheme.surfaceLight,
       child: Row(
         children: [
-          _SummaryChip('Top CPU', '${topCpu.name} (${topCpu.cpuImpact.toStringAsFixed(1)}%)', AppTheme.primary),
+          _SummaryChip(
+              'Top CPU',
+              '${topCpu.name} (${topCpu.cpuImpact.toStringAsFixed(1)}%)',
+              AppTheme.primary),
           const SizedBox(width: 24),
-          _SummaryChip('Top Memory', '${topMem.name} (${topMem.memoryPercent.toStringAsFixed(1)}%)', AppTheme.accent),
+          _SummaryChip(
+              'Top Memory',
+              '${topMem.name} (${topMem.memoryPercent.toStringAsFixed(1)}%)',
+              AppTheme.accent),
           const SizedBox(width: 24),
-          _SummaryChip('Highest Impact', '${topImpact.name} (${topImpact.impactScore.toStringAsFixed(1)})', AppTheme.warning),
+          _SummaryChip(
+              'Highest Impact',
+              '${topImpact.name} (${topImpact.impactScore.toStringAsFixed(1)})',
+              AppTheme.warning),
         ],
       ),
     );
@@ -172,8 +196,11 @@ class _SummaryChip extends StatelessWidget {
     return Row(children: [
       Icon(Icons.circle, size: 6, color: color),
       const SizedBox(width: 6),
-      Text('$label: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-      Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      Text('$label: ',
+          style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+      Text(value,
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     ]);
   }
 }
@@ -194,28 +221,42 @@ class _ProcessDataTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(AppTheme.surfaceLight),
-        dataRowColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.hovered)) return AppTheme.surfaceLight;
-          return AppTheme.background;
-        }),
-        columnSpacing: 20,
-        horizontalMargin: 20,
-        dataRowMinHeight: 48,
-        dataRowMaxHeight: 60,
-        sortColumnIndex: sortColumnIndex,
-        sortAscending: sortAscending,
-        headingTextStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-        columns: [
-          DataColumn(label: const Text('PROCESS'), onSort: onSort),
-          DataColumn(label: const Text('PID'), numeric: true, onSort: onSort),
-          DataColumn(label: const Text('CPU IMPACT'), numeric: true, onSort: onSort),
-          DataColumn(label: const Text('MEMORY'), numeric: true, onSort: onSort),
-          DataColumn(label: const Text('IMPACT SCORE'), numeric: true, onSort: onSort),
-          const DataColumn(label: Text('SEVERITY')),
-        ],
-        rows: processes.map((p) => _buildRow(p)).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(AppTheme.surfaceLight),
+          dataRowColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppTheme.surfaceLight;
+            }
+            return AppTheme.background;
+          }),
+          columnSpacing: 20,
+          horizontalMargin: 20,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 60,
+          sortColumnIndex: sortColumnIndex,
+          sortAscending: sortAscending,
+          headingTextStyle: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5),
+          columns: [
+            DataColumn(label: const Text('PROCESS'), onSort: onSort),
+            DataColumn(label: const Text('PID'), numeric: true, onSort: onSort),
+            DataColumn(
+                label: const Text('CPU IMPACT'), numeric: true, onSort: onSort),
+            DataColumn(
+                label: const Text('MEMORY'), numeric: true, onSort: onSort),
+            DataColumn(
+                label: const Text('IMPACT SCORE'),
+                numeric: true,
+                onSort: onSort),
+            const DataColumn(label: Text('SEVERITY')),
+          ],
+          rows: processes.map((p) => _buildRow(p)).toList(),
+        ),
       ),
     );
   }
@@ -226,14 +267,22 @@ class _ProcessDataTable extends StatelessWidget {
       // Process name
       DataCell(Row(children: [
         Container(
-          width: 8, height: 8,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(color: severity.$2, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
-        Flexible(child: Text(p.name, style: TextStyle(color: AppTheme.textPrimary, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        Flexible(
+            child: Text(p.name,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                overflow: TextOverflow.ellipsis)),
       ])),
       // PID
-      DataCell(Text('${p.pid}', style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontFamily: 'monospace'))),
+      DataCell(Text('${p.pid}',
+          style: TextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+              fontFamily: 'monospace'))),
       // CPU impact with bar
       DataCell(_BarCell(p.cpuImpact, 100, AppTheme.primary, '%')),
       // Memory with bar
@@ -241,7 +290,10 @@ class _ProcessDataTable extends StatelessWidget {
       // Impact score
       DataCell(Text(
         p.impactScore.toStringAsFixed(1),
-        style: TextStyle(color: AppTheme.stressColor(_stressLevelForScore(p.impactScore)), fontWeight: FontWeight.w600, fontSize: 12),
+        style: TextStyle(
+            color: AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
+            fontWeight: FontWeight.w600,
+            fontSize: 12),
       )),
       // Severity badge
       DataCell(_SeverityBadge(severity.$1, severity.$2)),
@@ -276,7 +328,9 @@ class _BarCell extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${value.toStringAsFixed(1)}$suffix', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+        Text('${value.toStringAsFixed(1)}$suffix',
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w600)),
         const SizedBox(height: 3),
         SizedBox(
           width: 80,
@@ -285,7 +339,8 @@ class _BarCell extends StatelessWidget {
             child: LinearProgressIndicator(
               value: (value / maxVal).clamp(0, 1),
               backgroundColor: AppTheme.surfaceLight,
-              valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
               minHeight: 3,
             ),
           ),
@@ -309,7 +364,12 @@ class _SeverityBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+      child: Text(label,
+          style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5)),
     );
   }
 }

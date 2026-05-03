@@ -53,7 +53,7 @@ class Alert:
 
 
 # Type alias for alert callback functions
-AlertCallback = Callable[['Alert'], None]
+AlertCallback = Callable[["Alert"], None]
 
 
 class AlertManager:
@@ -83,8 +83,9 @@ class AlertManager:
         self._callbacks: list[AlertCallback] = []
         self._total_alerts: int = 0
         self._alert_history = []
-        
+
         from engine.intelligence.correlation_engine import CorrelationEngine
+
         self._correlation_engine = CorrelationEngine()
 
     def register_callback(self, callback: AlertCallback) -> None:
@@ -100,7 +101,7 @@ class AlertManager:
         self,
         stress: StressResult,
         top_processes: list[ProcessImpact],
-        recent_events: list['SystemEvent'] = None,
+        recent_events: list["SystemEvent"] = None,
     ) -> Alert | None:
         """
         Evaluate whether an alert should fire based on current stress.
@@ -138,10 +139,7 @@ class AlertManager:
         self._total_alerts += 1
 
         # Build context message
-        contributors_str = ", ".join(
-            f"{p.name} ({p.avg_cpu_percent:.1f}% CPU)"
-            for p in top_processes[:3]
-        )
+
         message = (
             f"System stress {stress.level} ({stress.score:.0f}/100) "
             f"sustained for {self._consecutive_high * 2}s. "

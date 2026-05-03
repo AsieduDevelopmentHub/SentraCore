@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 class AnomalyResult:
     """Result of anomaly detection."""
 
-    score: float               # Overall anomaly score (0-100)
-    level: str                 # "normal", "elevated", "high", "severe"
+    score: float  # Overall anomaly score (0-100)
+    level: str  # "normal", "elevated", "high", "severe"
     cpu_z_score: float
     memory_z_score: float
     disk_z_score: float
-    is_sustained: bool         # True if anomaly has persisted for several cycles
+    is_sustained: bool  # True if anomaly has persisted for several cycles
 
     def to_dict(self) -> dict:
         return {
@@ -50,7 +50,9 @@ class AnomalyDetector:
         self._sustained_threshold_cycles = sustained_threshold_cycles
         self._consecutive_anomaly_count = 0
 
-    def detect(self, normalized: NormalizedSnapshot, baseline: BaselineModel) -> AnomalyResult:
+    def detect(
+        self, normalized: NormalizedSnapshot, baseline: BaselineModel
+    ) -> AnomalyResult:
         """
         Detect anomalies using current snapshot and active baseline.
         """
@@ -58,23 +60,20 @@ class AnomalyDetector:
             return AnomalyResult(0.0, "normal", 0.0, 0.0, 0.0, False)
 
         segment = baseline._get_segment_name(normalized.timestamp)
-        
+
         cpu_z = self._calculate_z_score(
-            normalized.cpu_percent_smoothed, 
-            baseline, "cpu_percent", segment
+            normalized.cpu_percent_smoothed, baseline, "cpu_percent", segment
         )
         mem_z = self._calculate_z_score(
-            normalized.memory_percent_smoothed, 
-            baseline, "memory_percent", segment
+            normalized.memory_percent_smoothed, baseline, "memory_percent", segment
         )
         disk_z = self._calculate_z_score(
-            normalized.disk_total_ops_per_sec, 
-            baseline, "disk_ops_per_sec", segment
+            normalized.disk_total_ops_per_sec, baseline, "disk_ops_per_sec", segment
         )
 
         # Max deviation is the primary driver of the anomaly score
         max_z = max(cpu_z, mem_z, disk_z)
-        
+
         # Convert z-score to an anomaly score 0-100
         # z=0 -> 0 score. z=2 -> 40 score. z=3 -> 70 score. z>=4 -> 100 score.
         score = 0.0
@@ -86,9 +85,13 @@ class AnomalyDetector:
         if score > 50.0:  # e.g., z > 2.5
             self._consecutive_anomaly_count += 1
         else:
-            self._consecutive_anomaly_count = max(0, self._consecutive_anomaly_count - 1)
+            self._consecutive_anomaly_count = max(
+                0, self._consecutive_anomaly_count - 1
+            )
 
-        is_sustained = self._consecutive_anomaly_count >= self._sustained_threshold_cycles
+        is_sustained = (
+            self._consecutive_anomaly_count >= self._sustained_threshold_cycles
+        )
 
         # Level
         if score < 30.0:
@@ -110,26 +113,24 @@ class AnomalyDetector:
         )
 
     def _calculate_z_score(
-        self, 
-        value: float, 
-        baseline: BaselineModel, 
-        metric: str, 
-        segment: str
+        self, value: float, baseline: BaselineModel, metric: str, segment: str
     ) -> float:
         """Calculate Z-score for a given value, metric, and segment."""
         # Need to access internal stats. We'll use the private method for now.
         stats = baseline._get_metric_stats(metric, segment)
         if stats is None or stats.count < baseline._min_samples:
             stats = baseline._get_metric_stats(metric, "global")
-            
+
         if stats is None or stats.count < baseline._min_samples:
             return 0.0
-            
+
         if stats.std_dev == 0:
-            return 0.0 if value <= stats.mean else 3.0 # Arbitrary high z-score if deviated from strict flatline
-            
+            return (
+                0.0 if value <= stats.mean else 3.0
+            )  # Arbitrary high z-score if deviated from strict flatline
+
         # Only consider positive deviations (higher than normal) as anomalous for stress
         if value <= stats.mean:
             return 0.0
-            
+
         return (value - stats.mean) / stats.std_dev

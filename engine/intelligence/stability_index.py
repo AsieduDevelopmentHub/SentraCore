@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 class StabilityIndex:
     """Unified system health score."""
 
-    score: float       # 1-100 (100 = perfect, 1 = critical)
-    state: str         # "stable", "degraded", "critical"
-    components: dict   # Breakdown of the penalty points
+    score: float  # 1-100 (100 = perfect, 1 = critical)
+    state: str  # "stable", "degraded", "critical"
+    components: dict  # Breakdown of the penalty points
 
     def to_dict(self) -> dict:
         return {
@@ -38,7 +38,7 @@ class StabilityIndex:
 class StabilityCalculator:
     """
     Computes System Stability Index.
-    
+
     100 means the system is perfectly stable.
     Lower scores indicate increasing levels of degradation.
     """
@@ -61,9 +61,9 @@ class StabilityCalculator:
 
     def calculate(
         self,
-        stress: 'StressResult',
-        prediction: 'PredictionResult',
-        anomaly: 'AnomalyResult',
+        stress: "StressResult",
+        prediction: "PredictionResult",
+        anomaly: "AnomalyResult",
     ) -> StabilityIndex:
         """
         Calculate global stability score.

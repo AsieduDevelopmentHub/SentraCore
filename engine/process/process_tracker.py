@@ -10,7 +10,7 @@ of which processes are actually stressing the system.
 from __future__ import annotations
 
 import logging
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass
 
 from engine.collector.system_collector import ProcessInfo
@@ -175,7 +175,8 @@ class ProcessTracker:
     def _prune_stale(self) -> None:
         """Remove processes not seen for an extended period."""
         stale_pids = [
-            pid for pid in self._tracked
+            pid
+            for pid in self._tracked
             if pid not in self._active_pids and not self._tracked[pid].cpu_history
         ]
         for pid in stale_pids:

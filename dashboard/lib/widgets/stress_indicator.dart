@@ -97,11 +97,14 @@ class StressIndicator extends StatelessWidget {
 
             // Pressure breakdown
             if (stress != null) ...[
-              _PressureBar('CPU', stress.pressures['cpu'] ?? 0, AppTheme.primary),
+              _PressureBar(
+                  'CPU', stress.pressures['cpu'] ?? 0, AppTheme.primary),
               const SizedBox(height: 4),
-              _PressureBar('Memory', stress.pressures['memory'] ?? 0, AppTheme.accent),
+              _PressureBar(
+                  'Memory', stress.pressures['memory'] ?? 0, AppTheme.accent),
               const SizedBox(height: 4),
-              _PressureBar('Disk', stress.pressures['disk'] ?? 0, AppTheme.warning),
+              _PressureBar(
+                  'Disk', stress.pressures['disk'] ?? 0, AppTheme.warning),
             ],
           ],
         ),
@@ -134,7 +137,8 @@ class _PressureBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value / 100,
               backgroundColor: AppTheme.surfaceLight,
-              valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
               minHeight: 4,
             ),
           ),

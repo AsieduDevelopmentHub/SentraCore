@@ -33,20 +33,22 @@ class RcaPanel extends StatelessWidget {
               ],
             ),
             const Divider(height: 24, color: AppTheme.border),
-
             if (rca == null)
               _buildEmptyState()
             else ...[
               _buildAlertBanner(provider.currentState?.alert.lastMessage ?? ''),
               const SizedBox(height: 16),
-              _buildDataRow('Primary Bottleneck:', rca.primaryBottleneck.toUpperCase()),
+              _buildDataRow(
+                  'Primary Bottleneck:', rca.primaryBottleneck.toUpperCase()),
               if (rca.suspectProcess != null) ...[
                 const SizedBox(height: 8),
-                _buildDataRow('Suspect Process:', '${rca.suspectProcess!['name']} (PID: ${rca.suspectProcess!['pid']})'),
+                _buildDataRow('Suspect Process:',
+                    '${rca.suspectProcess!['name']} (PID: ${rca.suspectProcess!['pid']})'),
               ],
               if (rca.triggerEvent != null) ...[
                 const SizedBox(height: 8),
-                _buildDataRow('Trigger Event:', rca.triggerEvent!['event_type']),
+                _buildDataRow(
+                    'Trigger Event:', rca.triggerEvent!['event_type']),
               ],
             ],
           ],
@@ -69,7 +71,7 @@ class RcaPanel extends StatelessWidget {
 
   Widget _buildAlertBanner(String message) {
     if (message.isEmpty) return const SizedBox.shrink();
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -78,7 +80,8 @@ class RcaPanel extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+        style:
+            TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
       ),
     );
   }
@@ -89,12 +92,16 @@ class RcaPanel extends StatelessWidget {
       children: [
         SizedBox(
           width: 130,
-          child: Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+          child: Text(label,
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500),
           ),
         ),
       ],

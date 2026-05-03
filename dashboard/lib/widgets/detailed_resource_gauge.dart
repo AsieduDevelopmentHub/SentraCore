@@ -49,8 +49,7 @@ class DetailedResourceGauge extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (isSpiking)
-                  _SpikeBadge(),
+                if (isSpiking) _SpikeBadge(),
               ],
             ),
             const SizedBox(height: 10),
@@ -72,7 +71,8 @@ class DetailedResourceGauge extends StatelessWidget {
                       if (subtitle != null)
                         Text(
                           subtitle!,
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                          style: TextStyle(
+                              color: AppTheme.textMuted, fontSize: 10),
                         ),
                     ],
                   ),
@@ -91,7 +91,8 @@ class DetailedResourceGauge extends StatelessWidget {
                         valueColor: AlwaysStoppedAnimation<Color>(activeColor),
                         strokeCap: StrokeCap.round,
                       ),
-                      Icon(icon, size: 10, color: activeColor.withValues(alpha: 0.5)),
+                      Icon(icon,
+                          size: 10, color: activeColor.withValues(alpha: 0.5)),
                     ],
                   ),
                 ),

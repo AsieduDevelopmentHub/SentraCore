@@ -21,7 +21,6 @@ import asyncio
 import logging
 import signal
 import sys
-import threading
 import time
 
 import uvicorn
@@ -92,12 +91,20 @@ class SentraCoreEngine:
                 "baseline_samples": self.baseline.sample_count,
             },
             "snapshot": latest.to_dict() if latest else None,
-            "normalized": self._current_normalized.to_dict() if self._current_normalized else None,
+            "normalized": self._current_normalized.to_dict()
+            if self._current_normalized
+            else None,
             "trend": self._current_trend.to_dict() if self._current_trend else None,
-            "anomaly": self._current_anomaly.to_dict() if self._current_anomaly else None,
-            "prediction": self._current_prediction.to_dict() if self._current_prediction else None,
+            "anomaly": self._current_anomaly.to_dict()
+            if self._current_anomaly
+            else None,
+            "prediction": self._current_prediction.to_dict()
+            if self._current_prediction
+            else None,
             "stress": self._current_stress.to_dict() if self._current_stress else None,
-            "stability": self._current_stability.to_dict() if self._current_stability else None,
+            "stability": self._current_stability.to_dict()
+            if self._current_stability
+            else None,
             "alert": {
                 "total_fired": self.alert_manager.total_alerts,
                 "in_cooldown": self.alert_manager.is_in_cooldown,
@@ -149,9 +156,7 @@ class SentraCoreEngine:
         self._last_alert = alert
         # Schedule async broadcast from sync context
         if self._loop and self._loop.is_running():
-            asyncio.run_coroutine_threadsafe(
-                self._broadcast_alert(alert), self._loop
-            )
+            asyncio.run_coroutine_threadsafe(self._broadcast_alert(alert), self._loop)
 
     async def run(self) -> None:
         """
@@ -168,7 +173,10 @@ class SentraCoreEngine:
 
         # Prime CPU measurement
         self.collector.prime()
-        logger.info("Collector primed. Starting collection loop (%.1fs interval)...", COLLECTION_INTERVAL_SEC)
+        logger.info(
+            "Collector primed. Starting collection loop (%.1fs interval)...",
+            COLLECTION_INTERVAL_SEC,
+        )
 
         # Wait one interval for CPU delta to be meaningful
         await asyncio.sleep(COLLECTION_INTERVAL_SEC)
@@ -201,19 +209,23 @@ class SentraCoreEngine:
                 # 7. Intelligence Layer (Phase 2)
                 trend = self.trend_analyzer.analyze(self.buffer)
                 self._current_trend = trend
-                
+
                 anomaly = self.anomaly_detector.detect(normalized, self.baseline)
                 self._current_anomaly = anomaly
 
                 # 8. Compute stress (Multi-State)
-                stress = self.stress_engine.compute(normalized, trend=trend, anomaly=anomaly)
+                stress = self.stress_engine.compute(
+                    normalized, trend=trend, anomaly=anomaly
+                )
                 self._current_stress = stress
 
                 # 9. Phase 4: Prediction & Risk
                 prediction = self.prediction_engine.predict(trend, normalized)
                 self._current_prediction = prediction
-                
-                stability = self.stability_calculator.calculate(stress, prediction, anomaly)
+
+                stability = self.stability_calculator.calculate(
+                    stress, prediction, anomaly
+                )
                 self._current_stability = stability
 
                 # 10. Evaluate alerts
@@ -275,15 +287,15 @@ def main() -> None:
     """Entry point for SentraCore engine."""
     _configure_logging()
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {__app_name__} v{__version__}")
-    print(f"  Local System Behavior Intelligence Layer")
-    print(f"{'='*60}")
+    print("  Local System Behavior Intelligence Layer")
+    print(f"{'=' * 60}")
     print(f"  API:       http://{API_HOST}:{API_PORT}")
     print(f"  Docs:      http://{API_HOST}:{API_PORT}/docs")
     print(f"  WebSocket: ws://{API_HOST}:{API_PORT}/ws/live")
     print(f"  Interval:  {COLLECTION_INTERVAL_SEC}s")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # Create engine and register with API
     engine = SentraCoreEngine()

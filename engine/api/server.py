@@ -10,17 +10,15 @@ by the main orchestrator using uvicorn.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 if TYPE_CHECKING:
-    from engine.alerts.alert_manager import Alert
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -40,17 +38,23 @@ class ConnectionManager:
     async def connect_alert(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self._alert_connections.append(websocket)
-        logger.info("Alert WebSocket connected. Total: %d", len(self._alert_connections))
+        logger.info(
+            "Alert WebSocket connected. Total: %d", len(self._alert_connections)
+        )
 
     def disconnect_live(self, websocket: WebSocket) -> None:
         if websocket in self._live_connections:
             self._live_connections.remove(websocket)
-        logger.info("Live WebSocket disconnected. Remaining: %d", len(self._live_connections))
+        logger.info(
+            "Live WebSocket disconnected. Remaining: %d", len(self._live_connections)
+        )
 
     def disconnect_alert(self, websocket: WebSocket) -> None:
         if websocket in self._alert_connections:
             self._alert_connections.remove(websocket)
-        logger.info("Alert WebSocket disconnected. Remaining: %d", len(self._alert_connections))
+        logger.info(
+            "Alert WebSocket disconnected. Remaining: %d", len(self._alert_connections)
+        )
 
     async def broadcast_live(self, data: dict) -> None:
         """Broadcast system state to all live connections."""

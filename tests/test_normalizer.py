@@ -36,7 +36,6 @@ def _make_snapshot(
 
 
 class TestNormalizer:
-
     def test_first_normalize_initializes_ema(self):
         norm = Normalizer(alpha=0.3)
         snap = _make_snapshot(cpu=50.0, mem_pct=60.0)
@@ -58,23 +57,31 @@ class TestNormalizer:
     def test_disk_rate_computation(self):
         norm = Normalizer()
         # First snapshot: baseline
-        norm.normalize(_make_snapshot(
-            disk_read_bytes=1000, disk_write_bytes=2000,
-            disk_read_count=10, disk_write_count=20,
-            ts=1.0,
-        ))
+        norm.normalize(
+            _make_snapshot(
+                disk_read_bytes=1000,
+                disk_write_bytes=2000,
+                disk_read_count=10,
+                disk_write_count=20,
+                ts=1.0,
+            )
+        )
         # Second snapshot: 2 seconds later
-        result = norm.normalize(_make_snapshot(
-            disk_read_bytes=3000, disk_write_bytes=4000,
-            disk_read_count=30, disk_write_count=40,
-            ts=3.0,
-        ))
+        result = norm.normalize(
+            _make_snapshot(
+                disk_read_bytes=3000,
+                disk_write_bytes=4000,
+                disk_read_count=30,
+                disk_write_count=40,
+                ts=3.0,
+            )
+        )
 
         # Delta over 2 seconds
-        assert result.disk_read_bytes_per_sec == 1000.0    # (3000-1000)/2
-        assert result.disk_write_bytes_per_sec == 1000.0   # (4000-2000)/2
-        assert result.disk_read_ops_per_sec == 10.0        # (30-10)/2
-        assert result.disk_write_ops_per_sec == 10.0       # (40-20)/2
+        assert result.disk_read_bytes_per_sec == 1000.0  # (3000-1000)/2
+        assert result.disk_write_bytes_per_sec == 1000.0  # (4000-2000)/2
+        assert result.disk_read_ops_per_sec == 10.0  # (30-10)/2
+        assert result.disk_write_ops_per_sec == 10.0  # (40-20)/2
 
     def test_first_disk_rates_are_zero(self):
         norm = Normalizer()

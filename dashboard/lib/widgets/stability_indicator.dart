@@ -97,11 +97,14 @@ class StabilityIndicator extends StatelessWidget {
 
             // Penalty breakdown
             if (stability != null) ...[
-              _PenaltyBar('Stress', stability.components['stress_penalty'] ?? 0, AppTheme.error),
+              _PenaltyBar('Stress', stability.components['stress_penalty'] ?? 0,
+                  AppTheme.error),
               const SizedBox(height: 4),
-              _PenaltyBar('Risk', stability.components['risk_penalty'] ?? 0, AppTheme.warning),
+              _PenaltyBar('Risk', stability.components['risk_penalty'] ?? 0,
+                  AppTheme.warning),
               const SizedBox(height: 4),
-              _PenaltyBar('Anomaly', stability.components['anomaly_penalty'] ?? 0, AppTheme.info),
+              _PenaltyBar('Anomaly',
+                  stability.components['anomaly_penalty'] ?? 0, AppTheme.info),
             ],
           ],
         ),
@@ -134,7 +137,8 @@ class _PenaltyBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value / 100, // Show penalty size out of 100
               backgroundColor: AppTheme.surfaceLight,
-              valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
               minHeight: 4,
             ),
           ),

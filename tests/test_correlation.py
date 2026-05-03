@@ -5,18 +5,19 @@ from engine.stress.stress_engine import StressResult
 from engine.process.process_tracker import ProcessImpact
 from engine.events.event_logger import SystemEvent
 
+
 def test_correlation_identifies_cpu_bottleneck():
     engine = CorrelationEngine()
-    
+
     stress = StressResult(
         score=85.0,
         level="high",
         cpu_pressure=95.0,
         memory_pressure=20.0,
         disk_pressure=10.0,
-        weights={"cpu": 0.8, "memory": 0.1, "disk": 0.1}
+        weights={"cpu": 0.8, "memory": 0.1, "disk": 0.1},
     )
-    
+
     procs = [
         ProcessImpact(
             pid=1234,
@@ -28,7 +29,7 @@ def test_correlation_identifies_cpu_bottleneck():
             current_cpu_percent=45.0,
             current_memory_percent=5.0,
             sample_count=10,
-            impact_score=50.0
+            impact_score=50.0,
         ),
         ProcessImpact(
             pid=5678,
@@ -40,45 +41,43 @@ def test_correlation_identifies_cpu_bottleneck():
             current_cpu_percent=2.0,
             current_memory_percent=1.0,
             sample_count=10,
-            impact_score=3.0
-        )
+            impact_score=3.0,
+        ),
     ]
-    
+
     events = [
         SystemEvent(
             timestamp=100.0,
             event_type="process_start",
             severity="info",
-            details={"pid": 1234, "name": "chrome.exe"}
+            details={"pid": 1234, "name": "chrome.exe"},
         ),
         SystemEvent(
-            timestamp=105.0,
-            event_type="cpu_spike",
-            severity="warning",
-            details={}
-        )
+            timestamp=105.0, event_type="cpu_spike", severity="warning", details={}
+        ),
     ]
-    
+
     rca = engine.analyze(stress, procs, events)
-    
+
     assert rca.primary_bottleneck == "cpu"
     assert rca.suspect_process is not None
     assert rca.suspect_process["pid"] == 1234
     assert rca.trigger_event is not None
-    assert rca.trigger_event["event_type"] == "cpu_spike" # The latest matching event
+    assert rca.trigger_event["event_type"] == "cpu_spike"  # The latest matching event
+
 
 def test_correlation_identifies_memory_bottleneck():
     engine = CorrelationEngine()
-    
+
     stress = StressResult(
         score=90.0,
         level="critical",
         cpu_pressure=10.0,
         memory_pressure=98.0,
         disk_pressure=5.0,
-        weights={"cpu": 0.1, "memory": 0.8, "disk": 0.1}
+        weights={"cpu": 0.1, "memory": 0.8, "disk": 0.1},
     )
-    
+
     procs = [
         ProcessImpact(
             pid=9999,
@@ -90,12 +89,12 @@ def test_correlation_identifies_memory_bottleneck():
             current_cpu_percent=1.0,
             current_memory_percent=65.0,
             sample_count=10,
-            impact_score=61.0
+            impact_score=61.0,
         )
     ]
-    
+
     rca = engine.analyze(stress, procs, [])
-    
+
     assert rca.primary_bottleneck == "memory"
     assert rca.suspect_process is not None
     assert rca.suspect_process["name"] == "docker.exe"

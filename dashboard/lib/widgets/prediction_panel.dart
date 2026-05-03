@@ -33,7 +33,6 @@ class PredictionPanel extends StatelessWidget {
               ],
             ),
             const Divider(height: 24, color: AppTheme.border),
-
             if (prediction == null)
               _buildEmptyState()
             else ...[
@@ -83,8 +82,10 @@ class PredictionPanel extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Degradation Risk', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-            Text('${score.toStringAsFixed(0)}%', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Text('Degradation Risk',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            Text('${score.toStringAsFixed(0)}%',
+                style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 6),
@@ -104,7 +105,7 @@ class PredictionPanel extends StatelessWidget {
   Widget _buildEtaRow(String label, double? etaSec, IconData icon) {
     String text = 'Stable';
     Color color = AppTheme.textMuted;
-    
+
     if (etaSec != null) {
       if (etaSec < 60) {
         text = '${etaSec.toStringAsFixed(0)}s';
@@ -126,7 +127,8 @@ class PredictionPanel extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppTheme.textSecondary),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+          Text(label,
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
           const Spacer(),
           Text(
             text,

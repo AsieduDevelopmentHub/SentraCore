@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 /// Screen 2: Full-page detailed performance charts.
 class PerformanceScreen extends StatelessWidget {
@@ -21,8 +22,9 @@ class PerformanceScreen extends StatelessWidget {
             child: Column(
               children: [
                 // CPU + Memory full charts
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  useIntrinsicHeight: false,
                   children: [
                     Expanded(
                       child: _DetailedChart(
@@ -35,7 +37,6 @@ class PerformanceScreen extends StatelessWidget {
                         stats: _chartStats(provider.cpuHistory, '%'),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: _DetailedChart(
                         title: 'Memory Usage',
@@ -53,8 +54,9 @@ class PerformanceScreen extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Disk + Stability full charts
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  useIntrinsicHeight: false,
                   children: [
                     Expanded(
                       child: _DetailedChart(
@@ -63,10 +65,10 @@ class PerformanceScreen extends StatelessWidget {
                         color: AppTheme.warning,
                         unit: ' ops/s',
                         maxY: 500,
-                        stats: _chartStats(provider.diskHistory, ' ops/s', maxVal: 500),
+                        stats: _chartStats(provider.diskHistory, ' ops/s',
+                            maxVal: 500),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: _DetailedChart(
                         title: 'System Stability Index',
@@ -83,12 +85,11 @@ class PerformanceScreen extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Trend & anomaly info row
-                Row(
+                ResponsiveRowColumn(
+                  spacing: 12,
                   children: [
                     Expanded(child: _TrendCard(provider: provider)),
-                    const SizedBox(width: 12),
                     Expanded(child: _AnomalyCard(provider: provider)),
-                    const SizedBox(width: 12),
                     Expanded(child: _StressCard(provider: provider)),
                   ],
                 ),
@@ -100,8 +101,11 @@ class PerformanceScreen extends StatelessWidget {
     );
   }
 
-  Map<String, String> _chartStats(List<double> data, String unit, {double maxVal = 100}) {
-    if (data.isEmpty) return {'min': '--', 'max': '--', 'avg': '--', 'cur': '--'};
+  Map<String, String> _chartStats(List<double> data, String unit,
+      {double maxVal = 100}) {
+    if (data.isEmpty) {
+      return {'min': '--', 'max': '--', 'avg': '--', 'cur': '--'};
+    }
     final min = data.reduce((a, b) => a < b ? a : b);
     final max = data.reduce((a, b) => a > b ? a : b);
     final avg = data.reduce((a, b) => a + b) / data.length;
@@ -131,8 +135,13 @@ class _PerformanceHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Performance', style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-              Text('60-second rolling history with trend analysis', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+              Text('Performance',
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600)),
+              Text('60-second rolling history with trend analysis',
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
             ],
           ),
           const Spacer(),
@@ -141,12 +150,15 @@ class _PerformanceHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               Icon(Icons.circle, size: 6, color: AppTheme.accent),
               const SizedBox(width: 6),
-              Text('Live — 2s interval', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+              Text('Live — 2s interval',
+                  style:
+                      TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
             ]),
           ),
         ],
@@ -196,10 +208,17 @@ class _DetailedChart extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text(title,
+                    style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 Text(
                   '${currentValue.toStringAsFixed(1)}$unit',
-                  style: TextStyle(color: valueColor, fontSize: 20, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: valueColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -208,7 +227,9 @@ class _DetailedChart extends StatelessWidget {
             SizedBox(
               height: 200,
               child: data.length < 2
-                  ? Center(child: Text('Collecting data...', style: TextStyle(color: AppTheme.textMuted)))
+                  ? Center(
+                      child: Text('Collecting data...',
+                          style: TextStyle(color: AppTheme.textMuted)))
                   : LineChart(
                       LineChartData(
                         minY: 0,
@@ -229,17 +250,24 @@ class _DetailedChart extends StatelessWidget {
                               reservedSize: 36,
                               getTitlesWidget: (v, _) => Text(
                                 v.toStringAsFixed(0),
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 9),
+                                style: TextStyle(
+                                    color: AppTheme.textMuted, fontSize: 9),
                               ),
                             ),
                           ),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                         ),
                         borderData: FlBorderData(
                           show: true,
-                          border: Border(bottom: BorderSide(color: AppTheme.border.withValues(alpha: 0.5))),
+                          border: Border(
+                              bottom: BorderSide(
+                                  color:
+                                      AppTheme.border.withValues(alpha: 0.5))),
                         ),
                         clipData: const FlClipData.all(),
                         lineTouchData: LineTouchData(
@@ -248,7 +276,10 @@ class _DetailedChart extends StatelessWidget {
                             getTooltipItems: (spots) => spots
                                 .map((s) => LineTooltipItem(
                                       '${s.y.toStringAsFixed(1)}$unit',
-                                      TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
+                                      TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12),
                                     ))
                                 .toList(),
                           ),
@@ -264,14 +295,18 @@ class _DetailedChart extends StatelessWidget {
                                     show: true,
                                     alignment: Alignment.topRight,
                                     labelResolver: (_) => thresholdLabel ?? '',
-                                    style: TextStyle(color: AppTheme.error, fontSize: 9),
+                                    style: TextStyle(
+                                        color: AppTheme.error, fontSize: 9),
                                   ),
                                 ),
                               ])
                             : null,
                         lineBarsData: [
                           LineChartBarData(
-                            spots: List.generate(data.length, (i) => FlSpot(i.toDouble(), data[i].clamp(0, maxY))),
+                            spots: List.generate(
+                                data.length,
+                                (i) => FlSpot(
+                                    i.toDouble(), data[i].clamp(0, maxY))),
                             isCurved: true,
                             curveSmoothness: 0.25,
                             color: color,
@@ -283,7 +318,10 @@ class _DetailedChart extends StatelessWidget {
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.0)],
+                                colors: [
+                                  color.withValues(alpha: 0.2),
+                                  color.withValues(alpha: 0.0)
+                                ],
                               ),
                             ),
                           ),
@@ -316,9 +354,13 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      Text(label, style: TextStyle(color: AppTheme.textMuted, fontSize: 9, letterSpacing: 0.5)),
+      Text(label,
+          style: TextStyle(
+              color: AppTheme.textMuted, fontSize: 9, letterSpacing: 0.5)),
       const SizedBox(height: 2),
-      Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      Text(value,
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     ]);
   }
 }
@@ -340,7 +382,11 @@ class _TrendCard extends StatelessWidget {
             Row(children: [
               Icon(Icons.trending_up, size: 15, color: AppTheme.primary),
               const SizedBox(width: 6),
-              Text('Trend Analysis', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text('Trend Analysis',
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
             ]),
             const Divider(color: AppTheme.border, height: 20),
             if (trend == null)
@@ -350,9 +396,11 @@ class _TrendCard extends StatelessWidget {
               const SizedBox(height: 8),
               _TrendRow('Memory Slope', trend.memorySlope, '%/s'),
               const SizedBox(height: 8),
-              _MetricBar('CPU Volatility', trend.cpuVolatility, 20, AppTheme.primary),
+              _MetricBar(
+                  'CPU Volatility', trend.cpuVolatility, 20, AppTheme.primary),
               const SizedBox(height: 6),
-              _MetricBar('Mem Volatility', trend.memoryVolatility, 20, AppTheme.accent),
+              _MetricBar('Mem Volatility', trend.memoryVolatility, 20,
+                  AppTheme.accent),
             ],
           ],
         ),
@@ -374,12 +422,15 @@ class _TrendRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+        Text(label,
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         Row(children: [
-          Icon(isPositive ? Icons.trending_up : Icons.trending_down, size: 13, color: color),
+          Icon(isPositive ? Icons.trending_up : Icons.trending_down,
+              size: 13, color: color),
           const SizedBox(width: 4),
           Text('${isPositive ? '+' : ''}${value.toStringAsFixed(4)}$unit',
-              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
         ]),
       ],
     );
@@ -397,8 +448,11 @@ class _MetricBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
-        Text(value.toStringAsFixed(2), style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(label,
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+        Text(value.toStringAsFixed(2),
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w600)),
       ]),
       const SizedBox(height: 4),
       ClipRRect(
@@ -406,7 +460,8 @@ class _MetricBar extends StatelessWidget {
         child: LinearProgressIndicator(
           value: (value / maxValue).clamp(0, 1),
           backgroundColor: AppTheme.surfaceLight,
-          valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
+          valueColor:
+              AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.7)),
           minHeight: 4,
         ),
       ),
@@ -431,7 +486,11 @@ class _AnomalyCard extends StatelessWidget {
             Row(children: [
               Icon(Icons.radar, size: 15, color: AppTheme.info),
               const SizedBox(width: 6),
-              Text('Anomaly Detection', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text('Anomaly Detection',
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
             ]),
             const Divider(color: AppTheme.border, height: 20),
             if (anomaly == null)
@@ -439,12 +498,16 @@ class _AnomalyCard extends StatelessWidget {
             else ...[
               _MetricBar('CPU Z-Score', anomaly.cpuZScore, 4, AppTheme.primary),
               const SizedBox(height: 8),
-              _MetricBar('Memory Z-Score', anomaly.memoryZScore, 4, AppTheme.accent),
+              _MetricBar(
+                  'Memory Z-Score', anomaly.memoryZScore, 4, AppTheme.accent),
               const SizedBox(height: 8),
-              _MetricBar('Disk Z-Score', anomaly.diskZScore, 4, AppTheme.warning),
+              _MetricBar(
+                  'Disk Z-Score', anomaly.diskZScore, 4, AppTheme.warning),
               const SizedBox(height: 10),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Anomaly Level', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                Text('Anomaly Level',
+                    style:
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                 _LevelBadge(anomaly.level),
               ]),
             ],
@@ -475,7 +538,12 @@ class _LevelBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(level.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+      child: Text(level.toUpperCase(),
+          style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8)),
     );
   }
 }
@@ -496,22 +564,35 @@ class _StressCard extends StatelessWidget {
             Row(children: [
               Icon(Icons.speed, size: 15, color: AppTheme.warning),
               const SizedBox(width: 6),
-              Text('Stress Engine', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text('Stress Engine',
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
             ]),
             const Divider(color: AppTheme.border, height: 20),
             if (stress == null)
               Text('No data', style: TextStyle(color: AppTheme.textMuted))
             else ...[
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Score', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                Text('${stress.score.toStringAsFixed(1)}', style: TextStyle(color: AppTheme.stressColor(stress.level), fontSize: 18, fontWeight: FontWeight.w700)),
+                Text('Score',
+                    style:
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                Text(stress.score.toStringAsFixed(1),
+                    style: TextStyle(
+                        color: AppTheme.stressColor(stress.level),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700)),
               ]),
               const SizedBox(height: 8),
-              _MetricBar('CPU Pressure', (stress.pressures['cpu'] ?? 0), 100, AppTheme.primary),
+              _MetricBar('CPU Pressure', (stress.pressures['cpu'] ?? 0), 100,
+                  AppTheme.primary),
               const SizedBox(height: 6),
-              _MetricBar('Memory Pressure', (stress.pressures['memory'] ?? 0), 100, AppTheme.accent),
+              _MetricBar('Memory Pressure', (stress.pressures['memory'] ?? 0),
+                  100, AppTheme.accent),
               const SizedBox(height: 6),
-              _MetricBar('Disk Pressure', (stress.pressures['disk'] ?? 0), 100, AppTheme.warning),
+              _MetricBar('Disk Pressure', (stress.pressures['disk'] ?? 0), 100,
+                  AppTheme.warning),
             ],
           ],
         ),

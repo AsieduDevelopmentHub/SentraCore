@@ -215,7 +215,15 @@ class SystemCollector:
         proc_list: list[ProcessInfo] = []
 
         for proc in psutil.process_iter(
-            attrs=["pid", "name", "cpu_percent", "memory_percent", "memory_info", "status", "create_time"]
+            attrs=[
+                "pid",
+                "name",
+                "cpu_percent",
+                "memory_percent",
+                "memory_info",
+                "status",
+                "create_time",
+            ]
         ):
             try:
                 info = proc.info
@@ -225,7 +233,9 @@ class SystemCollector:
                         name=info["name"] or "Unknown",
                         cpu_percent=info.get("cpu_percent") or 0.0,
                         memory_percent=info.get("memory_percent") or 0.0,
-                        memory_rss=(info.get("memory_info") or type("", (), {"rss": 0})()).rss,
+                        memory_rss=(
+                            info.get("memory_info") or type("", (), {"rss": 0})()
+                        ).rss,
                         status=info.get("status") or "unknown",
                         create_time=info.get("create_time") or 0.0,
                     )

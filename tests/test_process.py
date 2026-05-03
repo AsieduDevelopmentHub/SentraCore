@@ -6,13 +6,17 @@ from engine.process.process_tracker import ProcessImpact, ProcessTracker
 
 def _make_proc(pid: int, name: str, cpu: float, mem: float) -> ProcessInfo:
     return ProcessInfo(
-        pid=pid, name=name, cpu_percent=cpu, memory_percent=mem,
-        memory_rss=100_000_000, status="running", create_time=1.0,
+        pid=pid,
+        name=name,
+        cpu_percent=cpu,
+        memory_percent=mem,
+        memory_rss=100_000_000,
+        status="running",
+        create_time=1.0,
     )
 
 
 class TestProcessTracker:
-
     def test_update_and_get_top(self):
         tracker = ProcessTracker(window_size=5, top_count=3)
         procs = (
@@ -32,20 +36,26 @@ class TestProcessTracker:
         tracker = ProcessTracker(window_size=3, top_count=2)
 
         # Round 1: Chrome is high
-        tracker.update((
-            _make_proc(1, "chrome.exe", 80.0, 5.0),
-            _make_proc(2, "python.exe", 5.0, 5.0),
-        ))
+        tracker.update(
+            (
+                _make_proc(1, "chrome.exe", 80.0, 5.0),
+                _make_proc(2, "python.exe", 5.0, 5.0),
+            )
+        )
         # Round 2: Chrome drops, python rises
-        tracker.update((
-            _make_proc(1, "chrome.exe", 10.0, 5.0),
-            _make_proc(2, "python.exe", 50.0, 5.0),
-        ))
+        tracker.update(
+            (
+                _make_proc(1, "chrome.exe", 10.0, 5.0),
+                _make_proc(2, "python.exe", 50.0, 5.0),
+            )
+        )
         # Round 3: Chrome is low, python is high
-        tracker.update((
-            _make_proc(1, "chrome.exe", 10.0, 5.0),
-            _make_proc(2, "python.exe", 50.0, 5.0),
-        ))
+        tracker.update(
+            (
+                _make_proc(1, "chrome.exe", 10.0, 5.0),
+                _make_proc(2, "python.exe", 50.0, 5.0),
+            )
+        )
 
         top = tracker.get_top_consumers(2)
         # Python should rank higher due to sustained usage
@@ -57,11 +67,15 @@ class TestProcessTracker:
         tracker = ProcessTracker(window_size=5)
 
         # First round: 2 processes
-        tracker.update((_make_proc(1, "a.exe", 10.0, 5.0), _make_proc(2, "b.exe", 20.0, 10.0)))
+        tracker.update(
+            (_make_proc(1, "a.exe", 10.0, 5.0), _make_proc(2, "b.exe", 20.0, 10.0))
+        )
         assert tracker.get_active_count() == 2
 
         # Second round: process 1 gone, process 3 new
-        tracker.update((_make_proc(2, "b.exe", 20.0, 10.0), _make_proc(3, "c.exe", 5.0, 5.0)))
+        tracker.update(
+            (_make_proc(2, "b.exe", 20.0, 10.0), _make_proc(3, "c.exe", 5.0, 5.0))
+        )
         assert tracker.get_active_count() == 2
 
     def test_impact_to_dict(self):

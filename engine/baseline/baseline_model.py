@@ -34,7 +34,7 @@ class MetricStats:
 
     count: int = 0
     mean: float = 0.0
-    m2: float = 0.0        # Sum of squares of differences from mean
+    m2: float = 0.0  # Sum of squares of differences from mean
     min_val: float = float("inf")
     max_val: float = float("-inf")
 
@@ -73,11 +73,13 @@ class MetricStats:
         stats.count = data.get("count", 0)
         stats.mean = data.get("mean", 0.0)
         stats.min_val = data.get("min") if data.get("min") is not None else float("inf")
-        stats.max_val = data.get("max") if data.get("max") is not None else float("-inf")
+        stats.max_val = (
+            data.get("max") if data.get("max") is not None else float("-inf")
+        )
         # Reconstruct m2 from std_dev and count
         std = data.get("std_dev", 0.0)
         if stats.count >= 2:
-            stats.m2 = (std ** 2) * (stats.count - 1)
+            stats.m2 = (std**2) * (stats.count - 1)
         return stats
 
 
@@ -169,6 +171,7 @@ class BaselineModel:
     def _get_segment_name(timestamp: float) -> str:
         """Determine the time-of-day segment for a given timestamp."""
         import datetime
+
         dt = datetime.datetime.fromtimestamp(timestamp)
         hour = dt.hour
         if 0 <= hour < 6:
@@ -187,7 +190,7 @@ class BaselineModel:
         Automatically persists to disk at configured intervals.
         """
         segment = self._get_segment_name(normalized.timestamp)
-        
+
         for seg_name in ("global", segment):
             seg_stats = self._stats.segments[seg_name]
             seg_stats.cpu_percent.update(normalized.cpu_percent_smoothed)
@@ -198,7 +201,9 @@ class BaselineModel:
         if self._update_count % self._persist_interval == 0:
             self.persist()
 
-    def is_deviated(self, metric: str, value: float, timestamp: float | None = None) -> bool:
+    def is_deviated(
+        self, metric: str, value: float, timestamp: float | None = None
+    ) -> bool:
         """
         Check if a value deviates significantly from the baseline.
 
@@ -217,11 +222,11 @@ class BaselineModel:
 
         segment = self._get_segment_name(timestamp) if timestamp else "global"
         stats = self._get_metric_stats(metric, segment)
-        
+
         # Fallback to global if segment lacks samples
         if stats is None or stats.count < self._min_samples:
             stats = self._get_metric_stats(metric, "global")
-            
+
         if stats is None or stats.count < self._min_samples:
             return False
 
@@ -247,7 +252,9 @@ class BaselineModel:
             DATASTORE_DIR.mkdir(parents=True, exist_ok=True)
             data = self._stats.to_dict()
             self._file.write_text(json.dumps(data, indent=2), encoding="utf-8")
-            logger.debug("Baseline persisted to %s (%d samples)", self._file, self.sample_count)
+            logger.debug(
+                "Baseline persisted to %s (%d samples)", self._file, self.sample_count
+            )
         except OSError as exc:
             logger.error("Failed to persist baseline: %s", exc)
 
@@ -267,11 +274,13 @@ class BaselineModel:
                 logger.warning("Failed to load baseline, starting fresh: %s", exc)
         return BaselineStats()
 
-    def _get_metric_stats(self, metric: str, segment: str = "global") -> MetricStats | None:
+    def _get_metric_stats(
+        self, metric: str, segment: str = "global"
+    ) -> MetricStats | None:
         """Resolve metric name to its MetricStats instance."""
         if segment not in self._stats.segments:
             return None
-            
+
         seg_stats = self._stats.segments[segment]
         mapping = {
             "cpu_percent": seg_stats.cpu_percent,

@@ -3,13 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/stability_indicator.dart';
-import 'package:sentracore_dashboard/widgets/resource_gauge.dart';
 import 'package:sentracore_dashboard/widgets/detailed_resource_gauge.dart';
 import 'package:sentracore_dashboard/widgets/prediction_panel.dart';
 import 'package:sentracore_dashboard/widgets/rca_panel.dart';
 import 'package:sentracore_dashboard/widgets/metric_chart_card.dart';
 import 'package:sentracore_dashboard/widgets/process_table.dart';
 import 'package:sentracore_dashboard/widgets/event_timeline.dart';
+import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 /// Screen 1: At-a-glance overview of current system health.
 class OverviewScreen extends StatelessWidget {
@@ -33,83 +33,87 @@ class OverviewScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Row 1: Stability + resource gauges
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(width: 220, child: StabilityIndicator()),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DetailedResourceGauge(
-                                    label: 'CPU',
-                                    value: provider.normalized?.cpu.smoothed ?? 0,
-                                    isSpiking: provider.normalized?.cpu.spiking ?? false,
-                                    color: AppTheme.primary,
-                                    icon: Icons.memory,
-                                    subtitle: 'Smoothed EMA',
-                                  ),
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  children: [
+                    const SizedBox(width: 220, child: StabilityIndicator()),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          ResponsiveRowColumn(
+                            spacing: 12,
+                            useIntrinsicHeight: false,
+                            children: [
+                              Expanded(
+                                child: DetailedResourceGauge(
+                                  label: 'CPU',
+                                  value: provider.normalized?.cpu.smoothed ?? 0,
+                                  isSpiking:
+                                      provider.normalized?.cpu.spiking ?? false,
+                                  color: AppTheme.primary,
+                                  icon: Icons.memory,
+                                  subtitle: 'Smoothed EMA',
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: DetailedResourceGauge(
-                                    label: 'Memory',
-                                    value: provider.normalized?.memory.smoothed ?? 0,
-                                    isSpiking: provider.normalized?.memory.spiking ?? false,
-                                    color: AppTheme.accent,
-                                    icon: Icons.storage,
-                                    subtitle: '${((provider.normalized?.memory.used ?? 0) / 1024 / 1024 / 1024).toStringAsFixed(1)} GB used',
-                                  ),
+                              ),
+                              Expanded(
+                                child: DetailedResourceGauge(
+                                  label: 'Memory',
+                                  value:
+                                      provider.normalized?.memory.smoothed ?? 0,
+                                  isSpiking:
+                                      provider.normalized?.memory.spiking ??
+                                          false,
+                                  color: AppTheme.accent,
+                                  icon: Icons.storage,
+                                  subtitle:
+                                      '${((provider.normalized?.memory.used ?? 0) / 1024 / 1024 / 1024).toStringAsFixed(1)} GB used',
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: DetailedResourceGauge(
-                                    label: 'Disk Activity',
-                                    value: _diskPercent(provider),
-                                    isSpiking: provider.normalized?.diskIo.spiking ?? false,
-                                    color: AppTheme.warning,
-                                    icon: Icons.disc_full_outlined,
-                                    subtitle: '${provider.normalized?.diskIo.totalOpsPerSec.toStringAsFixed(0) ?? 0} ops/s',
-                                  ),
+                              ),
+                              Expanded(
+                                child: DetailedResourceGauge(
+                                  label: 'Disk Activity',
+                                  value: _diskPercent(provider),
+                                  isSpiking:
+                                      provider.normalized?.diskIo.spiking ??
+                                          false,
+                                  color: AppTheme.warning,
+                                  icon: Icons.disc_full_outlined,
+                                  subtitle:
+                                      '${provider.normalized?.diskIo.totalOpsPerSec.toStringAsFixed(0) ?? 0} ops/s',
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Stats strip
-                            _StatsStrip(provider: provider),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Stats strip
+                          _StatsStrip(provider: provider),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 16),
 
                 // Row 2: Prediction + RCA
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: const [
-                      Expanded(child: PredictionPanel()),
-                      SizedBox(width: 12),
-                      Expanded(child: RcaPanel()),
-                    ],
-                  ),
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  children: const [
+                    Expanded(child: PredictionPanel()),
+                    Expanded(child: RcaPanel()),
+                  ],
                 ),
 
                 const SizedBox(height: 16),
 
                 // Row 3: Mini charts
-                SizedBox(
-                  height: 180,
-                  child: Row(
-                    children: [
-                      Expanded(
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  useIntrinsicHeight: false,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 180,
                         child: MetricChartCard(
                           title: 'CPU History',
                           data: provider.cpuHistory,
@@ -118,8 +122,10 @@ class OverviewScreen extends StatelessWidget {
                           suffix: '%',
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 180,
                         child: MetricChartCard(
                           title: 'Memory History',
                           data: provider.memoryHistory,
@@ -128,8 +134,10 @@ class OverviewScreen extends StatelessWidget {
                           suffix: '%',
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 180,
                         child: MetricChartCard(
                           title: 'Stability History',
                           data: provider.stabilityHistory,
@@ -138,23 +146,24 @@ class OverviewScreen extends StatelessWidget {
                           suffix: '',
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 16),
 
                 // Row 4: Process table + events
-                SizedBox(
-                  height: 300,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Expanded(flex: 3, child: ProcessTable()),
-                      SizedBox(width: 12),
-                      Expanded(flex: 2, child: EventTimeline()),
-                    ],
-                  ),
+                ResponsiveRowColumn(
+                  spacing: 12,
+                  useIntrinsicHeight: false,
+                  children: const [
+                    Expanded(
+                        flex: 3,
+                        child: SizedBox(height: 300, child: ProcessTable())),
+                    Expanded(
+                        flex: 2,
+                        child: SizedBox(height: 300, child: EventTimeline())),
+                  ],
                 ),
               ],
             ),
@@ -188,15 +197,33 @@ class _StatsStrip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _Stat('CPU Slope', trend != null ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s' : '--', AppTheme.primary),
+          _Stat(
+              'CPU Slope',
+              trend != null
+                  ? '${trend.cpuSlope > 0 ? '+' : ''}${trend.cpuSlope.toStringAsFixed(3)}%/s'
+                  : '--',
+              AppTheme.primary),
           _StatDivider(),
-          _Stat('Mem Slope', trend != null ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s' : '--', AppTheme.accent),
+          _Stat(
+              'Mem Slope',
+              trend != null
+                  ? '${trend.memorySlope > 0 ? '+' : ''}${trend.memorySlope.toStringAsFixed(3)}%/s'
+                  : '--',
+              AppTheme.accent),
           _StatDivider(),
           _Stat('Anomaly', anomaly?.level.toUpperCase() ?? '--', AppTheme.info),
           _StatDivider(),
-          _Stat('Alerts Fired', '${provider.currentState?.alert.totalFired ?? 0}', AppTheme.warning),
+          _Stat(
+              'Alerts Fired',
+              '${provider.currentState?.alert.totalFired ?? 0}',
+              AppTheme.warning),
           _StatDivider(),
-          _Stat('Baseline', provider.engineInfo?.baselineReady == true ? 'READY' : 'LEARNING', provider.engineInfo?.baselineReady == true ? AppTheme.accent : AppTheme.textMuted),
+          _Stat(
+              'Baseline',
+              provider.engineInfo?.baselineReady == true ? 'READY' : 'LEARNING',
+              provider.engineInfo?.baselineReady == true
+                  ? AppTheme.accent
+                  : AppTheme.textMuted),
         ],
       ),
     );
@@ -216,7 +243,9 @@ class _Stat extends StatelessWidget {
       children: [
         Text(label, style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(value,
+            style: TextStyle(
+                color: color, fontSize: 12, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -233,7 +262,8 @@ class _ScreenHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final EngineProvider provider;
-  const _ScreenHeader({required this.title, required this.subtitle, required this.provider});
+  const _ScreenHeader(
+      {required this.title, required this.subtitle, required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -248,15 +278,24 @@ class _ScreenHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-              Text(subtitle, style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+              Text(title,
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600)),
+              Text(subtitle,
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
             ],
           ),
           const Spacer(),
           if (provider.engineInfo != null) ...[
-            _HeaderChip(Icons.timer_outlined, 'v${provider.engineInfo!.version}', AppTheme.info),
+            _HeaderChip(Icons.timer_outlined,
+                'v${provider.engineInfo!.version}', AppTheme.info),
             const SizedBox(width: 8),
-            _HeaderChip(Icons.data_usage, '${provider.engineInfo!.uptimeSamples} samples', AppTheme.textSecondary),
+            _HeaderChip(
+                Icons.data_usage,
+                '${provider.engineInfo!.uptimeSamples} samples',
+                AppTheme.textSecondary),
           ],
         ],
       ),

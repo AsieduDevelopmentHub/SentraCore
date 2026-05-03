@@ -29,10 +29,14 @@ class PredictionResult:
     def to_dict(self) -> dict:
         return {
             "memory_exhaustion_eta_sec": (
-                round(self.memory_exhaustion_eta_sec, 1) if self.memory_exhaustion_eta_sec else None
+                round(self.memory_exhaustion_eta_sec, 1)
+                if self.memory_exhaustion_eta_sec
+                else None
             ),
             "cpu_critical_eta_sec": (
-                round(self.cpu_critical_eta_sec, 1) if self.cpu_critical_eta_sec else None
+                round(self.cpu_critical_eta_sec, 1)
+                if self.cpu_critical_eta_sec
+                else None
             ),
             "risk_score": round(self.risk_score, 2),
         }
@@ -53,7 +57,9 @@ class PredictionEngine:
         self._smoothed_cpu_slope = 0.0
         self._smoothed_memory_slope = 0.0
 
-    def predict(self, trend: 'TrendResult', snapshot: 'NormalizedSnapshot') -> PredictionResult:
+    def predict(
+        self, trend: "TrendResult", snapshot: "NormalizedSnapshot"
+    ) -> PredictionResult:
         """
         Forecast resource exhaustion.
 
@@ -83,21 +89,25 @@ class PredictionEngine:
 
         # Calculate Memory ETA to 98%
         mem_eta = None
-        if self._smoothed_memory_slope > 0.05:  # Require at least 0.05% growth per second to forecast
+        if (
+            self._smoothed_memory_slope > 0.05
+        ):  # Require at least 0.05% growth per second to forecast
             remaining_mem = 98.0 - snapshot.memory_percent_smoothed
             if remaining_mem > 0:
                 mem_eta = remaining_mem / self._smoothed_memory_slope
 
         # Calculate CPU ETA to 95%
         cpu_eta = None
-        if self._smoothed_cpu_slope > 0.1:  # Require at least 0.1% growth per second to forecast
+        if (
+            self._smoothed_cpu_slope > 0.1
+        ):  # Require at least 0.1% growth per second to forecast
             remaining_cpu = 95.0 - snapshot.cpu_percent_smoothed
             if remaining_cpu > 0:
                 cpu_eta = remaining_cpu / self._smoothed_cpu_slope
 
         # Calculate Probabilistic Risk Score (0-100)
         risk_score = 0.0
-        
+
         # Risk from Memory exhaustion proximity
         if mem_eta is not None:
             if mem_eta < 60:
@@ -106,14 +116,14 @@ class PredictionEngine:
                 risk_score += 40.0  # Under 5 minutes is high risk
             else:
                 risk_score += 10.0  # Leaking, but slow
-                
+
         # Risk from CPU exhaustion proximity
         if cpu_eta is not None:
             if cpu_eta < 30:
                 risk_score += 60.0  # Fast spike to saturation
             elif cpu_eta < 120:
                 risk_score += 30.0
-                
+
         # Base risk based on sheer resource usage, regardless of slope
         if snapshot.memory_percent_smoothed > 90.0:
             risk_score += 40.0

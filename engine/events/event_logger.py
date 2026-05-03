@@ -10,9 +10,8 @@ Python logging system.
 from __future__ import annotations
 
 import logging
-import time
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from engine.collector.system_collector import SystemSnapshot
 from engine.config import (
@@ -31,9 +30,9 @@ class SystemEvent:
     """Discrete system event with context."""
 
     timestamp: float
-    event_type: str   # "cpu_spike", "memory_pressure", "disk_spike", "process_start", "process_stop"
-    severity: str     # "info", "warning", "critical"
-    details: dict     # Context-specific data
+    event_type: str  # "cpu_spike", "memory_pressure", "disk_spike", "process_start", "process_stop"
+    severity: str  # "info", "warning", "critical"
+    details: dict  # Context-specific data
 
     def to_dict(self) -> dict:
         return {
@@ -129,7 +128,9 @@ class EventLogger:
             )
             new_events.append(event)
             self._memory_pressure_active = True
-            logger.warning("Memory pressure detected: %.1f%%", normalized.memory_percent_raw)
+            logger.warning(
+                "Memory pressure detected: %.1f%%", normalized.memory_percent_raw
+            )
 
         elif not normalized.memory_is_spiking and self._memory_pressure_active:
             event = SystemEvent(
@@ -158,7 +159,9 @@ class EventLogger:
             )
             new_events.append(event)
             self._disk_spike_active = True
-            logger.warning("Disk spike detected: %.1f ops/sec", normalized.disk_total_ops_per_sec)
+            logger.warning(
+                "Disk spike detected: %.1f ops/sec", normalized.disk_total_ops_per_sec
+            )
 
         elif not normalized.disk_is_spiking and self._disk_spike_active:
             event = SystemEvent(

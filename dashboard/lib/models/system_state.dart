@@ -25,14 +25,15 @@ class SystemState {
   factory SystemState.fromJson(Map<String, dynamic> json) {
     return SystemState(
       engine: EngineInfo.fromJson(json['engine'] ?? {}),
-      stress: json['stress'] != null
-          ? StressResult.fromJson(json['stress'])
-          : null,
+      stress:
+          json['stress'] != null ? StressResult.fromJson(json['stress']) : null,
       normalized: json['normalized'] != null
           ? NormalizedData.fromJson(json['normalized'])
           : null,
       trend: json['trend'] != null ? TrendResult.fromJson(json['trend']) : null,
-      anomaly: json['anomaly'] != null ? AnomalyResult.fromJson(json['anomaly']) : null,
+      anomaly: json['anomaly'] != null
+          ? AnomalyResult.fromJson(json['anomaly'])
+          : null,
       prediction: json['prediction'] != null
           ? PredictionResult.fromJson(json['prediction'])
           : null,
@@ -86,10 +87,12 @@ class StressResult {
       score: (json['score'] ?? 0).toDouble(),
       level: json['level'] ?? 'unknown',
       pressures: Map<String, double>.from(
-        (json['pressures'] ?? {}).map((k, v) => MapEntry(k, (v as num).toDouble())),
+        (json['pressures'] ?? {})
+            .map((k, v) => MapEntry(k, (v as num).toDouble())),
       ),
       weights: Map<String, double>.from(
-        (json['weights'] ?? {}).map((k, v) => MapEntry(k, (v as num).toDouble())),
+        (json['weights'] ?? {})
+            .map((k, v) => MapEntry(k, (v as num).toDouble())),
       ),
     );
   }
@@ -209,10 +212,12 @@ class AlertInfo {
       totalFired: json['total_fired'] ?? 0,
       inCooldown: json['in_cooldown'] ?? false,
       consecutiveHigh: json['consecutive_high'] ?? 0,
-      lastMessage: json['last_alert'] != null ? json['last_alert']['message'] : null,
-      lastRootCause: json['last_alert'] != null && json['last_alert']['root_cause'] != null
-          ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
-          : null,
+      lastMessage:
+          json['last_alert'] != null ? json['last_alert']['message'] : null,
+      lastRootCause:
+          json['last_alert'] != null && json['last_alert']['root_cause'] != null
+              ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
+              : null,
     );
   }
 }
@@ -331,7 +336,9 @@ class SystemEvent {
       timestamp: (json['timestamp'] ?? 0).toDouble(),
       eventType: json['event_type'] ?? 'unknown',
       severity: json['severity'] ?? 'info',
-      description: details['description'] as String? ?? details['message'] as String? ?? '',
+      description: details['description'] as String? ??
+          details['message'] as String? ??
+          '',
       details: details,
     );
   }
@@ -417,9 +424,13 @@ class AnomalyResult {
 
   factory AnomalyResult.fromJson(Map<String, dynamic> json) {
     return AnomalyResult(
-      cpuZScore: (json['cpu_z_score'] ?? json['cpu_zscore'] ?? 0).toDouble().abs(),
-      memoryZScore: (json['memory_z_score'] ?? json['memory_zscore'] ?? 0).toDouble().abs(),
-      diskZScore: (json['disk_z_score'] ?? json['disk_zscore'] ?? 0).toDouble().abs(),
+      cpuZScore:
+          (json['cpu_z_score'] ?? json['cpu_zscore'] ?? 0).toDouble().abs(),
+      memoryZScore: (json['memory_z_score'] ?? json['memory_zscore'] ?? 0)
+          .toDouble()
+          .abs(),
+      diskZScore:
+          (json['disk_z_score'] ?? json['disk_zscore'] ?? 0).toDouble().abs(),
       level: json['level'] ?? 'normal',
     );
   }

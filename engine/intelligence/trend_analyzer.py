@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 class TrendResult:
     """Result of trend analysis over a time window."""
 
-    cpu_slope: float           # % change per second
-    memory_slope: float        # % change per second
-    cpu_volatility: float      # Standard deviation of recent CPU values
-    memory_volatility: float   # Standard deviation of recent memory values
+    cpu_slope: float  # % change per second
+    memory_slope: float  # % change per second
+    cpu_volatility: float  # Standard deviation of recent CPU values
+    memory_volatility: float  # Standard deviation of recent memory values
 
     @property
     def is_cpu_growing(self) -> bool:
@@ -68,16 +68,16 @@ class TrendAnalyzer:
             return TrendResult(0.0, 0.0, 0.0, 0.0)
 
         # Slice to the requested window size
-        cpu_data = all_cpu[-self._window_size:]
-        mem_data = all_mem[-self._window_size:]
-        timestamps = all_times[-self._window_size:]
+        cpu_data = all_cpu[-self._window_size :]
+        mem_data = all_mem[-self._window_size :]
+        timestamps = all_times[-self._window_size :]
 
         if len(timestamps) < 2:
             return TrendResult(0.0, 0.0, 0.0, 0.0)
 
         cpu_slope = self._calculate_slope(timestamps, cpu_data)
         mem_slope = self._calculate_slope(timestamps, mem_data)
-        
+
         cpu_vol = self._calculate_volatility(cpu_data)
         mem_vol = self._calculate_volatility(mem_data)
 
@@ -103,7 +103,7 @@ class TrendAnalyzer:
         sum_x_sq = sum(xi * xi for xi in x_norm)
         sum_xy = sum(x_norm[i] * y[i] for i in range(n))
 
-        denominator = (n * sum_x_sq - sum_x * sum_x)
+        denominator = n * sum_x_sq - sum_x * sum_x
         if denominator == 0:
             return 0.0
 
@@ -118,4 +118,5 @@ class TrendAnalyzer:
         mean = sum(data) / len(data)
         variance = sum((xi - mean) ** 2 for xi in data) / (len(data) - 1)
         import math
+
         return math.sqrt(variance)

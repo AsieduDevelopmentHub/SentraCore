@@ -6,7 +6,9 @@ from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import SystemSnapshot
 
 
-def _make_snapshot(cpu: float = 25.0, mem_pct: float = 50.0, ts: float | None = None) -> SystemSnapshot:
+def _make_snapshot(
+    cpu: float = 25.0, mem_pct: float = 50.0, ts: float | None = None
+) -> SystemSnapshot:
     """Create a minimal test snapshot."""
     return SystemSnapshot(
         timestamp=ts or time.time(),
@@ -29,7 +31,6 @@ def _make_snapshot(cpu: float = 25.0, mem_pct: float = 50.0, ts: float | None = 
 
 
 class TestTimeSeriesBuffer:
-
     def test_push_and_retrieve(self):
         buf = TimeSeriesBuffer(short_size=10, long_size=20)
         snap = _make_snapshot()

@@ -48,9 +48,9 @@ class CorrelationEngine:
 
     def analyze(
         self,
-        stress: 'StressResult',
-        top_processes: list['ProcessImpact'],
-        recent_events: list['SystemEvent'],
+        stress: "StressResult",
+        top_processes: list["ProcessImpact"],
+        recent_events: list["SystemEvent"],
     ) -> RootCauseAnalysis:
         """
         Perform root cause analysis based on current context.
@@ -79,7 +79,7 @@ class CorrelationEngine:
             summary=summary,
         )
 
-    def _identify_bottleneck(self, stress: 'StressResult') -> str:
+    def _identify_bottleneck(self, stress: "StressResult") -> str:
         """Find the resource under the most pressure."""
         pressures = {
             "cpu": stress.cpu_pressure,
@@ -89,84 +89,111 @@ class CorrelationEngine:
         return max(pressures.items(), key=lambda item: item[1])[0]
 
     def _identify_suspect(
-        self, bottleneck: str, top_processes: list['ProcessImpact']
-    ) -> 'ProcessImpact | None':
+        self, bottleneck: str, top_processes: list["ProcessImpact"]
+    ) -> "ProcessImpact | None":
         """Find the process most likely causing the bottleneck."""
         if not top_processes:
             return None
 
         # Sort processes based on the bottleneck resource
         if bottleneck == "cpu":
-            candidates = sorted(top_processes, key=lambda p: p.avg_cpu_percent, reverse=True)
+            candidates = sorted(
+                top_processes, key=lambda p: p.avg_cpu_percent, reverse=True
+            )
             # Only suspect if it's taking a significant chunk (e.g., > 15%)
             if candidates and candidates[0].avg_cpu_percent > 15.0:
                 return candidates[0]
-                
+
         elif bottleneck == "memory":
-            candidates = sorted(top_processes, key=lambda p: p.avg_memory_percent, reverse=True)
+            candidates = sorted(
+                top_processes, key=lambda p: p.avg_memory_percent, reverse=True
+            )
             if candidates and candidates[0].avg_memory_percent > 10.0:
                 return candidates[0]
-                
+
         elif bottleneck == "disk":
             # We don't track per-process disk IO yet, so fallback to highest impact
-            candidates = sorted(top_processes, key=lambda p: p.impact_score, reverse=True)
+            candidates = sorted(
+                top_processes, key=lambda p: p.impact_score, reverse=True
+            )
             if candidates:
                 return candidates[0]
 
         return None
 
     def _identify_trigger(
-        self, bottleneck: str, suspect: 'ProcessImpact | None', recent_events: list['SystemEvent']
-    ) -> 'SystemEvent | None':
+        self,
+        bottleneck: str,
+        suspect: "ProcessImpact | None",
+        recent_events: list["SystemEvent"],
+    ) -> "SystemEvent | None":
         """Find a recent event that explains the bottleneck."""
         if not recent_events:
             return None
-            
+
         # Search backwards (most recent first)
         for event in reversed(recent_events):
             # If we have a suspect, see if there's a process_started event for it
             if suspect and event.event_type == "process_started":
-                if event.details.get("pid") == suspect.pid or event.details.get("name") == suspect.name:
+                if (
+                    event.details.get("pid") == suspect.pid
+                    or event.details.get("name") == suspect.name
+                ):
                     return event
-                    
+
             # Correlate generic events to the bottleneck
-            if bottleneck == "memory" and event.event_type in ("high_swap_usage", "memory_spike"):
+            if bottleneck == "memory" and event.event_type in (
+                "high_swap_usage",
+                "memory_spike",
+            ):
                 return event
             elif bottleneck == "cpu" and event.event_type == "cpu_spike":
                 return event
             elif bottleneck == "disk" and event.event_type == "disk_io_spike":
                 return event
-                
+
         return None
 
     def _calculate_confidence(
-        self, bottleneck: str, suspect: 'ProcessImpact | None', trigger: 'SystemEvent | None'
+        self,
+        bottleneck: str,
+        suspect: "ProcessImpact | None",
+        trigger: "SystemEvent | None",
     ) -> float:
         """Calculate confidence (0-100%) in the RCA."""
         score = 20.0  # Base confidence for finding a bottleneck
-        
+
         if suspect:
             score += 50.0  # Strong confidence if we have a culprit process
-            
+
         if trigger:
             score += 30.0  # Extra confidence if we have a matching event
-            
+
         return score
 
     def _generate_summary(
-        self, bottleneck: str, suspect: 'ProcessImpact | None', trigger: 'SystemEvent | None'
+        self,
+        bottleneck: str,
+        suspect: "ProcessImpact | None",
+        trigger: "SystemEvent | None",
     ) -> str:
         """Generate human-readable explanation."""
         summary = f"System is experiencing critical {bottleneck.upper()} pressure."
-        
+
         if suspect:
-            metric = f"{suspect.avg_cpu_percent:.1f}% CPU" if bottleneck == "cpu" else f"{suspect.avg_memory_percent:.1f}% Memory"
+            metric = (
+                f"{suspect.avg_cpu_percent:.1f}% CPU"
+                if bottleneck == "cpu"
+                else f"{suspect.avg_memory_percent:.1f}% Memory"
+            )
             summary += f" The process '{suspect.name}' (PID {suspect.pid}) is the primary suspect, consuming {metric}."
-            
+
         if trigger:
             if trigger.event_type == "process_started":
-                summary += " This pressure began shortly after the process was launched."
+                summary += (
+                    " This pressure began shortly after the process was launched."
+                )
             else:
                 summary += f" A '{trigger.event_type}' event was detected recently."
-                
+
         return summary

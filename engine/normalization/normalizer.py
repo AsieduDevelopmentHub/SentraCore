@@ -95,7 +95,9 @@ class Normalizer:
     Must be called sequentially with chronologically ordered snapshots.
     """
 
-    def __init__(self, alpha: float = EMA_ALPHA, min_spike_readings: int = MIN_SPIKE_READINGS) -> None:
+    def __init__(
+        self, alpha: float = EMA_ALPHA, min_spike_readings: int = MIN_SPIKE_READINGS
+    ) -> None:
         self._alpha = alpha
         self._min_spike_readings = min_spike_readings
 
@@ -189,13 +191,17 @@ class Normalizer:
             if self._ema_cpu is None:
                 self._ema_cpu = raw_value
             else:
-                self._ema_cpu = self._alpha * raw_value + (1 - self._alpha) * self._ema_cpu
+                self._ema_cpu = (
+                    self._alpha * raw_value + (1 - self._alpha) * self._ema_cpu
+                )
             return self._ema_cpu
         elif metric == "memory":
             if self._ema_memory is None:
                 self._ema_memory = raw_value
             else:
-                self._ema_memory = self._alpha * raw_value + (1 - self._alpha) * self._ema_memory
+                self._ema_memory = (
+                    self._alpha * raw_value + (1 - self._alpha) * self._ema_memory
+                )
             return self._ema_memory
         else:
             raise ValueError(f"Unknown EMA metric: {metric}")
@@ -223,9 +229,13 @@ class Normalizer:
 
         # Compute deltas (handle counter wraps by clamping to zero)
         read_bytes_delta = max(0, snapshot.disk_read_bytes - self._prev_disk_read_bytes)
-        write_bytes_delta = max(0, snapshot.disk_write_bytes - self._prev_disk_write_bytes)
+        write_bytes_delta = max(
+            0, snapshot.disk_write_bytes - self._prev_disk_write_bytes
+        )
         read_count_delta = max(0, snapshot.disk_read_count - self._prev_disk_read_count)
-        write_count_delta = max(0, snapshot.disk_write_count - self._prev_disk_write_count)
+        write_count_delta = max(
+            0, snapshot.disk_write_count - self._prev_disk_write_count
+        )
 
         read_bps = read_bytes_delta / elapsed
         write_bps = write_bytes_delta / elapsed
@@ -241,7 +251,9 @@ class Normalizer:
             "total_ops_per_sec": read_ops + write_ops,
         }
 
-    def _update_spike_counter(self, metric: str, value: float, threshold: float) -> bool:
+    def _update_spike_counter(
+        self, metric: str, value: float, threshold: float
+    ) -> bool:
         """
         Track consecutive elevated readings for spike noise filtering.
 

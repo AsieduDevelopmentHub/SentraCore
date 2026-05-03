@@ -37,12 +37,12 @@ logger = logging.getLogger(__name__)
 class StressResult:
     """Result of stress score computation."""
 
-    score: float              # 0–100
-    level: str                # "low", "moderate", "high", "critical"
-    cpu_pressure: float       # 0–100 CPU contribution
-    memory_pressure: float    # 0–100 memory contribution
-    disk_pressure: float      # 0–100 disk contribution
-    weights: dict[str, float] # Adaptive weights used
+    score: float  # 0–100
+    level: str  # "low", "moderate", "high", "critical"
+    cpu_pressure: float  # 0–100 CPU contribution
+    memory_pressure: float  # 0–100 memory contribution
+    disk_pressure: float  # 0–100 disk contribution
+    weights: dict[str, float]  # Adaptive weights used
 
     def to_dict(self) -> dict:
         """Serialize for API output."""
@@ -85,10 +85,10 @@ class StressEngine:
         self._disk_ops_reference: float = 500.0
 
     def compute(
-        self, 
-        normalized: NormalizedSnapshot, 
-        trend: 'TrendResult' = None, 
-        anomaly: 'AnomalyResult' = None
+        self,
+        normalized: NormalizedSnapshot,
+        trend: "TrendResult" = None,
+        anomaly: "AnomalyResult" = None,
     ) -> StressResult:
         """
         Compute the system stress score from a normalized snapshot.
@@ -109,15 +109,17 @@ class StressEngine:
         disk_pressure = self._compute_disk_pressure(normalized)
 
         # ----- Incorporate Trend & Volatility (Multi-State Adjustments) -----
-        
+
         if trend:
             # If CPU is steadily growing, increase CPU pressure
             if trend.is_cpu_growing:
                 cpu_pressure = min(100.0, cpu_pressure + (trend.cpu_slope * 10))
             # If memory is leaking, increase memory pressure
             if trend.is_memory_leaking:
-                memory_pressure = min(100.0, memory_pressure + (trend.memory_slope * 20))
-                
+                memory_pressure = min(
+                    100.0, memory_pressure + (trend.memory_slope * 20)
+                )
+
         if anomaly and anomaly.is_sustained:
             # Sustained anomalies boost overall pressure implicitly by boosting components
             # based on their z-scores
@@ -212,11 +214,11 @@ class StressEngine:
         # Apply a soft-clamp curve: pressure rises steeply beyond 1.0x reference
         # Using a sigmoid-like curve to prevent extreme outliers
         if ratio <= 0.5:
-            pressure = ratio * 40.0        # 0–20 range for normal activity
+            pressure = ratio * 40.0  # 0–20 range for normal activity
         elif ratio <= 1.0:
-            pressure = 20.0 + (ratio - 0.5) * 60.0   # 20–50 for moderate
+            pressure = 20.0 + (ratio - 0.5) * 60.0  # 20–50 for moderate
         elif ratio <= 2.0:
-            pressure = 50.0 + (ratio - 1.0) * 30.0   # 50–80 for heavy
+            pressure = 50.0 + (ratio - 1.0) * 30.0  # 50–80 for heavy
         else:
             pressure = 80.0 + min(20.0, (ratio - 2.0) * 10.0)  # 80–100 for extreme
 
@@ -244,7 +246,8 @@ class StressEngine:
         # Boost dominant signals
         high_threshold = 80.0
         dominant_count = sum(
-            1 for p in (cpu_pressure, memory_pressure, disk_pressure)
+            1
+            for p in (cpu_pressure, memory_pressure, disk_pressure)
             if p >= high_threshold
         )
 

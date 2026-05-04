@@ -42,12 +42,15 @@ class ResponsiveRowColumn extends StatelessWidget {
           }
 
           // Note: don't wrap LayoutBuilder output with IntrinsicHeight; Flutter
-          // disallows intrinsic sizing for LayoutBuilder (see flutter.logs).
+          // disallows intrinsic sizing for LayoutBuilder.
           //
-          // We still stretch the Row so cards line up when their children use
-          // Expanded/Flexible properly.
+          // Also: don't use CrossAxisAlignment.stretch when height is unbounded
+          // (e.g. inside a scroll view), or Flutter will throw "infinite height".
+          final crossAxisAlignment = constraints.hasBoundedHeight
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.start;
           return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: crossAxisAlignment,
             children: rowChildren,
           );
         } else {

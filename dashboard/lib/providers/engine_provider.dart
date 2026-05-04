@@ -185,6 +185,8 @@ class EngineProvider extends ChangeNotifier {
 
       _connected = true;
       notifyListeners();
+      unawaited(_fetchProcesses());
+      unawaited(_fetchEvents());
     } catch (e) {
       _connected = false;
       _bootstrapErrorPending = false;
@@ -299,8 +301,13 @@ class EngineProvider extends ChangeNotifier {
 
   Future<void> _fetchProcesses() async {
     try {
-      _processes = await _service.getProcesses();
+      _processes = await _service.getProcesses(limit: 50);
+      notifyListeners();
     } catch (_) {}
+  }
+
+  Future<void> refreshProcesses() async {
+    await _fetchProcesses();
   }
 
   Future<void> _fetchEvents() async {

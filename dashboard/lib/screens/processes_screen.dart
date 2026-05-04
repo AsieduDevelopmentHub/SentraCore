@@ -51,10 +51,12 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                     ),
                   ),
                   Text(
-                    'Ranked by sustained system impact',
+                    'Top processes by impact — not every app. Memory % is each '
+                    'process’s share of RAM; it will not add up to overall usage.',
                     style: TextStyle(
                       color: AppTheme.textMutedFor(context),
                       fontSize: 11,
+                      height: 1.25,
                     ),
                   ),
                 ],

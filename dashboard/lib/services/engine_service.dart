@@ -40,8 +40,8 @@ class EngineService {
     return null;
   }
 
-  Future<List<ProcessImpact>> getProcesses() async {
-    final data = await _get('/api/v1/processes');
+  Future<List<ProcessImpact>> getProcesses({int limit = 50}) async {
+    final data = await _get('/api/v1/processes?limit=$limit');
     if (data != null && data['processes'] != null) {
       return (data['processes'] as List)
           .map((p) => ProcessImpact.fromJson(p))

@@ -135,9 +135,11 @@ class SentraCoreEngine:
         }
         return state
 
-    def get_top_processes(self) -> list[ProcessImpact]:
-        """Return top processes by sustained impact."""
-        return self.process_tracker.get_top_consumers()
+    def get_top_processes(self, limit: int | None = None) -> list[ProcessImpact]:
+        """Return top processes by sustained impact (ranked, capped at ``limit``)."""
+        n = 40 if limit is None else int(limit)
+        n = max(1, min(n, 100))
+        return self.process_tracker.get_top_consumers(n)
 
     def get_recent_events(self):
         """Return recent system events."""

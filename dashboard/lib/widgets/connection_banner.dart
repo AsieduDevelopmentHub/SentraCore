@@ -16,31 +16,40 @@ class ConnectionBanner extends StatelessWidget {
           bottom: BorderSide(color: AppTheme.warning.withValues(alpha: 0.3)),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.warning),
-            ),
+          Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.warning),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Connecting to SentraCore engine…',
+                  style: TextStyle(
+                    color: AppTheme.warning,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Text(
-            'Connecting to SentraCore engine at 127.0.0.1:8740...',
-            style: TextStyle(
-              color: AppTheme.warning,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            'Make sure the engine is running: python -m engine.main',
-            style: TextStyle(
-              color: AppTheme.textMutedFor(context),
-              fontSize: 11,
+          Padding(
+            padding: const EdgeInsets.only(left: 24, top: 6),
+            child: Text(
+              'Waiting for the local engine. This may take a few seconds.',
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 11,
+              ),
             ),
           ),
         ],

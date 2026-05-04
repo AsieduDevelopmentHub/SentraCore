@@ -118,6 +118,51 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<String> _parseSafeguardLines() {
+    return _safeguardProcessNames
+        .split(RegExp(r'[\r\n,;]+'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  /// Names to show as safeguard checkboxes: snapshot processes plus any saved names.
+  List<String> safeguardPickList(Iterable<String> snapshotProcessNames) {
+    final merged = {
+      ...snapshotProcessNames,
+      ..._parseSafeguardLines(),
+    }.toList();
+    merged.sort(
+      (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
+    );
+    return merged;
+  }
+
+  bool safeguardHasName(String name) {
+    final l = name.toLowerCase();
+    return _parseSafeguardLines().any((x) => x.toLowerCase() == l);
+  }
+
+  void toggleSafeguardProcessName(String name, bool selected) {
+    final lines = List<String>.from(_parseSafeguardLines());
+    final l = name.toLowerCase();
+    if (selected) {
+      if (!lines.any((x) => x.toLowerCase() == l)) {
+        lines.add(name);
+      }
+    } else {
+      lines.removeWhere((x) => x.toLowerCase() == l);
+    }
+    _safeguardProcessNames = lines.join('\n');
+    notifyListeners();
+  }
+
+  void addSafeguardProcessNameLine(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return;
+    toggleSafeguardProcessName(t, true);
+  }
+
   /// Apply JSON from [GET /api/v1/preferences] (does not persist to disk here).
   void applyFromEngine(Map<String, dynamic> json) {
     _alertCpuPercent = (json['alert_cpu_percent'] as num?)?.toDouble() ?? 85;
@@ -136,11 +181,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> toEngineJson() {
-    final lines = _safeguardProcessNames
-        .split(RegExp(r'[\r\n,;]+'))
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final lines = _parseSafeguardLines();
     return {
       'alert_cpu_percent': _alertCpuPercent,
       'alert_memory_percent': _alertMemoryPercent,

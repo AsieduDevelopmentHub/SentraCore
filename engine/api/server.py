@@ -14,7 +14,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 if TYPE_CHECKING:
@@ -149,13 +149,15 @@ def create_app() -> FastAPI:
         return _engine.get_current_state()
 
     @app.get("/api/v1/processes")
-    async def get_processes():
+    async def get_processes(
+        limit: int = Query(50, ge=1, le=100, description="Max processes to return"),
+    ):
         """Top process consumers by sustained impact."""
         if _engine is None:
             return {"error": "Engine not initialized"}
 
         return {
-            "processes": [p.to_dict() for p in _engine.get_top_processes()],
+            "processes": [p.to_dict() for p in _engine.get_top_processes(limit)],
         }
 
     @app.post("/api/v1/processes/{pid}/action")

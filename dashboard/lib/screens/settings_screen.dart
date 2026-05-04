@@ -12,37 +12,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late final TextEditingController _safeguardCtrl;
-  late final SettingsProvider _settingsRef;
-
-  void _syncSafeguardFromProvider() {
-    final t = _settingsRef.safeguardProcessNames;
-    if (_safeguardCtrl.text != t) {
-      _safeguardCtrl.value = TextEditingValue(
-        text: t,
-        selection: TextSelection.collapsed(offset: t.length),
-      );
-    }
-  }
+  late final TextEditingController _manualSafeguardCtrl;
 
   @override
   void initState() {
     super.initState();
-    _settingsRef = context.read<SettingsProvider>();
-    _safeguardCtrl = TextEditingController(text: _settingsRef.safeguardProcessNames);
-    _settingsRef.addListener(_syncSafeguardFromProvider);
+    _manualSafeguardCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _settingsRef.removeListener(_syncSafeguardFromProvider);
-    _safeguardCtrl.dispose();
+    _manualSafeguardCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+    final engine = context.watch<EngineProvider>();
+    final pickNames = settings.safeguardPickList(
+      engine.processes.map((p) => p.name),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,8 +130,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               Text(
                 'After an alert fires, the engine may end matching processes '
-                '(graceful terminate) to reduce load. One name per line; '
-                'include .exe or omit it (e.g. chrome or chrome.exe). '
+                '(graceful terminate) to reduce load. Choose names from what '
+                'the engine currently sees, or add another name manually. '
                 'Use only for apps you accept losing unsaved work.',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
@@ -152,6 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 12),
               Card(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SwitchListTile(
                       title: Text(
@@ -170,22 +161,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: settings.setSafeguardEnabled,
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: TextField(
-                        controller: _safeguardCtrl,
-                        maxLines: 5,
-                        enabled: settings.safeguardEnabled,
-                        decoration: InputDecoration(
-                          labelText: 'Process names',
-                          hintText: 'e.g.\nSomeHeavyApp.exe\nAnotherApp',
-                          alignLabelWithHint: true,
-                          border: const OutlineInputBorder(),
-                        ),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Safe to close (select processes)',
+                            style: TextStyle(
+                              color: AppTheme.textSecondaryFor(context),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: !engine.connected
+                                ? null
+                                : () => engine.refreshProcesses(),
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Refresh list'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        !engine.connected
+                            ? 'Connect to the engine to load process names from this PC.'
+                            : pickNames.isEmpty
+                                ? 'No processes yet — tap Refresh after the engine runs a few seconds.'
+                                : 'Checked names are allowed for safeguard termination.',
                         style: TextStyle(
-                          color: AppTheme.textPrimaryFor(context),
-                          fontSize: 13,
+                          color: AppTheme.textMutedFor(context),
+                          fontSize: 11,
+                          height: 1.3,
                         ),
-                        onChanged: settings.setSafeguardProcessNames,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                        itemCount: pickNames.length,
+                        itemBuilder: (context, i) {
+                          final name = pickNames[i];
+                          return CheckboxListTile(
+                            dense: true,
+                            enabled: settings.safeguardEnabled,
+                            value: settings.safeguardHasName(name),
+                            onChanged: settings.safeguardEnabled
+                                ? (v) => settings.toggleSafeguardProcessName(
+                                      name,
+                                      v ?? false,
+                                    )
+                                : null,
+                            title: Text(
+                              name,
+                              style: TextStyle(
+                                color: AppTheme.textPrimaryFor(context),
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _manualSafeguardCtrl,
+                              enabled: settings.safeguardEnabled,
+                              decoration: InputDecoration(
+                                labelText: 'Add other process name',
+                                hintText: 'e.g. MyApp.exe',
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              style: TextStyle(
+                                color: AppTheme.textPrimaryFor(context),
+                                fontSize: 13,
+                              ),
+                              onSubmitted: settings.safeguardEnabled
+                                  ? (_) {
+                                      settings.addSafeguardProcessNameLine(
+                                        _manualSafeguardCtrl.text,
+                                      );
+                                      _manualSafeguardCtrl.clear();
+                                    }
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: IconButton.filledTonal(
+                              tooltip: 'Add name',
+                              onPressed: !settings.safeguardEnabled
+                                  ? null
+                                  : () {
+                                      settings.addSafeguardProcessNameLine(
+                                        _manualSafeguardCtrl.text,
+                                      );
+                                      _manualSafeguardCtrl.clear();
+                                    },
+                              icon: const Icon(Icons.add, size: 22),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -261,7 +350,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: () async {
-                  settings.setSafeguardProcessNames(_safeguardCtrl.text);
                   await settings.save();
                   if (!context.mounted) return;
                   final eng = context.read<EngineProvider>();

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
@@ -13,21 +12,31 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late final TextEditingController _hostCtrl;
-  late final TextEditingController _portCtrl;
+  late final TextEditingController _safeguardCtrl;
+  late final SettingsProvider _settingsRef;
+
+  void _syncSafeguardFromProvider() {
+    final t = _settingsRef.safeguardProcessNames;
+    if (_safeguardCtrl.text != t) {
+      _safeguardCtrl.value = TextEditingValue(
+        text: t,
+        selection: TextSelection.collapsed(offset: t.length),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    final s = context.read<SettingsProvider>();
-    _hostCtrl = TextEditingController(text: s.engineHost);
-    _portCtrl = TextEditingController(text: '${s.enginePort}');
+    _settingsRef = context.read<SettingsProvider>();
+    _safeguardCtrl = TextEditingController(text: _settingsRef.safeguardProcessNames);
+    _settingsRef.addListener(_syncSafeguardFromProvider);
   }
 
   @override
   void dispose() {
-    _hostCtrl.dispose();
-    _portCtrl.dispose();
+    _settingsRef.removeListener(_syncSafeguardFromProvider);
+    _safeguardCtrl.dispose();
     super.dispose();
   }
 
@@ -58,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               Text(
-                'Engine connection, appearance, and notifications',
+                'Alert thresholds, optional process safeguard, appearance',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 11,
@@ -72,12 +81,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.all(20),
             children: [
               Text(
-                'Engine',
+                'Resource alerts',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'When CPU, memory, or disk pressure stays at or above these '
+                'levels for several samples, an alert fires (same signals as the dashboard).',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 12,
+                  height: 1.35,
                 ),
               ),
               const SizedBox(height: 12),
@@ -87,38 +106,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextField(
-                        controller: _hostCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Host',
-                          border: OutlineInputBorder(),
-                        ),
-                        style: TextStyle(
-                          color: AppTheme.textPrimaryFor(context),
-                        ),
-                        onChanged: settings.setEngineHost,
+                      _ThresholdSlider(
+                        label: 'CPU pressure threshold',
+                        value: settings.alertCpuPercent,
+                        onChanged: settings.setAlertCpuPercent,
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _portCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Port',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        style: TextStyle(
-                          color: AppTheme.textPrimaryFor(context),
-                        ),
-                        onChanged: (v) {
-                          final n = int.tryParse(v);
-                          if (n != null) settings.setEnginePort(n);
-                        },
+                      const SizedBox(height: 16),
+                      _ThresholdSlider(
+                        label: 'Memory pressure threshold',
+                        value: settings.alertMemoryPercent,
+                        onChanged: settings.setAlertMemoryPercent,
+                      ),
+                      const SizedBox(height: 16),
+                      _ThresholdSlider(
+                        label: 'Disk I/O pressure threshold',
+                        value: settings.alertDiskPressure,
+                        onChanged: settings.setAlertDiskPressure,
                       ),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Safeguard (optional)',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'After an alert fires, the engine may end matching processes '
+                '(graceful terminate) to reduce load. One name per line; '
+                'include .exe or omit it (e.g. chrome or chrome.exe). '
+                'Use only for apps you accept losing unsaved work.',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text(
+                        'Enable safeguard terminations',
+                        style:
+                            TextStyle(color: AppTheme.textPrimaryFor(context)),
+                      ),
+                      subtitle: Text(
+                        'Applies only when an alert has just fired',
+                        style: TextStyle(
+                          color: AppTheme.textMutedFor(context),
+                          fontSize: 12,
+                        ),
+                      ),
+                      value: settings.safeguardEnabled,
+                      onChanged: settings.setSafeguardEnabled,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: TextField(
+                        controller: _safeguardCtrl,
+                        maxLines: 5,
+                        enabled: settings.safeguardEnabled,
+                        decoration: InputDecoration(
+                          labelText: 'Process names',
+                          hintText: 'e.g.\nSomeHeavyApp.exe\nAnotherApp',
+                          alignLabelWithHint: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                        style: TextStyle(
+                          color: AppTheme.textPrimaryFor(context),
+                          fontSize: 13,
+                        ),
+                        onChanged: settings.setSafeguardProcessNames,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -162,7 +232,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Alerts',
+                'Notifications',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 11,
@@ -178,7 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(color: AppTheme.textPrimaryFor(context)),
                   ),
                   subtitle: Text(
-                    'Show a Windows toast when the engine fires a stress alert',
+                    'Windows toast when the engine fires an alert',
                     style: TextStyle(
                       color: AppTheme.textMutedFor(context),
                       fontSize: 12,
@@ -191,22 +261,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: () async {
-                  settings.setEngineHost(_hostCtrl.text);
-                  final p = int.tryParse(_portCtrl.text);
-                  if (p != null) settings.setEnginePort(p);
+                  settings.setSafeguardProcessNames(_safeguardCtrl.text);
                   await settings.save();
                   if (!context.mounted) return;
-                  await context.read<EngineProvider>().reconnect();
+                  final eng = context.read<EngineProvider>();
+                  final ok = await eng.pushUserPreferences();
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Settings saved')),
+                    SnackBar(
+                      content: Text(
+                        ok
+                            ? 'Preferences saved'
+                            : 'Saved locally; engine was offline — will sync when connected',
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.save_outlined),
-                label: const Text('Save & reconnect'),
+                label: const Text('Save preferences'),
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThresholdSlider extends StatelessWidget {
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _ThresholdSlider({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: AppTheme.textSecondaryFor(context),
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              '${value.round()}%',
+              style: TextStyle(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: 1,
+          max: 100,
+          divisions: 99,
+          label: '${value.round()}%',
+          onChanged: onChanged,
         ),
       ],
     );

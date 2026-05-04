@@ -37,6 +37,7 @@ from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
 from engine.stress.stress_engine import StressEngine, StressResult
+from engine.user_preferences import UserPreferences, canonical_process_name
 from engine.intelligence.trend_analyzer import TrendAnalyzer, TrendResult
 from engine.intelligence.anomaly_detector import AnomalyDetector, AnomalyResult
 from engine.intelligence.prediction_engine import PredictionEngine, PredictionResult
@@ -181,6 +182,49 @@ class SentraCoreEngine:
         """Return baseline statistics."""
         return self.baseline.get_baseline()
 
+    def get_user_preferences(self) -> dict:
+        """Return persisted user preferences (alert thresholds, safeguard list)."""
+        return UserPreferences.load().to_dict()
+
+    def set_user_preferences(self, body: dict) -> dict:
+        """Validate, persist, and return updated user preferences."""
+        try:
+            prefs = UserPreferences.from_dict(body)
+            prefs.save()
+        except Exception as exc:
+            logger.warning("set_user_preferences failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "preferences": prefs.to_dict()}
+
+    def _apply_safeguard(
+        self, prefs: UserPreferences, top_procs: list[ProcessImpact]
+    ) -> None:
+        """Terminate configured processes when an alert has just fired."""
+        if not prefs.safeguard_enabled:
+            return
+        targets = {
+            canonical_process_name(str(n))
+            for n in prefs.safeguard_process_names
+            if str(n).strip()
+        }
+        if not targets:
+            return
+        terminated = 0
+        for proc in top_procs[:15]:
+            key = canonical_process_name(proc.name)
+            if key not in targets:
+                continue
+            res = self.process_action(proc.pid, "terminate")
+            terminated += 1
+            logger.warning(
+                "Safeguard: terminate %s (pid %s) -> %s",
+                proc.name,
+                proc.pid,
+                res,
+            )
+            if terminated >= 5:
+                break
+
     async def _broadcast_state(self) -> None:
         """Broadcast current state to WebSocket clients."""
         try:
@@ -273,12 +317,17 @@ class SentraCoreEngine:
                 )
                 self._current_stability = stability
 
-                # 10. Evaluate alerts
+                # 10. Evaluate alerts (user thresholds) + optional safeguard
                 top_procs = self.process_tracker.get_top_consumers(5)
                 recent_events = self.event_logger.get_recent_events(20)
-                self.alert_manager.evaluate(stress, top_procs, recent_events)
+                prefs = UserPreferences.load()
+                alert = self.alert_manager.evaluate(
+                    stress, top_procs, recent_events, prefs=prefs
+                )
+                if alert is not None:
+                    self._apply_safeguard(prefs, top_procs)
 
-                # 10. Broadcast via WebSocket
+                # 11. Broadcast via WebSocket
                 await self._broadcast_state()
 
                 # Periodic log

@@ -1,12 +1,10 @@
 """
 SentraCore — Alert Manager.
 
-Generates alerts based on sustained system stress, not instant spikes.
-An alert fires only when the stress score exceeds a threshold for a
-configurable number of consecutive readings. After firing, a cooldown
-period prevents alert spam.
-
-Alerts are emitted via registered callbacks (e.g., WebSocket broadcast).
+Generates alerts based on sustained resource pressure (CPU / memory / disk),
+not instant spikes. An alert fires only when at least one signal exceeds its
+configured threshold for a configurable number of consecutive readings. After
+firing, a cooldown period prevents alert spam.
 """
 
 from __future__ import annotations
@@ -14,7 +12,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from engine.events.event_logger import SystemEvent
@@ -22,10 +20,11 @@ if TYPE_CHECKING:
 from engine.config import (
     ALERT_CONSECUTIVE_COUNT,
     ALERT_COOLDOWN_SEC,
-    ALERT_STRESS_THRESHOLD,
+    COLLECTION_INTERVAL_SEC,
 )
 from engine.process.process_tracker import ProcessImpact
 from engine.stress.stress_engine import StressResult
+from engine.user_preferences import UserPreferences
 
 logger = logging.getLogger(__name__)
 
@@ -52,29 +51,20 @@ class Alert:
         }
 
 
-# Type alias for alert callback functions
 AlertCallback = Callable[["Alert"], None]
 
 
 class AlertManager:
     """
-    Manages sustained-stress alert detection and emission.
-
-    An alert fires when:
-    1. Stress score > threshold for N consecutive readings
-    2. Cooldown period has elapsed since the last alert
-
-    Callbacks can be registered to receive alerts (e.g., the WebSocket
-    layer registers a broadcast callback).
+    Fires when CPU, memory, or disk pressure (each 0–100) exceeds user thresholds
+    for N consecutive collection cycles, and cooldown allows it.
     """
 
     def __init__(
         self,
-        threshold: float = ALERT_STRESS_THRESHOLD,
         consecutive_count: int = ALERT_CONSECUTIVE_COUNT,
         cooldown_sec: float = ALERT_COOLDOWN_SEC,
     ) -> None:
-        self._threshold = threshold
         self._required_consecutive = consecutive_count
         self._cooldown_sec = cooldown_sec
 
@@ -89,61 +79,74 @@ class AlertManager:
         self._correlation_engine = CorrelationEngine()
 
     def register_callback(self, callback: AlertCallback) -> None:
-        """Register a function to be called when an alert fires."""
         self._callbacks.append(callback)
         logger.debug("Alert callback registered. Total: %d", len(self._callbacks))
 
     def get_recent_alerts(self, limit: int = 10) -> list[Alert]:
-        """Return the most recent fired alerts."""
         return list(reversed(self._alert_history[-limit:]))
+
+    @staticmethod
+    def _resource_breach(stress: StressResult, prefs: UserPreferences) -> bool:
+        return (
+            stress.cpu_pressure >= prefs.alert_cpu_percent
+            or stress.memory_pressure >= prefs.alert_memory_percent
+            or stress.disk_pressure >= prefs.alert_disk_pressure
+        )
+
+    @staticmethod
+    def _breach_summary(stress: StressResult, prefs: UserPreferences) -> list[str]:
+        parts: list[str] = []
+        if stress.cpu_pressure >= prefs.alert_cpu_percent:
+            parts.append(
+                f"CPU pressure {stress.cpu_pressure:.0f}% "
+                f"(threshold {prefs.alert_cpu_percent:.0f}%)"
+            )
+        if stress.memory_pressure >= prefs.alert_memory_percent:
+            parts.append(
+                f"Memory pressure {stress.memory_pressure:.0f}% "
+                f"(threshold {prefs.alert_memory_percent:.0f}%)"
+            )
+        if stress.disk_pressure >= prefs.alert_disk_pressure:
+            parts.append(
+                f"Disk pressure {stress.disk_pressure:.0f}% "
+                f"(threshold {prefs.alert_disk_pressure:.0f}%)"
+            )
+        return parts
 
     def evaluate(
         self,
         stress: StressResult,
         top_processes: list[ProcessImpact],
-        recent_events: list["SystemEvent"] = None,
+        recent_events: list["SystemEvent"] | None = None,
+        prefs: UserPreferences | None = None,
     ) -> Alert | None:
-        """
-        Evaluate whether an alert should fire based on current stress.
-
-        Args:
-            stress: Current stress score result.
-            top_processes: Current top resource consumers.
-            recent_events: Recent system events for RCA correlation.
-
-        Returns:
-            Alert if one was triggered, None otherwise.
-        """
         now = time.time()
         recent_events = recent_events or []
+        prefs = prefs if prefs is not None else UserPreferences.default()
 
-        if stress.score >= self._threshold:
+        if self._resource_breach(stress, prefs):
             self._consecutive_high += 1
         else:
             self._consecutive_high = 0
             return None
 
-        # Check if we've hit the consecutive threshold
         if self._consecutive_high < self._required_consecutive:
             return None
 
-        # Check cooldown
         if (now - self._last_alert_time) < self._cooldown_sec:
             return None
 
-        # ----- Correlation & RCA (Phase 3) -----
         rca = self._correlation_engine.analyze(stress, top_processes, recent_events)
 
-        # ----- Fire Alert -----
         self._last_alert_time = now
         self._total_alerts += 1
 
-        # Build context message
-
+        sustained_sec = self._consecutive_high * COLLECTION_INTERVAL_SEC
+        breach_txt = "; ".join(self._breach_summary(stress, prefs))
         message = (
-            f"System stress {stress.level} ({stress.score:.0f}/100) "
-            f"sustained for {self._consecutive_high * 2}s. "
-            f"Root Cause: {rca.summary}"
+            f"Resource alert ({breach_txt}). "
+            f"Stress {stress.level} ({stress.score:.0f}/100), sustained ~{sustained_sec:.0f}s. "
+            f"Root cause: {rca.summary}"
         )
 
         alert = Alert(
@@ -159,7 +162,6 @@ class AlertManager:
         if len(self._alert_history) > 50:
             self._alert_history.pop(0)
 
-        # Notify all registered callbacks
         for callback in self._callbacks:
             try:
                 callback(alert)
@@ -171,24 +173,20 @@ class AlertManager:
 
     @property
     def total_alerts(self) -> int:
-        """Total number of alerts fired since startup."""
         return self._total_alerts
 
     @property
     def is_in_cooldown(self) -> bool:
-        """Whether the alert manager is currently in cooldown."""
         if self._last_alert_time <= 0:
             return False
         return self.cooldown_remaining_sec > 0
 
     @property
     def cooldown_total_sec(self) -> float:
-        """Configured cooldown duration after an alert fires."""
         return float(self._cooldown_sec)
 
     @property
     def cooldown_remaining_sec(self) -> float:
-        """Seconds until another alert may fire (0 if not in cooldown)."""
         if self._last_alert_time <= 0:
             return 0.0
         rem = self._cooldown_sec - (time.time() - self._last_alert_time)
@@ -196,11 +194,9 @@ class AlertManager:
 
     @property
     def consecutive_high_count(self) -> int:
-        """Current consecutive high-stress reading count."""
         return self._consecutive_high
 
     def reset(self) -> None:
-        """Reset alert state (but keep callbacks)."""
         self._consecutive_high = 0
         self._last_alert_time = 0.0
         self._total_alerts = 0

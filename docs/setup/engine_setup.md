@@ -57,6 +57,8 @@ On startup, the engine will:
 | `GET http://localhost:8740/api/v1/processes` | Top processes by sustained impact |
 | `GET http://localhost:8740/api/v1/events` | Recent system events |
 | `GET http://localhost:8740/api/v1/alerts` | Alert history with Root Cause Analysis |
+| `GET http://localhost:8740/api/v1/preferences` | User alert thresholds and safeguard process list |
+| `PUT http://localhost:8740/api/v1/preferences` | Update preferences (JSON body; persisted under datastore) |
 | `WS ws://localhost:8740/ws/live` | Real-time state broadcast (WebSocket) |
 
 ---
@@ -68,7 +70,7 @@ Key constants are configurable in `engine/config.py`:
 | Constant | Default | Description |
 |---|---|---|
 | `COLLECTION_INTERVAL_SEC` | `2` | How frequently telemetry is sampled |
-| `ALERT_STRESS_THRESHOLD` | `70.0` | Stress score required to trigger an alert |
+| User preferences (`user_preferences.json`) | defaults in `engine/user_preferences.py` | Per-resource CPU / memory / disk pressure thresholds (0–100) and optional safeguard process list |
 | `ALERT_CONSECUTIVE_COUNT` | `3` | Consecutive high readings before alerting |
 | `ALERT_COOLDOWN_SEC` | `60.0` | Minimum time between consecutive alerts |
 | `BASELINE_MIN_SAMPLES` | `30` | Samples required before baseline is considered ready |

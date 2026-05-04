@@ -150,8 +150,8 @@ EVENT_DISK_SPIKE_THRESHOLD: float = 500.0
 # Alert Manager
 # ---------------------------------------------------------------------------
 
-# Stress score threshold to trigger an alert
-ALERT_STRESS_THRESHOLD: float = 70.0
+# Resource alert thresholds (CPU %, memory %, disk pressure 0–100) are user-tunable
+# via user_preferences.json / GET|PUT /api/v1/preferences (see engine/user_preferences.py).
 
 # Number of consecutive high-stress readings before alert fires
 ALERT_CONSECUTIVE_COUNT: int = 5  # 5 readings × 2s = 10 seconds

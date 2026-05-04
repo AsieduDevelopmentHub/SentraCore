@@ -188,6 +188,22 @@ def create_app() -> FastAPI:
 
         return _engine.get_baseline()
 
+    @app.get("/api/v1/preferences")
+    async def get_preferences():
+        """User-tunable alert thresholds and safeguard process list."""
+        if _engine is None:
+            return {"error": "Engine not initialized"}
+
+        return _engine.get_user_preferences()
+
+    @app.put("/api/v1/preferences")
+    async def put_preferences(body: dict = Body(default_factory=dict)):
+        """Update user preferences (persisted to datastore JSON)."""
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+
+        return _engine.set_user_preferences(body)
+
     @app.get("/api/v1/alerts")
     async def get_alerts():
         """Recent alerts with Root Cause Analysis."""

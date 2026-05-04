@@ -19,8 +19,7 @@ class EngineProvider extends ChangeNotifier {
     required DesktopNotificationService notifications,
   })  : _settings = settings,
         _notifications = notifications {
-    _service =
-        EngineService(host: settings.engineHost, port: settings.enginePort);
+    _service = EngineService();
   }
 
   final SettingsProvider _settings;
@@ -88,6 +87,8 @@ class EngineProvider extends ChangeNotifier {
   /// When true, [_connectionError] may hold a bootstrap failure; do not clear it in [_tryConnect].
   bool _bootstrapErrorPending = false;
 
+  bool _didPullEnginePrefs = false;
+
   // ── Connection ──
 
   void connect() {
@@ -102,21 +103,18 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
     _service.dispose();
-    _service = EngineService(
-      host: _settings.engineHost,
-      port: _settings.enginePort,
-    );
+    _service = EngineService();
     _connected = false;
     _currentState = null;
     _cooldownDeadline = null;
     _bootstrapErrorPending = false;
+    _didPullEnginePrefs = false;
     notifyListeners();
     await _bootstrapAndConnect();
   }
 
   Future<void> _bootstrapAndConnect() async {
     final showChecking = Platform.isWindows &&
-        _settings.isLocalLoopback &&
         EngineBundledLauncher.bundledEngineExecutablePath() != null;
     if (showChecking) {
       _connectionError = 'Starting engine, please wait…';
@@ -124,8 +122,8 @@ class EngineProvider extends ChangeNotifier {
     }
 
     final out = await EngineBundledLauncher.ensureReady(
-      host: _settings.engineHost,
-      port: _settings.enginePort,
+      host: EngineService.defaultHost,
+      port: EngineService.defaultPort,
     );
 
     if (!out.success && (out.message?.isNotEmpty ?? false)) {
@@ -237,7 +235,26 @@ class EngineProvider extends ChangeNotifier {
 
   // ── Data Handling ──
 
+  Future<void> _maybePullEnginePreferences() async {
+    if (_didPullEnginePrefs) return;
+    final data = await _service.getUserPreferences();
+    if (data == null || data.containsKey('error')) return;
+    _didPullEnginePrefs = true;
+    _settings.applyFromEngine(data);
+    await _settings.save();
+    notifyListeners();
+  }
+
+  /// Persist [SettingsProvider] values to the engine (and local prefs).
+  Future<bool> pushUserPreferences() async {
+    final res = await _service.putUserPreferences(_settings.toEngineJson());
+    return res != null && res['ok'] == true;
+  }
+
   void _onStateReceived(SystemState state) {
+    if (!_didPullEnginePrefs) {
+      unawaited(_maybePullEnginePreferences());
+    }
     _bootstrapErrorPending = false;
     if (!_connected) {
       _connected = true;

@@ -9,6 +9,9 @@ import 'package:sentracore_dashboard/models/system_state.dart';
 ///
 /// Handles both REST API calls and WebSocket real-time streaming.
 class EngineService {
+  static const String defaultHost = '127.0.0.1';
+  static const int defaultPort = 8740;
+
   final String host;
   final int port;
 
@@ -18,7 +21,7 @@ class EngineService {
   WebSocketChannel? _liveChannel;
   WebSocketChannel? _alertChannel;
 
-  EngineService({this.host = '127.0.0.1', this.port = 8740}) {
+  EngineService({this.host = defaultHost, this.port = defaultPort}) {
     _baseUrl = 'http://$host:$port';
     _wsUrl = 'ws://$host:$port';
   }
@@ -79,6 +82,30 @@ class EngineService {
 
   Future<Map<String, dynamic>?> getBaseline() async {
     return _get('/api/v1/baseline');
+  }
+
+  Future<Map<String, dynamic>?> getUserPreferences() async {
+    return _get('/api/v1/preferences');
+  }
+
+  Future<Map<String, dynamic>?> putUserPreferences(
+      Map<String, dynamic> body) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/preferences');
+      final response = await http
+          .put(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
   }
 
   // ── WebSocket Live Stream ──

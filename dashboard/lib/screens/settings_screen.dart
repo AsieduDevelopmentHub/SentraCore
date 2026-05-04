@@ -71,6 +71,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               IconButton.filledTonal(
                 tooltip: 'Save preferences',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppTheme.primary.withValues(alpha: 0.16),
+                  foregroundColor: AppTheme.primary,
+                ),
                 onPressed: () async {
                   await settings.save();
                   if (!context.mounted) return;

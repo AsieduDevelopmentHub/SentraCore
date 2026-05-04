@@ -17,6 +17,7 @@ class LogbookScreen extends StatefulWidget {
 /// "Logbook" tab is now automated system history.
 class _LogbookScreenState extends State<LogbookScreen> {
   _HistoryRange _range = _HistoryRange.day;
+  DateTimeRange? _customRange;
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
   Widget build(BuildContext context) {
     final history = context.watch<HistoryProvider>();
     final all = history.samples;
-    final filtered = _filter(all, _range);
+    final filtered = _filter(all, _range, _customRange);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -59,8 +60,31 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         value: _HistoryRange.quarter, label: Text('3 mo')),
                   ],
                   selected: {_range},
-                  onSelectionChanged: (set) =>
-                      setState(() => _range = set.first),
+                  onSelectionChanged: (set) => setState(() {
+                    _range = set.first;
+                    _customRange = null;
+                  }),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  tooltip: 'Pick date range',
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final initialStart = _customRange?.start ??
+                        now.subtract(const Duration(days: 7));
+                    final initialEnd = _customRange?.end ?? now;
+                    final picked = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(2020),
+                      lastDate: now.add(const Duration(days: 365)),
+                      initialDateRange:
+                          DateTimeRange(start: initialStart, end: initialEnd),
+                    );
+                    if (picked == null) return;
+                    if (!context.mounted) return;
+                    setState(() => _customRange = picked);
+                  },
+                  icon: const Icon(Icons.date_range_outlined),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -86,24 +110,69 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 height: 1.35,
               ),
             ),
+            if (_customRange != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Range: ${_fmtDate(_customRange!.start)} → ${_fmtDate(_customRange!.end)}',
+                style: TextStyle(
+                  color: AppTheme.textSecondaryFor(context),
+                  fontSize: 11,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Expanded(
-              child: Card(
-                child: filtered.isEmpty
-                    ? _EmptyHistory(loaded: history.loaded)
-                    : Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            // 3 charts in one row (wide), stacked (narrow).
-                            SizedBox(
-                              height: 260,
-                              child: ResponsiveRowColumn(
-                                spacing: 12,
-                                useIntrinsicHeight: false,
-                                breakpoint: 980,
+              child: filtered.isEmpty
+                  ? Card(child: _EmptyHistory(loaded: history.loaded))
+                  : LayoutBuilder(
+                      builder: (context, c) {
+                        final isWide = c.maxWidth >= 980;
+
+                        final charts = isWide
+                            ? SizedBox(
+                                height: 280,
+                                child: ResponsiveRowColumn(
+                                  spacing: 12,
+                                  useIntrinsicHeight: false,
+                                  breakpoint: 980,
+                                  children: [
+                                    Expanded(
+                                      child: _HistoryChart(
+                                        title: 'CPU',
+                                        color: AppTheme.primary,
+                                        samples: filtered,
+                                        selector: (s) => s.cpuPercent,
+                                        suffix: '%',
+                                        maxY: 100,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _HistoryChart(
+                                        title: 'Memory',
+                                        color: AppTheme.accent,
+                                        samples: filtered,
+                                        selector: (s) => s.memPercent,
+                                        suffix: '%',
+                                        maxY: 100,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _HistoryChart(
+                                        title: 'Disk pressure',
+                                        color: AppTheme.warning,
+                                        samples: filtered,
+                                        selector: (s) => s.diskPressurePercent,
+                                        suffix: '%',
+                                        maxY: 100,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Column(
                                 children: [
-                                  Expanded(
+                                  SizedBox(
+                                    height: 220,
                                     child: _HistoryChart(
                                       title: 'CPU',
                                       color: AppTheme.primary,
@@ -113,7 +182,9 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                       maxY: 100,
                                     ),
                                   ),
-                                  Expanded(
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 220,
                                     child: _HistoryChart(
                                       title: 'Memory',
                                       color: AppTheme.accent,
@@ -123,7 +194,9 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                       maxY: 100,
                                     ),
                                   ),
-                                  Expanded(
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 220,
                                     child: _HistoryChart(
                                       title: 'Disk pressure',
                                       color: AppTheme.warning,
@@ -134,17 +207,25 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                     ),
                                   ),
                                 ],
+                              );
+
+                        // Separate sections: charts card + latest processes card.
+                        return Column(
+                          children: [
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: charts,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Give the latest processes plenty of space.
                             Expanded(
                               child: _TopProcessesCard(sample: filtered.last),
                             ),
                           ],
-                        ),
-                      ),
-              ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -152,8 +233,23 @@ class _LogbookScreenState extends State<LogbookScreen> {
     );
   }
 
-  List<HistorySample> _filter(List<HistorySample> src, _HistoryRange range) {
+  List<HistorySample> _filter(
+    List<HistorySample> src,
+    _HistoryRange range,
+    DateTimeRange? custom,
+  ) {
     final now = DateTime.now();
+    if (custom != null) {
+      final start =
+          DateTime(custom.start.year, custom.start.month, custom.start.day);
+      final endExclusive =
+          DateTime(custom.end.year, custom.end.month, custom.end.day).add(
+        const Duration(days: 1),
+      );
+      return src
+          .where((s) => !s.at.isBefore(start) && s.at.isBefore(endExclusive))
+          .toList();
+    }
     final minAt = switch (range) {
       _HistoryRange.day => now.subtract(const Duration(days: 1)),
       _HistoryRange.week => now.subtract(const Duration(days: 7)),
@@ -161,6 +257,11 @@ class _LogbookScreenState extends State<LogbookScreen> {
       _HistoryRange.quarter => now.subtract(const Duration(days: 90)),
     };
     return src.where((s) => s.at.isAfter(minAt)).toList();
+  }
+
+  String _fmtDate(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
   }
 
   Future<bool> _confirmClear(BuildContext context) async {
@@ -309,17 +410,20 @@ class _HistoryChart extends StatelessWidget {
                   lineTouchData: LineTouchData(
                     enabled: true,
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipItems: (touchedSpots) => touchedSpots
-                          .map(
-                            (s) => LineTooltipItem(
-                              '${s.y.toStringAsFixed(1)}$suffix',
-                              TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.w700,
-                              ),
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((s) {
+                          final idx = s.x.round().clamp(0, samples.length - 1);
+                          final at = samples[idx].at;
+                          final ts = _fmt(at);
+                          return LineTooltipItem(
+                            '$ts\n${s.y.toStringAsFixed(1)}$suffix',
+                            TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w700,
                             ),
-                          )
-                          .toList(),
+                          );
+                        }).toList();
+                      },
                     ),
                   ),
                   lineBarsData: [
@@ -386,6 +490,11 @@ class _HistoryChart extends StatelessWidget {
       ],
     );
   }
+
+  String _fmt(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    return '${dt.month}/${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
+  }
 }
 
 class _TopProcessesCard extends StatelessWidget {
@@ -427,46 +536,61 @@ class _TopProcessesCard extends StatelessWidget {
                 style: TextStyle(color: AppTheme.textMutedFor(context)),
               )
             else
-              Expanded(
-                child: ListView.separated(
-                  itemCount: procs.length,
-                  separatorBuilder: (_, __) => Divider(
-                    color:
-                        Theme.of(context).dividerColor.withValues(alpha: 0.5),
-                    height: 8,
-                  ),
-                  itemBuilder: (context, i) {
-                    final p = procs[i];
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            p.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppTheme.textPrimaryFor(context),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _cell(context, 'CPU',
-                            '${p.cpuPercent.toStringAsFixed(1)}%'),
-                        const SizedBox(width: 10),
-                        _cell(context, 'Mem',
-                            '${p.memPercent.toStringAsFixed(1)}%'),
-                        const SizedBox(width: 10),
-                        _cell(context, 'Imp', p.impact.toStringAsFixed(0)),
-                      ],
-                    );
-                  },
-                ),
-              ),
+              ..._fixedRows(context, procs),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _fixedRows(
+      BuildContext context, List<HistoryProcessSample> procs) {
+    final show = procs.take(10).toList();
+    final rows = <Widget>[];
+    for (var i = 0; i < show.length; i++) {
+      final p = show[i];
+      if (i > 0) {
+        rows.add(
+          Divider(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
+            height: 12,
+          ),
+        );
+      }
+      rows.add(
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textPrimaryFor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _cell(context, 'CPU', '${p.cpuPercent.toStringAsFixed(1)}%'),
+            const SizedBox(width: 10),
+            _cell(context, 'Mem', '${p.memPercent.toStringAsFixed(1)}%'),
+            const SizedBox(width: 10),
+            _cell(context, 'Imp', p.impact.toStringAsFixed(0)),
+          ],
+        ),
+      );
+    }
+    if (procs.length > show.length) {
+      rows.add(const SizedBox(height: 10));
+      rows.add(
+        Text(
+          '… and ${procs.length - show.length} more',
+          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11),
+        ),
+      );
+    }
+    return rows;
   }
 
   Widget _cell(BuildContext context, String k, String v) {

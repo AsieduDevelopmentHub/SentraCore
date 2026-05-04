@@ -106,15 +106,15 @@ class AppTheme {
         prefixIconColor: darkTextSecondary.withValues(alpha: 0.85),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: darkBorder),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: darkBorder),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: primary),
+          borderSide: const BorderSide(color: primary, width: 1.2),
         ),
       ),
     );
@@ -155,15 +155,15 @@ class AppTheme {
         prefixIconColor: lightTextSecondary.withValues(alpha: 0.85),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: lightBorder),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: lightBorder),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: primary),
+          borderSide: const BorderSide(color: primary, width: 1.2),
         ),
       ),
     );

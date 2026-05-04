@@ -501,15 +501,22 @@ class _AnomalyCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Icon(Icons.radar, size: 15, color: AppTheme.info),
-              const SizedBox(width: 6),
-              Text('Anomaly Detection',
+            Row(
+              children: [
+                Icon(Icons.radar, size: 15, color: AppTheme.info),
+                const SizedBox(width: 6),
+                Text(
+                  'Anomaly Detection',
                   style: TextStyle(
-                      color: AppTheme.textPrimaryFor(context),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13)),
-            ]),
+                    color: AppTheme.textPrimaryFor(context),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                if (anomaly != null) _LevelBadge(anomaly.level),
+              ],
+            ),
             Divider(color: Theme.of(context).dividerColor, height: 20),
             const SizedBox(height: 8),
             if (anomaly == null)
@@ -557,14 +564,6 @@ class _AnomalyCard extends StatelessWidget {
               const SizedBox(height: 8),
               _MetricBar(
                   'Disk Z-Score', anomaly.diskZScore, 4, AppTheme.warning),
-              const SizedBox(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Anomaly Level',
-                    style: TextStyle(
-                        color: AppTheme.textSecondaryFor(context),
-                        fontSize: 12)),
-                _LevelBadge(anomaly.level),
-              ]),
             ],
           ],
         ),

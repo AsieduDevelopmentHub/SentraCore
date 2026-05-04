@@ -1,8 +1,9 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:sentracore_dashboard/models/logbook_entry.dart';
-import 'package:sentracore_dashboard/providers/logbook_provider.dart';
+import 'package:sentracore_dashboard/models/history_sample.dart';
+import 'package:sentracore_dashboard/providers/history_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 class LogbookScreen extends StatefulWidget {
@@ -12,30 +13,24 @@ class LogbookScreen extends StatefulWidget {
   State<LogbookScreen> createState() => _LogbookScreenState();
 }
 
+/// "Logbook" tab is now automated system history.
 class _LogbookScreenState extends State<LogbookScreen> {
-  String _query = '';
-  _LogbookRange _range = _LogbookRange.all;
+  _HistoryRange _range = _HistoryRange.day;
 
   @override
   void initState() {
     super.initState();
-    // Safe in initState: no async gap, just kick off provider load.
-    Provider.of<LogbookProvider>(context, listen: false).load();
+    Provider.of<HistoryProvider>(context, listen: false).load();
   }
 
   @override
   Widget build(BuildContext context) {
-    final logbook = context.watch<LogbookProvider>();
-    final all = logbook.entries;
-    final filtered = _filter(all);
+    final history = context.watch<HistoryProvider>();
+    final all = history.samples;
+    final filtered = _filter(all, _range);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add entry'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -44,7 +39,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
             Row(
               children: [
                 Text(
-                  'Logbook',
+                  'History',
                   style: TextStyle(
                     color: AppTheme.textPrimaryFor(context),
                     fontSize: 18,
@@ -52,15 +47,30 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   ),
                 ),
                 const Spacer(),
+                SegmentedButton<_HistoryRange>(
+                  segments: const [
+                    ButtonSegment(value: _HistoryRange.day, label: Text('Day')),
+                    ButtonSegment(
+                        value: _HistoryRange.week, label: Text('Week')),
+                    ButtonSegment(
+                        value: _HistoryRange.month, label: Text('Month')),
+                    ButtonSegment(
+                        value: _HistoryRange.quarter, label: Text('3 mo')),
+                  ],
+                  selected: {_range},
+                  onSelectionChanged: (set) =>
+                      setState(() => _range = set.first),
+                ),
+                const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Clear logbook',
+                  tooltip: 'Clear history',
                   onPressed: all.isEmpty
                       ? null
                       : () async {
                           final ok = await _confirmClear(context);
                           if (!ok) return;
                           if (!context.mounted) return;
-                          context.read<LogbookProvider>().clear();
+                          context.read<HistoryProvider>().clear();
                         },
                   icon: const Icon(Icons.delete_outline),
                 ),
@@ -68,69 +78,61 @@ class _LogbookScreenState extends State<LogbookScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Manually record past process metrics (CPU / memory / disk pressure) '
-              'with a timestamp. Stored locally on this PC.',
+              'Automated history (sampled every ${HistoryProvider.sampleInterval.inSeconds}s) for CPU / memory / disk. Stored locally on this PC.',
               style: TextStyle(
                 color: AppTheme.textMutedFor(context),
                 fontSize: 12,
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Search by process name or notes',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    onChanged: (v) => setState(() => _query = v),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SegmentedButton<_LogbookRange>(
-                  segments: const [
-                    ButtonSegment(
-                      value: _LogbookRange.today,
-                      label: Text('Today'),
-                    ),
-                    ButtonSegment(
-                      value: _LogbookRange.last7Days,
-                      label: Text('7d'),
-                    ),
-                    ButtonSegment(
-                      value: _LogbookRange.all,
-                      label: Text('All'),
-                    ),
-                  ],
-                  selected: {_range},
-                  onSelectionChanged: (set) =>
-                      setState(() => _range = set.first),
-                ),
-              ],
-            ),
             const SizedBox(height: 12),
             Expanded(
               child: Card(
                 child: filtered.isEmpty
-                    ? _EmptyLogbook(loaded: logbook.loaded)
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(8),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            Divider(color: Theme.of(context).dividerColor),
-                        itemBuilder: (context, i) {
-                          final e = filtered[i];
-                          return _LogEntryTile(
-                            entry: e,
-                            onDelete: () => context
-                                .read<LogbookProvider>()
-                                .deleteById(e.id),
-                          );
-                        },
+                    ? _EmptyHistory(loaded: history.loaded)
+                    : Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: _HistoryChart(
+                                title: 'CPU',
+                                color: AppTheme.primary,
+                                samples: filtered,
+                                selector: (s) => s.cpuPercent,
+                                suffix: '%',
+                                maxY: 100,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: _HistoryChart(
+                                title: 'Memory',
+                                color: AppTheme.accent,
+                                samples: filtered,
+                                selector: (s) => s.memPercent,
+                                suffix: '%',
+                                maxY: 100,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: _HistoryChart(
+                                title: 'Disk pressure',
+                                color: AppTheme.warning,
+                                samples: filtered,
+                                selector: (s) => s.diskPressurePercent,
+                                suffix: '%',
+                                maxY: 100,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 220,
+                              child: _TopProcessesCard(sample: filtered.last),
+                            ),
+                          ],
+                        ),
                       ),
               ),
             ),
@@ -140,41 +142,24 @@ class _LogbookScreenState extends State<LogbookScreen> {
     );
   }
 
-  List<LogbookEntry> _filter(List<LogbookEntry> src) {
-    final q = _query.trim().toLowerCase();
+  List<HistorySample> _filter(List<HistorySample> src, _HistoryRange range) {
     final now = DateTime.now();
-    DateTime? minAt;
-    if (_range == _LogbookRange.today) {
-      minAt = DateTime(now.year, now.month, now.day);
-    } else if (_range == _LogbookRange.last7Days) {
-      minAt = now.subtract(const Duration(days: 7));
-    }
-
-    return src.where((e) {
-      if (minAt != null && e.at.isBefore(minAt)) return false;
-      if (q.isEmpty) return true;
-      return e.processName.toLowerCase().contains(q) ||
-          e.notes.toLowerCase().contains(q);
-    }).toList();
-  }
-
-  Future<void> _openAddDialog(BuildContext context) async {
-    final created = await showDialog<LogbookEntry>(
-      context: context,
-      builder: (_) => const _AddLogEntryDialog(),
-    );
-    if (created == null) return;
-    if (!context.mounted) return;
-    context.read<LogbookProvider>().add(created);
+    final minAt = switch (range) {
+      _HistoryRange.day => now.subtract(const Duration(days: 1)),
+      _HistoryRange.week => now.subtract(const Duration(days: 7)),
+      _HistoryRange.month => now.subtract(const Duration(days: 30)),
+      _HistoryRange.quarter => now.subtract(const Duration(days: 90)),
+    };
+    return src.where((s) => s.at.isAfter(minAt)).toList();
   }
 
   Future<bool> _confirmClear(BuildContext context) async {
     final res = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear logbook?'),
+        title: const Text('Clear history?'),
         content: const Text(
-          'This deletes all logged entries from this PC.',
+          'This deletes your locally stored history samples from this PC.',
         ),
         actions: [
           TextButton(
@@ -192,11 +177,11 @@ class _LogbookScreenState extends State<LogbookScreen> {
   }
 }
 
-enum _LogbookRange { today, last7Days, all }
+enum _HistoryRange { day, week, month, quarter }
 
-class _EmptyLogbook extends StatelessWidget {
+class _EmptyHistory extends StatelessWidget {
   final bool loaded;
-  const _EmptyLogbook({required this.loaded});
+  const _EmptyHistory({required this.loaded});
 
   @override
   Widget build(BuildContext context) {
@@ -207,13 +192,13 @@ class _EmptyLogbook extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.book_outlined,
+              Icons.timeline_outlined,
               size: 48,
               color: AppTheme.textMutedFor(context),
             ),
             const SizedBox(height: 10),
             Text(
-              loaded ? 'No entries yet' : 'Loading…',
+              loaded ? 'No history yet' : 'Loading…',
               style: TextStyle(
                 color: AppTheme.textPrimaryFor(context),
                 fontWeight: FontWeight.w700,
@@ -221,7 +206,7 @@ class _EmptyLogbook extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap “Add entry” to log metrics from a previous time.',
+              'Connect to the engine and leave SentraCore running. Samples will appear automatically.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppTheme.textMutedFor(context),
@@ -236,289 +221,271 @@ class _EmptyLogbook extends StatelessWidget {
   }
 }
 
-class _LogEntryTile extends StatelessWidget {
-  final LogbookEntry entry;
-  final VoidCallback onDelete;
+class _HistoryChart extends StatelessWidget {
+  final String title;
+  final Color color;
+  final List<HistorySample> samples;
+  final double Function(HistorySample s) selector;
+  final String suffix;
+  final double maxY;
 
-  const _LogEntryTile({
-    required this.entry,
-    required this.onDelete,
+  const _HistoryChart({
+    required this.title,
+    required this.color,
+    required this.samples,
+    required this.selector,
+    required this.suffix,
+    required this.maxY,
   });
-
-  String _fmtDateTime(DateTime dt) {
-    String two(int v) => v < 10 ? '0$v' : '$v';
-    return '${dt.year}-${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
-  }
 
   @override
   Widget build(BuildContext context) {
-    final title = entry.processName.trim().isEmpty
-        ? 'Unknown process'
-        : entry.processName;
-    return ListTile(
-      title: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: AppTheme.textPrimaryFor(context),
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
+    final values = samples.map(selector).toList();
+    final cur = values.isNotEmpty ? values.last : 0.0;
+    final avg =
+        values.isEmpty ? 0.0 : values.reduce((a, b) => a + b) / values.length;
+    final min = values.isEmpty ? 0.0 : values.reduce((a, b) => a < b ? a : b);
+    final max = values.isEmpty ? 0.0 : values.reduce((a, b) => a > b ? a : b);
+
+    final spots = List.generate(
+      values.length,
+      (i) => FlSpot(i.toDouble(), values[i].clamp(0.0, maxY)),
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _fmtDateTime(entry.at),
-              style: TextStyle(
-                color: AppTheme.textMutedFor(context),
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
+            Row(
               children: [
-                _pill(context, 'CPU', '${entry.cpuPercent.round()}%'),
-                _pill(context, 'Mem', '${entry.memPercent.round()}%'),
-                _pill(context, 'Disk', '${entry.diskPressurePercent.round()}%'),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppTheme.textPrimaryFor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${cur.toStringAsFixed(1)}$suffix',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
-            if (entry.notes.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                entry.notes.trim(),
-                style: TextStyle(
-                  color: AppTheme.textSecondaryFor(context),
-                  fontSize: 12,
-                  height: 1.35,
+            const SizedBox(height: 8),
+            Expanded(
+              child: LineChart(
+                LineChartData(
+                  minY: 0,
+                  maxY: maxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxY / 4,
+                    getDrawingHorizontalLine: (v) => FlLine(
+                      color:
+                          Theme.of(context).dividerColor.withValues(alpha: 0.4),
+                      strokeWidth: 0.5,
+                    ),
+                  ),
+                  titlesData: const FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipItems: (touchedSpots) => touchedSpots
+                          .map(
+                            (s) => LineTooltipItem(
+                              '${s.y.toStringAsFixed(1)}$suffix',
+                              TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      curveSmoothness: 0.25,
+                      color: color,
+                      barWidth: 2,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            color.withValues(alpha: 0.18),
+                            color.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _mini(context, 'Min', '${min.toStringAsFixed(1)}$suffix'),
+                _mini(context, 'Avg', '${avg.toStringAsFixed(1)}$suffix'),
+                _mini(context, 'Max', '${max.toStringAsFixed(1)}$suffix'),
+              ],
+            ),
           ],
         ),
       ),
-      trailing: IconButton(
-        tooltip: 'Delete',
-        onPressed: onDelete,
-        icon: const Icon(Icons.delete_outline),
-      ),
     );
   }
 
-  Widget _pill(BuildContext context, String k, String v) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLightFor(context),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Text(
-        '$k: $v',
-        style: TextStyle(
-          color: AppTheme.textMutedFor(context),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _AddLogEntryDialog extends StatefulWidget {
-  const _AddLogEntryDialog();
-
-  @override
-  State<_AddLogEntryDialog> createState() => _AddLogEntryDialogState();
-}
-
-class _AddLogEntryDialogState extends State<_AddLogEntryDialog> {
-  final _processCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
-  DateTime _at = DateTime.now();
-  double _cpu = 0;
-  double _mem = 0;
-  double _disk = 0;
-
-  @override
-  void dispose() {
-    _processCtrl.dispose();
-    _notesCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add log entry'),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _processCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Process / app name',
-                  hintText: 'e.g. chrome.exe or Blender',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _at,
-                          firstDate: DateTime(2000),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 365)),
-                        );
-                        if (picked == null) return;
-                        if (!context.mounted) return;
-                        final tod = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.fromDateTime(_at),
-                        );
-                        if (tod == null) return;
-                        setState(() {
-                          _at = DateTime(
-                            picked.year,
-                            picked.month,
-                            picked.day,
-                            tod.hour,
-                            tod.minute,
-                          );
-                        });
-                      },
-                      icon: const Icon(Icons.schedule),
-                      label: Text(_prettyAt(_at)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _MetricSlider(
-                label: 'CPU',
-                value: _cpu,
-                onChanged: (v) => setState(() => _cpu = v),
-              ),
-              const SizedBox(height: 6),
-              _MetricSlider(
-                label: 'Memory',
-                value: _mem,
-                onChanged: (v) => setState(() => _mem = v),
-              ),
-              const SizedBox(height: 6),
-              _MetricSlider(
-                label: 'Disk pressure',
-                value: _disk,
-                onChanged: (v) => setState(() => _disk = v),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesCtrl,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  hintText: 'What was happening? Any context?',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final now = DateTime.now();
-            final id =
-                '${now.microsecondsSinceEpoch}_${_processCtrl.text.hashCode}';
-            Navigator.pop(
-              context,
-              LogbookEntry(
-                id: id,
-                at: _at,
-                processName: _processCtrl.text.trim(),
-                cpuPercent: _cpu,
-                memPercent: _mem,
-                diskPressurePercent: _disk,
-                notes: _notesCtrl.text.trim(),
-              ),
-            );
-          },
-          child: const Text('Add'),
-        ),
-      ],
-    );
-  }
-
-  String _prettyAt(DateTime dt) {
-    String two(int v) => v < 10 ? '0$v' : '$v';
-    return '${dt.year}-${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
-  }
-}
-
-class _MetricSlider extends StatelessWidget {
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-
-  const _MetricSlider({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _mini(BuildContext context, String k, String v) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: AppTheme.textSecondaryFor(context),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '${value.round()}%',
-              style: TextStyle(
-                color: AppTheme.primary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
+        Text(
+          k.toUpperCase(),
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
         ),
-        Slider(
-          value: value.clamp(0.0, 100.0).toDouble(),
-          min: 0,
-          max: 100,
-          divisions: 100,
-          label: '${value.round()}%',
-          onChanged: onChanged,
+        const SizedBox(height: 2),
+        Text(
+          v,
+          style: TextStyle(
+            color: AppTheme.textSecondaryFor(context),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
+  }
+}
+
+class _TopProcessesCard extends StatelessWidget {
+  final HistorySample sample;
+  const _TopProcessesCard({required this.sample});
+
+  @override
+  Widget build(BuildContext context) {
+    final procs = sample.topProcesses;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Top processes (latest sample)',
+                  style: TextStyle(
+                    color: AppTheme.textPrimaryFor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _fmt(sample.at),
+                  style: TextStyle(
+                    color: AppTheme.textMutedFor(context),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (procs.isEmpty)
+              Text(
+                'No process data yet.',
+                style: TextStyle(color: AppTheme.textMutedFor(context)),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  itemCount: procs.length,
+                  separatorBuilder: (_, __) => Divider(
+                    color:
+                        Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    height: 8,
+                  ),
+                  itemBuilder: (context, i) {
+                    final p = procs[i];
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            p.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppTheme.textPrimaryFor(context),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _cell(context, 'CPU',
+                            '${p.cpuPercent.toStringAsFixed(1)}%'),
+                        const SizedBox(width: 10),
+                        _cell(context, 'Mem',
+                            '${p.memPercent.toStringAsFixed(1)}%'),
+                        const SizedBox(width: 10),
+                        _cell(context, 'Imp', p.impact.toStringAsFixed(0)),
+                      ],
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(BuildContext context, String k, String v) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          k,
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+        Text(
+          v,
+          style: TextStyle(
+            color: AppTheme.textSecondaryFor(context),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _fmt(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
   }
 }

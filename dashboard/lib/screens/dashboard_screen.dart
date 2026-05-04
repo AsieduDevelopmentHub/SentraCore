@@ -230,14 +230,17 @@ class _SentraNavRail extends StatelessWidget {
           const Spacer(),
           // Theme Toggle
           Consumer<SettingsProvider>(
-            builder: (context, settings, _) => IconButton(
+            builder: (context, settings, _) => IconButton.filledTonal(
               tooltip: 'Toggle light / dark',
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.surfaceLightFor(context),
+                foregroundColor: AppTheme.primary,
+              ),
               onPressed: () => settings.toggleTheme(),
               icon: Icon(
                 settings.isDarkMode
                     ? Icons.light_mode_outlined
                     : Icons.dark_mode_outlined,
-                color: Theme.of(context).iconTheme.color,
                 size: 20,
               ),
             ),

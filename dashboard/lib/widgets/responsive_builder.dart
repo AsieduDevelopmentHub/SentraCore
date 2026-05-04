@@ -41,10 +41,11 @@ class ResponsiveRowColumn extends StatelessWidget {
             }
           }
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          final row = Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: rowChildren,
           );
+          return useIntrinsicHeight ? IntrinsicHeight(child: row) : row;
         } else {
           // Narrow: Stack vertically.
           // We need to strip out any `Expanded` or `Flexible` widgets since

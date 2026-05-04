@@ -4,6 +4,7 @@ import 'dart:io' show Platform, Process;
 
 import 'package:flutter/foundation.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
+import 'package:sentracore_dashboard/providers/history_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/services/engine_bundled_launcher.dart';
@@ -17,13 +18,16 @@ class EngineProvider extends ChangeNotifier {
   EngineProvider({
     required SettingsProvider settings,
     required DesktopNotificationService notifications,
+    HistoryProvider? history,
   })  : _settings = settings,
-        _notifications = notifications {
+        _notifications = notifications,
+        _history = history {
     _service = EngineService(port: settings.lastEngineHttpPort);
   }
 
   final SettingsProvider _settings;
   final DesktopNotificationService _notifications;
+  final HistoryProvider? _history;
   late EngineService _service;
 
   // ── Connection State ──
@@ -380,6 +384,11 @@ class EngineProvider extends ChangeNotifier {
 
   void _onStateReceived(SystemState state) {
     _lastLiveStateAt = DateTime.now();
+    _history?.recordIfDue(
+      now: _lastLiveStateAt!,
+      state: state,
+      processes: _processes,
+    );
     if (!_didPullEnginePrefs) {
       unawaited(_maybePullEnginePreferences());
     }

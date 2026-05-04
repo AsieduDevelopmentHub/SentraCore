@@ -143,6 +143,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: SegmentedButton<String>(
+                    style: ButtonStyle(
+                      foregroundColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected)
+                            ? AppTheme.textPrimaryFor(context)
+                            : AppTheme.textSecondaryFor(context),
+                      ),
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected)
+                            ? AppTheme.primary.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                      ),
+                      side: WidgetStatePropertyAll(
+                        BorderSide(color: Theme.of(context).dividerColor),
+                      ),
+                    ),
                     segments: const [
                       ButtonSegment(
                         value: 'lenient',
@@ -342,6 +357,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: SegmentedButton<ThemeMode>(
+                    style: ButtonStyle(
+                      foregroundColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected)
+                            ? AppTheme.textPrimaryFor(context)
+                            : AppTheme.textSecondaryFor(context),
+                      ),
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected)
+                            ? AppTheme.primary.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                      ),
+                      side: WidgetStatePropertyAll(
+                        BorderSide(color: Theme.of(context).dividerColor),
+                      ),
+                    ),
                     segments: const [
                       ButtonSegment(
                         value: ThemeMode.light,

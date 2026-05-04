@@ -288,6 +288,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                           g.members.first,
                           action,
                         ),
+                        onOpenActions: () =>
+                            _openActionsSheet(context, g.members.first),
                       );
                     }
                     final expanded = _expandedNames.contains(g.name);
@@ -298,12 +300,83 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                       onToggle: () => _toggleExpanded(g.name),
                       onAction: (p, action) =>
                           _runProcessAction(context, p, action),
+                      onOpenActions: (p) => _openActionsSheet(context, p),
                     );
                   },
                 ),
         ),
       ],
     );
+  }
+
+  Future<void> _openActionsSheet(BuildContext context, ProcessImpact p) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        // Constrain + scroll to avoid bottom overflow on short windows.
+        final maxH = MediaQuery.of(ctx).size.height * 0.82;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: Text(
+                      p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(ctx),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'PID ${p.pid}',
+                      style: TextStyle(color: AppTheme.textMutedFor(ctx)),
+                    ),
+                  ),
+                  Divider(color: Theme.of(ctx).dividerColor),
+                  ListTile(
+                    leading: const Icon(Icons.low_priority),
+                    title: const Text('Lower CPU priority'),
+                    onTap: () => Navigator.pop(ctx, 'lower_priority'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.priority_high),
+                    title: const Text('Normal priority'),
+                    onTap: () => Navigator.pop(ctx, 'normal_priority'),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    leading: Icon(Icons.close, color: AppTheme.warning),
+                    title: Text(
+                      'End process',
+                      style: TextStyle(color: AppTheme.warning),
+                    ),
+                    onTap: () => Navigator.pop(ctx, 'terminate'),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.delete_forever, color: AppTheme.error),
+                    title: Text(
+                      'Force kill',
+                      style: TextStyle(color: AppTheme.error),
+                    ),
+                    onTap: () => Navigator.pop(ctx, 'kill'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !context.mounted) return;
+    await _runProcessAction(context, p, selected);
   }
 
   Future<void> _runProcessAction(
@@ -434,6 +507,7 @@ class _GroupedProcessTile extends StatelessWidget {
   final Color borderColor;
   final VoidCallback onToggle;
   final void Function(ProcessImpact p, String action) onAction;
+  final void Function(ProcessImpact p) onOpenActions;
 
   const _GroupedProcessTile({
     required this.group,
@@ -441,6 +515,7 @@ class _GroupedProcessTile extends StatelessWidget {
     required this.borderColor,
     required this.onToggle,
     required this.onAction,
+    required this.onOpenActions,
   });
 
   @override
@@ -539,6 +614,7 @@ class _GroupedProcessTile extends StatelessWidget {
                     p: group.members[i],
                     indent: true,
                     onAction: (a) => onAction(group.members[i], a),
+                    onOpenActions: () => onOpenActions(group.members[i]),
                   ),
                 ],
               ],
@@ -616,11 +692,13 @@ class _CompactProcessTile extends StatelessWidget {
   final ProcessImpact p;
   final Color borderColor;
   final void Function(String action) onAction;
+  final VoidCallback onOpenActions;
 
   const _CompactProcessTile({
     required this.p,
     required this.borderColor,
     required this.onAction,
+    required this.onOpenActions,
   });
 
   @override
@@ -631,7 +709,12 @@ class _CompactProcessTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         side: BorderSide(color: borderColor),
       ),
-      child: _CompactPidRow(p: p, indent: false, onAction: onAction),
+      child: _CompactPidRow(
+        p: p,
+        indent: false,
+        onAction: onAction,
+        onOpenActions: onOpenActions,
+      ),
     );
   }
 }
@@ -640,11 +723,13 @@ class _CompactPidRow extends StatelessWidget {
   final ProcessImpact p;
   final bool indent;
   final void Function(String action) onAction;
+  final VoidCallback onOpenActions;
 
   const _CompactPidRow({
     required this.p,
     required this.indent,
     required this.onAction,
+    required this.onOpenActions,
   });
 
   @override
@@ -652,111 +737,115 @@ class _CompactPidRow extends StatelessWidget {
     final sev = _severity(p.impactScore);
     final muted = AppTheme.textMutedFor(context);
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(indent ? 28 : 10, 8, 8, 8),
-      child: Row(
-        children: [
-          if (!indent) ...[
-            Container(
-              width: 7,
-              height: 7,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(color: sev.$2, shape: BoxShape.circle),
-            ),
-            Expanded(
-              child: Text(
-                p.name,
-                style: TextStyle(
-                  color: AppTheme.textPrimaryFor(context),
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    return InkWell(
+      onTap: onOpenActions,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(indent ? 28 : 10, 8, 8, 8),
+        child: Row(
+          children: [
+            if (!indent) ...[
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 8),
+                decoration:
+                    BoxDecoration(color: sev.$2, shape: BoxShape.circle),
               ),
-            ),
-          ] else
-            Expanded(
+              Expanded(
+                child: Text(
+                  p.name,
+                  style: TextStyle(
+                    color: AppTheme.textPrimaryFor(context),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ] else
+              Expanded(
+                child: Text(
+                  'PID ${p.pid}',
+                  style: TextStyle(
+                    color: AppTheme.textSecondaryFor(context),
+                    fontSize: 12,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: _kColCpu,
               child: Text(
-                'PID ${p.pid}',
+                '${p.cpuImpact.toStringAsFixed(1)}%',
+                textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: AppTheme.textSecondaryFor(context),
                   fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
-          SizedBox(
-            width: _kColCpu,
-            child: Text(
-              '${p.cpuImpact.toStringAsFixed(1)}%',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primary,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          SizedBox(
-            width: _kColMem,
-            child: Text(
-              '${p.memoryPercent.toStringAsFixed(1)}%',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.accent,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          SizedBox(
-            width: _kColImp,
-            child: Text(
-              p.impactScore.toStringAsFixed(0),
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                fontFeatures: const [FontFeature.tabularFigures()],
-                color:
-                    AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
-              ),
-            ),
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Actions',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
-            iconSize: 22,
-            icon: Icon(Icons.more_vert, color: muted),
-            onSelected: onAction,
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: 'lower_priority',
-                child: Text('Lower CPU priority'),
-              ),
-              const PopupMenuItem(
-                value: 'normal_priority',
-                child: Text('Normal priority'),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'terminate',
-                child: Text('End process'),
-              ),
-              PopupMenuItem(
-                value: 'kill',
-                child: Text(
-                  'Force kill',
-                  style: TextStyle(color: AppTheme.error),
+            SizedBox(
+              width: _kColMem,
+              child: Text(
+                '${p.memoryPercent.toStringAsFixed(1)}%',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.accent,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            SizedBox(
+              width: _kColImp,
+              child: Text(
+                p.impactScore.toStringAsFixed(0),
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color:
+                      AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
+                ),
+              ),
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'Actions',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              iconSize: 22,
+              icon: Icon(Icons.more_vert, color: muted),
+              onSelected: onAction,
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'lower_priority',
+                  child: Text('Lower CPU priority'),
+                ),
+                const PopupMenuItem(
+                  value: 'normal_priority',
+                  child: Text('Normal priority'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'terminate',
+                  child: Text('End process'),
+                ),
+                PopupMenuItem(
+                  value: 'kill',
+                  child: Text(
+                    'Force kill',
+                    style: TextStyle(color: AppTheme.error),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

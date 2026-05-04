@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
-import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
@@ -495,7 +494,6 @@ class _AnomalyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final anomaly = provider.currentState?.anomaly;
-    final sens = context.watch<SettingsProvider>().anomalySensitivity;
 
     return Card(
       child: Padding(
@@ -513,15 +511,6 @@ class _AnomalyCard extends StatelessWidget {
                       fontSize: 13)),
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
-            Text(
-              'Label bands follow anomaly sensitivity in Settings '
-              '($sens). Resource alert sliders do not change z-scores.',
-              style: TextStyle(
-                color: AppTheme.textMutedFor(context),
-                fontSize: 10,
-                height: 1.25,
-              ),
-            ),
             const SizedBox(height: 8),
             if (anomaly == null)
               Text('No data',

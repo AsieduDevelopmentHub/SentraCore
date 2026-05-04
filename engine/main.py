@@ -31,7 +31,7 @@ from engine.alerts.alert_manager import Alert, AlertManager
 from engine.api.server import create_app, set_engine, ws_manager
 from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
-from engine.collector.system_collector import SystemCollector
+from engine.collector.system_collector import ProcessInfo, SystemCollector
 from engine.config import COLLECTION_INTERVAL_SEC, DATASTORE_DIR
 from engine.runtime_info import (
     allocate_listen_port,
@@ -207,9 +207,16 @@ class SentraCoreEngine:
         return {"ok": True, "preferences": prefs.to_dict()}
 
     def _apply_safeguard(
-        self, prefs: UserPreferences, top_procs: list[ProcessImpact]
+        self,
+        prefs: UserPreferences,
+        snapshot_procs: tuple[ProcessInfo, ...] | list[ProcessInfo],
+        tracked: list[ProcessImpact],
     ) -> None:
-        """Terminate configured processes when an alert has just fired."""
+        """Terminate configured processes when an alert has just fired.
+
+        Matches against the current snapshot top processes (instant load) plus
+        sustained tracker list, not only the small set used for alert RCA.
+        """
         if not prefs.safeguard_enabled:
             return
         targets = {
@@ -219,20 +226,40 @@ class SentraCoreEngine:
         }
         if not targets:
             return
+
+        # Snapshot first (ranked by current CPU+mem), then tracker extras — dedupe by PID.
+        ordered: list[tuple[int, str]] = []
+        seen: set[int] = set()
+        for p in snapshot_procs:
+            if p.pid not in seen:
+                seen.add(p.pid)
+                ordered.append((p.pid, p.name))
+        for proc in tracked:
+            if proc.pid not in seen:
+                seen.add(proc.pid)
+                ordered.append((proc.pid, proc.name))
+
         terminated = 0
-        for proc in top_procs[:15]:
-            key = canonical_process_name(proc.name)
+        for pid, name in ordered:
+            key = canonical_process_name(name)
             if key not in targets:
                 continue
-            res = self.process_action(proc.pid, "terminate")
-            terminated += 1
-            logger.warning(
-                "Safeguard: terminate %s (pid %s) -> %s",
-                proc.name,
-                proc.pid,
-                res,
-            )
-            if terminated >= 5:
+            res = self.process_action(pid, "terminate")
+            if res.get("ok"):
+                terminated += 1
+                logger.warning(
+                    "Safeguard: terminated %s (pid %s)",
+                    name,
+                    pid,
+                )
+            else:
+                logger.warning(
+                    "Safeguard: could not terminate %s (pid %s): %s",
+                    name,
+                    pid,
+                    res.get("error", res),
+                )
+            if terminated >= 8:
                 break
 
     async def _broadcast_state(self) -> None:
@@ -339,7 +366,10 @@ class SentraCoreEngine:
                     stress, top_procs, recent_events, prefs=prefs
                 )
                 if alert is not None:
-                    self._apply_safeguard(prefs, top_procs)
+                    tracked_for_safeguard = self.process_tracker.get_top_consumers(50)
+                    self._apply_safeguard(
+                        prefs, snapshot.processes, tracked_for_safeguard
+                    )
 
                 # 11. Broadcast via WebSocket
                 await self._broadcast_state()

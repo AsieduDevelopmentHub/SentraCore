@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
+import 'package:sentracore_dashboard/services/engine_bundled_launcher.dart';
 import 'package:sentracore_dashboard/services/engine_service.dart';
 
 /// Central state management for the SentraCore dashboard.
@@ -83,10 +85,13 @@ class EngineProvider extends ChangeNotifier {
   Timer? _reconnectTimer;
   Timer? _cooldownTicker;
 
+  /// When true, [_connectionError] may hold a bootstrap failure; do not clear it in [_tryConnect].
+  bool _bootstrapErrorPending = false;
+
   // ── Connection ──
 
   void connect() {
-    _tryConnect();
+    unawaited(_bootstrapAndConnect());
   }
 
   Future<void> reconnect() async {
@@ -104,12 +109,43 @@ class EngineProvider extends ChangeNotifier {
     _connected = false;
     _currentState = null;
     _cooldownDeadline = null;
+    _bootstrapErrorPending = false;
     notifyListeners();
+    await _bootstrapAndConnect();
+  }
+
+  Future<void> _bootstrapAndConnect() async {
+    final showChecking = Platform.isWindows &&
+        _settings.isLocalLoopback &&
+        EngineBundledLauncher.bundledEngineExecutablePath() != null;
+    if (showChecking) {
+      _connectionError = 'Starting engine, please wait…';
+      notifyListeners();
+    }
+
+    final out = await EngineBundledLauncher.ensureReady(
+      host: _settings.engineHost,
+      port: _settings.enginePort,
+    );
+
+    if (!out.success && (out.message?.isNotEmpty ?? false)) {
+      _bootstrapErrorPending = true;
+      _connectionError = out.message!;
+      notifyListeners();
+    } else {
+      _bootstrapErrorPending = false;
+      if (_connectionError == 'Starting engine, please wait…') {
+        _connectionError = '';
+      }
+    }
+
     _tryConnect();
   }
 
   void _tryConnect() {
-    _connectionError = '';
+    if (!_bootstrapErrorPending) {
+      _connectionError = '';
+    }
 
     try {
       final stream = _service.connectLive();
@@ -117,12 +153,14 @@ class EngineProvider extends ChangeNotifier {
         _onStateReceived,
         onError: (error) {
           _connected = false;
+          _bootstrapErrorPending = false;
           _connectionError = 'Connection lost. Retrying...';
           notifyListeners();
           _scheduleReconnect();
         },
         onDone: () {
           _connected = false;
+          _bootstrapErrorPending = false;
           _connectionError = 'Disconnected. Retrying...';
           notifyListeners();
           _scheduleReconnect();
@@ -144,6 +182,7 @@ class EngineProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _connected = false;
+      _bootstrapErrorPending = false;
       _connectionError = 'Cannot connect to engine. Is it running?';
       notifyListeners();
       _scheduleReconnect();
@@ -157,7 +196,7 @@ class EngineProvider extends ChangeNotifier {
       _alertSub?.cancel();
       _processFetchTimer?.cancel();
       _eventFetchTimer?.cancel();
-      _tryConnect();
+      unawaited(_bootstrapAndConnect());
     });
   }
 
@@ -199,6 +238,7 @@ class EngineProvider extends ChangeNotifier {
   // ── Data Handling ──
 
   void _onStateReceived(SystemState state) {
+    _bootstrapErrorPending = false;
     if (!_connected) {
       _connected = true;
       _connectionError = '';

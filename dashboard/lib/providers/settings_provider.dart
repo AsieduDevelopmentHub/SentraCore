@@ -18,6 +18,12 @@ class SettingsProvider extends ChangeNotifier {
   int get enginePort => _enginePort;
   bool get desktopNotificationsEnabled => _desktopNotifications;
 
+  /// True when the dashboard should treat the engine as local (auto-start exe).
+  bool get isLocalLoopback {
+    final h = _engineHost.toLowerCase().trim();
+    return h == '127.0.0.1' || h == 'localhost' || h == '::1';
+  }
+
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     _engineHost = p.getString(_kHost) ?? '127.0.0.1';

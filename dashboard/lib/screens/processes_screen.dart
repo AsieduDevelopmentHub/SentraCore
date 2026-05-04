@@ -194,16 +194,35 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                ChoiceChip(
+            child: Builder(
+              builder: (context) {
+                final chipSelectedColor =
+                    AppTheme.primary.withValues(alpha: 0.16);
+                final chipUnselectedColor = AppTheme.surfaceLightFor(context);
+                final chipSelectedLabel = TextStyle(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w700,
+                );
+                final chipUnselectedLabel = TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontWeight: FontWeight.w600,
+                );
+
+                return Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    ChoiceChip(
                   label: const Text('Impact'),
                   selected: _sortKey == _SortKey.impact,
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  selectedColor: chipSelectedColor,
+                  backgroundColor: chipUnselectedColor,
+                  labelStyle: _sortKey == _SortKey.impact
+                      ? chipSelectedLabel
+                      : chipUnselectedLabel,
                   onSelected: (sel) {
                     if (sel) setState(() => _sortKey = _SortKey.impact);
                   },
@@ -214,6 +233,11 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  selectedColor: chipSelectedColor,
+                  backgroundColor: chipUnselectedColor,
+                  labelStyle: _sortKey == _SortKey.cpu
+                      ? chipSelectedLabel
+                      : chipUnselectedLabel,
                   onSelected: (sel) {
                     if (sel) setState(() => _sortKey = _SortKey.cpu);
                   },
@@ -224,6 +248,11 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  selectedColor: chipSelectedColor,
+                  backgroundColor: chipUnselectedColor,
+                  labelStyle: _sortKey == _SortKey.memory
+                      ? chipSelectedLabel
+                      : chipUnselectedLabel,
                   onSelected: (sel) {
                     if (sel) setState(() => _sortKey = _SortKey.memory);
                   },
@@ -234,6 +263,11 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  selectedColor: chipSelectedColor,
+                  backgroundColor: chipUnselectedColor,
+                  labelStyle: _sortKey == _SortKey.name
+                      ? chipSelectedLabel
+                      : chipUnselectedLabel,
                   onSelected: (sel) {
                     if (sel) setState(() => _sortKey = _SortKey.name);
                   },
@@ -250,7 +284,9 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   onPressed: () =>
                       setState(() => _sortAscending = !_sortAscending),
                 ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ),

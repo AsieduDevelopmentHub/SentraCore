@@ -69,58 +69,18 @@ class _LogbookScreenState extends State<LogbookScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               sliver: SliverToBoxAdapter(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: LayoutBuilder(
-                      builder: (context, c) {
-                        final isWide = c.maxWidth >= 980;
-                        if (isWide) {
-                          return SizedBox(
-                            height: 280,
-                            child: ResponsiveRowColumn(
-                              spacing: 12,
-                              useIntrinsicHeight: false,
-                              breakpoint: 980,
-                              children: [
-                                Expanded(
-                                  child: _HistoryChart(
-                                    title: 'CPU',
-                                    color: AppTheme.primary,
-                                    samples: filtered,
-                                    selector: (s) => s.cpuPercent,
-                                    suffix: '%',
-                                    maxY: 100,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _HistoryChart(
-                                    title: 'Memory',
-                                    color: AppTheme.accent,
-                                    samples: filtered,
-                                    selector: (s) => s.memPercent,
-                                    suffix: '%',
-                                    maxY: 100,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _HistoryChart(
-                                    title: 'Disk pressure',
-                                    color: AppTheme.warning,
-                                    samples: filtered,
-                                    selector: (s) => s.diskPressurePercent,
-                                    suffix: '%',
-                                    maxY: 100,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return Column(
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    final isWide = c.maxWidth >= 980;
+                    if (isWide) {
+                      return SizedBox(
+                        height: 280,
+                        child: ResponsiveRowColumn(
+                          spacing: 12,
+                          useIntrinsicHeight: false,
+                          breakpoint: 980,
                           children: [
-                            SizedBox(
-                              height: 220,
+                            Expanded(
                               child: _HistoryChart(
                                 title: 'CPU',
                                 color: AppTheme.primary,
@@ -130,9 +90,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                 maxY: 100,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 220,
+                            Expanded(
                               child: _HistoryChart(
                                 title: 'Memory',
                                 color: AppTheme.accent,
@@ -142,9 +100,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                 maxY: 100,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 220,
+                            Expanded(
                               child: _HistoryChart(
                                 title: 'Disk pressure',
                                 color: AppTheme.warning,
@@ -155,10 +111,49 @@ class _LogbookScreenState extends State<LogbookScreen> {
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: [
+                        SizedBox(
+                          height: 220,
+                          child: _HistoryChart(
+                            title: 'CPU',
+                            color: AppTheme.primary,
+                            samples: filtered,
+                            selector: (s) => s.cpuPercent,
+                            suffix: '%',
+                            maxY: 100,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 220,
+                          child: _HistoryChart(
+                            title: 'Memory',
+                            color: AppTheme.accent,
+                            samples: filtered,
+                            selector: (s) => s.memPercent,
+                            suffix: '%',
+                            maxY: 100,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 220,
+                          child: _HistoryChart(
+                            title: 'Disk pressure',
+                            color: AppTheme.warning,
+                            samples: filtered,
+                            selector: (s) => s.diskPressurePercent,
+                            suffix: '%',
+                            maxY: 100,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

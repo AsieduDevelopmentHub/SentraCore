@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
@@ -6,7 +8,31 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 enum _SortKey { name, pid, cpu, memory, impact }
 
-/// Screen 3: Detailed process intelligence — card layout with actions.
+/// Groups multiple PIDs that share the same image name.
+class _ProcessGroup {
+  _ProcessGroup(this.name, List<ProcessImpact> raw)
+      : members = List<ProcessImpact>.from(raw)
+          ..sort((a, b) => b.impactScore.compareTo(a.impactScore));
+
+  final String name;
+  final List<ProcessImpact> members;
+
+  int get count => members.length;
+
+  int get minPid =>
+      members.map((p) => p.pid).fold(0x7fffffff, math.min);
+
+  double get sumCpu =>
+      members.fold<double>(0, (a, p) => a + p.cpuImpact);
+
+  double get sumMem =>
+      members.fold<double>(0, (a, p) => a + p.memoryPercent);
+
+  double get sumImpact =>
+      members.fold<double>(0, (a, p) => a + p.impactScore);
+}
+
+/// Screen 3: Process list — grouped by name, compact rows, per-PID actions.
 class ProcessesScreen extends StatefulWidget {
   const ProcessesScreen({super.key});
 
@@ -18,19 +44,66 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
   _SortKey _sortKey = _SortKey.impact;
   bool _sortAscending = false;
   String _filter = '';
+  final Set<String> _expandedNames = {};
+
+  List<_ProcessGroup> _groupAndSort(List<ProcessImpact> flat) {
+    final byName = <String, List<ProcessImpact>>{};
+    for (final p in flat) {
+      byName.putIfAbsent(p.name, () => []).add(p);
+    }
+    final groups =
+        byName.entries.map((e) => _ProcessGroup(e.key, e.value)).toList();
+
+    int cmpGroups(_ProcessGroup a, _ProcessGroup b) {
+      int cmp;
+      switch (_sortKey) {
+        case _SortKey.name:
+          cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          break;
+        case _SortKey.pid:
+          cmp = a.minPid.compareTo(b.minPid);
+          break;
+        case _SortKey.cpu:
+          cmp = a.sumCpu.compareTo(b.sumCpu);
+          break;
+        case _SortKey.memory:
+          cmp = a.sumMem.compareTo(b.sumMem);
+          break;
+        case _SortKey.impact:
+          cmp = a.sumImpact.compareTo(b.sumImpact);
+          break;
+      }
+      return _sortAscending ? cmp : -cmp;
+    }
+
+    groups.sort(cmpGroups);
+    return groups;
+  }
+
+  void _toggleExpanded(String name) {
+    setState(() {
+      if (_expandedNames.contains(name)) {
+        _expandedNames.remove(name);
+      } else {
+        _expandedNames.add(name);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EngineProvider>();
-    final processes = _sorted(provider.processes.where((p) {
+    final filtered = provider.processes.where((p) {
       if (_filter.isEmpty) return true;
       return p.name.toLowerCase().contains(_filter.toLowerCase());
-    }).toList());
+    }).toList();
+    final groups = _groupAndSort(filtered);
+    final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
 
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             border: Border(
@@ -38,82 +111,86 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Processes',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Processes',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Top processes by impact — not every app. Memory % is each '
-                    'process’s share of RAM; it will not add up to overall usage.',
-                    style: TextStyle(
-                      color: AppTheme.textMutedFor(context),
-                      fontSize: 11,
-                      height: 1.25,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Grouped by app name. Top by impact — not every process. '
+                      'Memory % is per instance.',
+                      style: TextStyle(
+                        color: AppTheme.textMutedFor(context),
+                        fontSize: 10,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const Spacer(),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceLightFor(context),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Text(
-                  '${provider.processes.length} tracked',
+                  '${groups.length} · ${filtered.length} PIDs',
                   style: TextStyle(
                     color: AppTheme.textSecondaryFor(context),
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               SizedBox(
-                width: 200,
+                width: 160,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Filter by name...',
+                    hintText: 'Filter…',
                     hintStyle: TextStyle(
                       color: AppTheme.textMutedFor(context),
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                     prefixIcon: Icon(
                       Icons.search,
-                      size: 16,
+                      size: 14,
                       color: AppTheme.textMutedFor(context),
                     ),
+                    isDense: true,
                     filled: true,
                     fillColor: AppTheme.surfaceLightFor(context),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                       borderSide:
                           BorderSide(color: Theme.of(context).dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                       borderSide:
                           BorderSide(color: Theme.of(context).dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                       borderSide: const BorderSide(color: AppTheme.primary),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
                   ),
                   style: TextStyle(
                     color: AppTheme.textPrimaryFor(context),
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                   onChanged: (v) => setState(() => _filter = v),
                 ),
@@ -122,38 +199,60 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
+              spacing: 6,
+              runSpacing: 4,
               children: [
                 ChoiceChip(
                   label: const Text('Impact'),
                   selected: _sortKey == _SortKey.impact,
-                  onSelected: (_) => setState(() => _sortKey = _SortKey.impact),
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sortKey = _SortKey.impact);
+                  },
                 ),
                 ChoiceChip(
                   label: const Text('CPU'),
                   selected: _sortKey == _SortKey.cpu,
-                  onSelected: (_) => setState(() => _sortKey = _SortKey.cpu),
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sortKey = _SortKey.cpu);
+                  },
                 ),
                 ChoiceChip(
                   label: const Text('Memory'),
                   selected: _sortKey == _SortKey.memory,
-                  onSelected: (_) => setState(() => _sortKey = _SortKey.memory),
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sortKey = _SortKey.memory);
+                  },
                 ),
                 ChoiceChip(
                   label: const Text('Name'),
                   selected: _sortKey == _SortKey.name,
-                  onSelected: (_) => setState(() => _sortKey = _SortKey.name),
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sortKey = _SortKey.name);
+                  },
                 ),
                 IconButton(
                   tooltip: _sortAscending ? 'Ascending' : 'Descending',
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   icon: Icon(
                     _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 20,
+                    size: 18,
                   ),
                   onPressed: () =>
                       setState(() => _sortAscending = !_sortAscending),
@@ -164,25 +263,39 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
         ),
         _ProcessSummaryStrip(provider: provider),
         Expanded(
-          child: processes.isEmpty
+          child: groups.isEmpty
               ? Center(
                   child: Text(
                     'No process data yet.',
                     style: TextStyle(color: AppTheme.textMutedFor(context)),
                   ),
                 )
-              : ListView.builder(
+              : ListView.separated(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: processes.length,
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  itemCount: groups.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 2),
                   itemBuilder: (context, i) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _ProcessCard(
-                        p: processes[i],
-                        onAction: (action) =>
-                            _runProcessAction(context, processes[i], action),
-                      ),
+                    final g = groups[i];
+                    if (g.count == 1) {
+                      return _CompactProcessTile(
+                        p: g.members.first,
+                        borderColor: divider,
+                        onAction: (action) => _runProcessAction(
+                          context,
+                          g.members.first,
+                          action,
+                        ),
+                      );
+                    }
+                    final expanded = _expandedNames.contains(g.name);
+                    return _GroupedProcessTile(
+                      group: g,
+                      expanded: expanded,
+                      borderColor: divider,
+                      onToggle: () => _toggleExpanded(g.name),
+                      onAction: (p, action) =>
+                          _runProcessAction(context, p, action),
                     );
                   },
                 ),
@@ -235,31 +348,6 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
       ),
     );
   }
-
-  List<ProcessImpact> _sorted(List<ProcessImpact> list) {
-    list.sort((a, b) {
-      int cmp;
-      switch (_sortKey) {
-        case _SortKey.name:
-          cmp = a.name.compareTo(b.name);
-          break;
-        case _SortKey.pid:
-          cmp = a.pid.compareTo(b.pid);
-          break;
-        case _SortKey.cpu:
-          cmp = a.cpuImpact.compareTo(b.cpuImpact);
-          break;
-        case _SortKey.memory:
-          cmp = a.memoryPercent.compareTo(b.memoryPercent);
-          break;
-        case _SortKey.impact:
-          cmp = a.impactScore.compareTo(b.impactScore);
-          break;
-      }
-      return _sortAscending ? cmp : -cmp;
-    });
-    return list;
-  }
 }
 
 class _ProcessSummaryStrip extends StatelessWidget {
@@ -278,28 +366,31 @@ class _ProcessSummaryStrip extends StatelessWidget {
         .reduce((a, b) => a.impactScore > b.impactScore ? a : b);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       color: AppTheme.surfaceLightFor(context),
-      child: Row(
-        children: [
-          _SummaryChip(
-            'Top CPU',
-            '${topCpu.name} (${topCpu.cpuImpact.toStringAsFixed(1)}%)',
-            AppTheme.primary,
-          ),
-          const SizedBox(width: 24),
-          _SummaryChip(
-            'Top Memory',
-            '${topMem.name} (${topMem.memoryPercent.toStringAsFixed(1)}%)',
-            AppTheme.accent,
-          ),
-          const SizedBox(width: 24),
-          _SummaryChip(
-            'Highest Impact',
-            '${topImpact.name} (${topImpact.impactScore.toStringAsFixed(1)})',
-            AppTheme.warning,
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _SummaryChip(
+              'CPU',
+              '${topCpu.name} ${topCpu.cpuImpact.toStringAsFixed(1)}%',
+              AppTheme.primary,
+            ),
+            const SizedBox(width: 16),
+            _SummaryChip(
+              'Mem',
+              '${topMem.name} ${topMem.memoryPercent.toStringAsFixed(1)}%',
+              AppTheme.accent,
+            ),
+            const SizedBox(width: 16),
+            _SummaryChip(
+              'Impact',
+              '${topImpact.name} ${topImpact.impactScore.toStringAsFixed(1)}',
+              AppTheme.warning,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -315,17 +406,17 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.circle, size: 6, color: color),
-        const SizedBox(width: 6),
+        Icon(Icons.circle, size: 5, color: color),
+        const SizedBox(width: 4),
         Text(
-          '$label: ',
-          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11),
+          '$label ',
+          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 10),
         ),
         Text(
           value,
           style: TextStyle(
             color: color,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -334,154 +425,114 @@ class _SummaryChip extends StatelessWidget {
   }
 }
 
-class _ProcessCard extends StatelessWidget {
-  final ProcessImpact p;
-  final void Function(String action) onAction;
+/// Group header + expandable PIDs.
+class _GroupedProcessTile extends StatelessWidget {
+  final _ProcessGroup group;
+  final bool expanded;
+  final Color borderColor;
+  final VoidCallback onToggle;
+  final void Function(ProcessImpact p, String action) onAction;
 
-  const _ProcessCard({required this.p, required this.onAction});
+  const _GroupedProcessTile({
+    required this.group,
+    required this.expanded,
+    required this.borderColor,
+    required this.onToggle,
+    required this.onAction,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final sev = _severity(p.impactScore);
-    final border = Theme.of(context).dividerColor.withValues(alpha: 0.35);
+    final sev = _severity(group.members.first.impactScore);
+    final muted = AppTheme.textMutedFor(context);
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
-      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: border),
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: borderColor),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+              child: Row(
+                children: [
+                  Icon(
+                    expanded ? Icons.expand_more : Icons.chevron_right,
+                    size: 18,
+                    color: muted,
+                  ),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(color: sev.$2, shape: BoxShape.circle),
+                  ),
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '×${group.count}',
+                    style: TextStyle(color: muted, fontSize: 10),
+                  ),
+                  const SizedBox(width: 8),
+                  _MiniStat('CPU', group.sumCpu, AppTheme.primary),
+                  const SizedBox(width: 8),
+                  _MiniStat('Mem', group.sumMem, AppTheme.accent),
+                  const SizedBox(width: 8),
+                  Text(
+                    group.sumImpact.toStringAsFixed(0),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.stressColor(
+                        _stressLevelForScore(
+                          group.members
+                              .map((e) => e.impactScore)
+                              .reduce(math.max),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
               children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: sev.$2,
-                    shape: BoxShape.circle,
+                for (var i = 0; i < group.members.length; i++) ...[
+                  if (i > 0)
+                    Divider(height: 1, thickness: 1, color: borderColor),
+                  _CompactPidRow(
+                    p: group.members[i],
+                    indent: true,
+                    onAction: (a) => onAction(group.members[i], a),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p.name,
-                        style: TextStyle(
-                          color: AppTheme.textPrimaryFor(context),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          _MiniChip(
-                              'PID ${p.pid}', AppTheme.textMutedFor(context)),
-                          _MiniChip(
-                            'Avg CPU ${p.avgCpuPercent.toStringAsFixed(1)}%',
-                            AppTheme.primary,
-                          ),
-                          _MiniChip(
-                            'Avg mem ${p.avgMemoryPercent.toStringAsFixed(1)}%',
-                            AppTheme.accent,
-                          ),
-                          _MiniChip(sev.$1, sev.$2),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      p.impactScore.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.stressColor(
-                          _stressLevelForScore(p.impactScore),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'impact',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.textMutedFor(context),
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      tooltip: 'Process actions',
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: AppTheme.textMutedFor(context),
-                      ),
-                      onSelected: onAction,
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(
-                          value: 'lower_priority',
-                          child: Text('Lower CPU priority'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'normal_priority',
-                          child: Text('Normal priority'),
-                        ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: 'terminate',
-                          child: Text('End process'),
-                        ),
-                        PopupMenuItem(
-                          value: 'kill',
-                          child: Text(
-                            'Force kill',
-                            style: TextStyle(color: AppTheme.error),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricBar(
-                    label: 'Current CPU',
-                    value: p.cpuImpact,
-                    color: AppTheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MetricBar(
-                    label: 'Current memory',
-                    value: p.memoryPercent,
-                    color: AppTheme.accent,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 180),
+          ),
+        ],
       ),
     );
   }
@@ -501,82 +552,180 @@ class _ProcessCard extends StatelessWidget {
   }
 }
 
-class _MiniChip extends StatelessWidget {
-  final String text;
-  final Color color;
-  const _MiniChip(this.text, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricBar extends StatelessWidget {
+class _MiniStat extends StatelessWidget {
   final String label;
   final double value;
   final Color color;
 
-  const _MetricBar({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _MiniStat(this.label, this.value, this.color);
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: AppTheme.textMutedFor(context),
-              ),
-            ),
-            Text(
-              '${value.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: TextStyle(fontSize: 8, color: AppTheme.textMutedFor(context)),
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: (value / 100).clamp(0, 1),
-            minHeight: 5,
-            backgroundColor:
-                Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            valueColor: AlwaysStoppedAnimation<Color>(
-              color.withValues(alpha: 0.75),
-            ),
+        Text(
+          '${value.toStringAsFixed(1)}%',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: color,
           ),
         ),
       ],
     );
+  }
+}
+
+/// Single process — one dense row.
+class _CompactProcessTile extends StatelessWidget {
+  final ProcessImpact p;
+  final Color borderColor;
+  final void Function(String action) onAction;
+
+  const _CompactProcessTile({
+    required this.p,
+    required this.borderColor,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: borderColor),
+      ),
+      child: _CompactPidRow(p: p, indent: false, onAction: onAction),
+    );
+  }
+}
+
+class _CompactPidRow extends StatelessWidget {
+  final ProcessImpact p;
+  final bool indent;
+  final void Function(String action) onAction;
+
+  const _CompactPidRow({
+    required this.p,
+    required this.indent,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sev = _severity(p.impactScore);
+    final muted = AppTheme.textMutedFor(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(indent ? 28 : 8, 4, 4, 4),
+      child: Row(
+        children: [
+          if (!indent) ...[
+            Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(color: sev.$2, shape: BoxShape.circle),
+            ),
+            Expanded(
+              child: Text(
+                p.name,
+                style: TextStyle(
+                  color: AppTheme.textPrimaryFor(context),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ] else
+            Expanded(
+              child: Text(
+                'PID ${p.pid}',
+                style: TextStyle(
+                  color: AppTheme.textSecondaryFor(context),
+                  fontSize: 11,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          if (indent) const SizedBox(width: 4),
+          Text(
+            '${p.cpuImpact.toStringAsFixed(1)}%',
+            style: TextStyle(fontSize: 10, color: AppTheme.primary),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${p.memoryPercent.toStringAsFixed(1)}%',
+            style: TextStyle(fontSize: 10, color: AppTheme.accent),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 28,
+            child: Text(
+              p.impactScore.toStringAsFixed(0),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
+              ),
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Actions',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            iconSize: 18,
+            icon: Icon(Icons.more_vert, color: muted),
+            onSelected: onAction,
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'lower_priority',
+                child: Text('Lower CPU priority'),
+              ),
+              const PopupMenuItem(
+                value: 'normal_priority',
+                child: Text('Normal priority'),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'terminate',
+                child: Text('End process'),
+              ),
+              PopupMenuItem(
+                value: 'kill',
+                child: Text(
+                  'Force kill',
+                  style: TextStyle(color: AppTheme.error),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  (String, Color) _severity(double score) {
+    if (score > 70) return ('Critical', AppTheme.stressCritical);
+    if (score > 40) return ('High', AppTheme.stressHigh);
+    if (score > 20) return ('Moderate', AppTheme.stressModerate);
+    return ('Low', AppTheme.stressLow);
+  }
+
+  String _stressLevelForScore(double score) {
+    if (score > 70) return 'critical';
+    if (score > 40) return 'high';
+    if (score > 20) return 'moderate';
+    return 'low';
   }
 }

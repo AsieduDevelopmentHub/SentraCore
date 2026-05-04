@@ -158,7 +158,7 @@ class EngineProvider extends ChangeNotifier {
   }
 
   Future<void> _bootstrapAndConnect() async {
-    final showChecking = Platform.isWindows &&
+    final showChecking =
         EngineBundledLauncher.bundledEngineExecutablePath() != null;
     if (showChecking) {
       _connectionError = 'Starting engine, please wait…';
@@ -463,6 +463,7 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
     _service.dispose();
+    unawaited(EngineBundledLauncher.stopOwnedEngine());
     super.dispose();
   }
 }

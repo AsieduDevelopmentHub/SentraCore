@@ -213,77 +213,79 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                   runSpacing: 4,
                   children: [
                     ChoiceChip(
-                  label: const Text('Impact'),
-                  selected: _sortKey == _SortKey.impact,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  selectedColor: chipSelectedColor,
-                  backgroundColor: chipUnselectedColor,
-                  labelStyle: _sortKey == _SortKey.impact
-                      ? chipSelectedLabel
-                      : chipUnselectedLabel,
-                  onSelected: (sel) {
-                    if (sel) setState(() => _sortKey = _SortKey.impact);
-                  },
-                ),
-                ChoiceChip(
-                  label: const Text('CPU'),
-                  selected: _sortKey == _SortKey.cpu,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  selectedColor: chipSelectedColor,
-                  backgroundColor: chipUnselectedColor,
-                  labelStyle: _sortKey == _SortKey.cpu
-                      ? chipSelectedLabel
-                      : chipUnselectedLabel,
-                  onSelected: (sel) {
-                    if (sel) setState(() => _sortKey = _SortKey.cpu);
-                  },
-                ),
-                ChoiceChip(
-                  label: const Text('Memory'),
-                  selected: _sortKey == _SortKey.memory,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  selectedColor: chipSelectedColor,
-                  backgroundColor: chipUnselectedColor,
-                  labelStyle: _sortKey == _SortKey.memory
-                      ? chipSelectedLabel
-                      : chipUnselectedLabel,
-                  onSelected: (sel) {
-                    if (sel) setState(() => _sortKey = _SortKey.memory);
-                  },
-                ),
-                ChoiceChip(
-                  label: const Text('Name'),
-                  selected: _sortKey == _SortKey.name,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  selectedColor: chipSelectedColor,
-                  backgroundColor: chipUnselectedColor,
-                  labelStyle: _sortKey == _SortKey.name
-                      ? chipSelectedLabel
-                      : chipUnselectedLabel,
-                  onSelected: (sel) {
-                    if (sel) setState(() => _sortKey = _SortKey.name);
-                  },
-                ),
-                IconButton(
-                  tooltip: _sortAscending ? 'Ascending' : 'Descending',
-                  visualDensity: VisualDensity.compact,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  icon: Icon(
-                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 18,
-                  ),
-                  onPressed: () =>
-                      setState(() => _sortAscending = !_sortAscending),
-                ),
+                      label: const Text('Impact'),
+                      selected: _sortKey == _SortKey.impact,
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      selectedColor: chipSelectedColor,
+                      backgroundColor: chipUnselectedColor,
+                      labelStyle: _sortKey == _SortKey.impact
+                          ? chipSelectedLabel
+                          : chipUnselectedLabel,
+                      onSelected: (sel) {
+                        if (sel) setState(() => _sortKey = _SortKey.impact);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('CPU'),
+                      selected: _sortKey == _SortKey.cpu,
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      selectedColor: chipSelectedColor,
+                      backgroundColor: chipUnselectedColor,
+                      labelStyle: _sortKey == _SortKey.cpu
+                          ? chipSelectedLabel
+                          : chipUnselectedLabel,
+                      onSelected: (sel) {
+                        if (sel) setState(() => _sortKey = _SortKey.cpu);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('Memory'),
+                      selected: _sortKey == _SortKey.memory,
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      selectedColor: chipSelectedColor,
+                      backgroundColor: chipUnselectedColor,
+                      labelStyle: _sortKey == _SortKey.memory
+                          ? chipSelectedLabel
+                          : chipUnselectedLabel,
+                      onSelected: (sel) {
+                        if (sel) setState(() => _sortKey = _SortKey.memory);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('Name'),
+                      selected: _sortKey == _SortKey.name,
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      selectedColor: chipSelectedColor,
+                      backgroundColor: chipUnselectedColor,
+                      labelStyle: _sortKey == _SortKey.name
+                          ? chipSelectedLabel
+                          : chipUnselectedLabel,
+                      onSelected: (sel) {
+                        if (sel) setState(() => _sortKey = _SortKey.name);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: _sortAscending ? 'Ascending' : 'Descending',
+                      visualDensity: VisualDensity.compact,
+                      constraints:
+                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                      icon: Icon(
+                        _sortAscending
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        size: 18,
+                      ),
+                      onPressed: () =>
+                          setState(() => _sortAscending = !_sortAscending),
+                    ),
                   ],
                 );
               },

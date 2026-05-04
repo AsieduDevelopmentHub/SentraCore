@@ -1,0 +1,443 @@
+name: Build Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  # Derived from tag at runtime (e.g. v1.0.3 -> 1.0.3)
+  RELEASE_VERSION: ""
+  ENGINE_PORT: "8740"
+
+jobs:
+  windows-installer-x64:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        shell: pwsh
+        run: |
+          $ref = "${env:GITHUB_REF_NAME}"
+          if ($ref -like "v*") { $ver = $ref.Substring(1) } else { $ver = $ref }
+          "RELEASE_VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release version: $ver"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Inject version into project files
+        shell: pwsh
+        run: |
+          $ver = "${env:RELEASE_VERSION}"
+          # Flutter pubspec version (keep build number stable for CI)
+          (Get-Content "dashboard/pubspec.yaml") `
+            -replace '^version:\s*.+$', "version: $ver+${env:GITHUB_RUN_NUMBER}" `
+            | Set-Content "dashboard/pubspec.yaml"
+          # Engine version metadata
+          (Get-Content "engine/__init__.py") `
+            -replace '__version__\s*=\s*\"[^\"]+\"', "__version__ = `"$ver`"" `
+            | Set-Content "engine/__init__.py"
+          (Get-Content "engine/api/server.py") `
+            -replace 'version=\"[^\"]+\"', "version=`"$ver`"" `
+            | Set-Content "engine/api/server.py"
+          # Inno Setup version + output name
+          (Get-Content "installer/sentracore.iss") `
+            -replace '^AppVersion=.*$', "AppVersion=$ver" `
+            -replace '^OutputBaseFilename=.*$', "OutputBaseFilename=SentraCore_Setup_v$ver" `
+            | Set-Content "installer/sentracore.iss"
+
+      - name: Create venv + install engine deps
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+          .\.venv\Scripts\python.exe -m pip install pyinstaller
+
+      - name: Build engine (PyInstaller)
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m PyInstaller --name "SentraCoreEngine" `
+            --noconsole `
+            --onefile `
+            --hidden-import "uvicorn.logging" `
+            --hidden-import "uvicorn.loops" `
+            --hidden-import "uvicorn.loops.auto" `
+            --hidden-import "uvicorn.protocols" `
+            --hidden-import "uvicorn.protocols.http" `
+            --hidden-import "uvicorn.protocols.http.auto" `
+            --hidden-import "uvicorn.protocols.websockets" `
+            --hidden-import "uvicorn.protocols.websockets.auto" `
+            --hidden-import "engine.api.server" `
+            --clean `
+            engine/main.py
+          if (!(Test-Path "dist\\SentraCoreEngine.exe")) { throw "Engine exe not found" }
+
+      - name: Validate engine runs (health check)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ".\\dist\\SentraCoreEngine.exe" -PassThru -WindowStyle Hidden
+          try {
+            $ok = $false
+            for ($i=0; $i -lt 40; $i++) {
+              try {
+                $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:${env:ENGINE_PORT}/api/v1/health"
+                if ($r.StatusCode -eq 200) { $ok = $true; break }
+              } catch {}
+              Start-Sleep -Milliseconds 500
+            }
+            if (-not $ok) { throw "Engine health check failed" }
+          } finally {
+            try { Stop-Process -Id $p.Id -Force } catch {}
+          }
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build dashboard (Flutter Windows x64)
+        shell: pwsh
+        working-directory: dashboard
+        run: |
+          flutter --version
+          flutter pub get
+          flutter build windows --release
+          if (!(Test-Path "build\\windows\\x64\\runner\\Release\\sentracore_dashboard.exe")) { throw "Dashboard exe not found" }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Build installer (ISCC)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw "ISCC not found at $iscc" }
+          & $iscc "installer\\sentracore.iss"
+          Get-ChildItem "dist" -Filter "SentraCore_Setup_v*.exe" | Select-Object -First 1 | ForEach-Object { $_.FullName }
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SentraCore_Windows_x64_installer
+          path: dist/SentraCore_Setup_v*.exe
+
+  macos-app:
+    name: macOS .app + engine
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          if [[ "$REF" == v* ]]; then VER="${REF:1}"; else VER="$REF"; fi
+          echo "RELEASE_VERSION=$VER" >> "$GITHUB_ENV"
+          echo "Release version: $VER"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/pip
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Inject version into project files
+        run: |
+          VER="${RELEASE_VERSION}"
+          python - <<'PY'
+          import os, re, pathlib
+          ver = os.environ["RELEASE_VERSION"]
+          run = os.environ.get("GITHUB_RUN_NUMBER","1")
+          p = pathlib.Path("dashboard/pubspec.yaml")
+          p.write_text(re.sub(r"^version:\s*.+$", f"version: {ver}+{run}", p.read_text(), flags=re.M))
+          init = pathlib.Path("engine/__init__.py")
+          init.write_text(re.sub(r'__version__\s*=\s*\"[^\"]+\"', f'__version__ = \"{ver}\"', init.read_text()))
+          srv = pathlib.Path("engine/api/server.py")
+          srv.write_text(re.sub(r'version=\"[^\"]+\"', f'version=\"{ver}\"', srv.read_text()))
+          PY
+
+      - name: Install engine deps + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build engine (PyInstaller)
+        run: |
+          python -m PyInstaller --name "SentraCoreEngine" \
+            --onefile \
+            --windowed \
+            --hidden-import "uvicorn.logging" \
+            --hidden-import "uvicorn.loops" \
+            --hidden-import "uvicorn.loops.auto" \
+            --hidden-import "uvicorn.protocols" \
+            --hidden-import "uvicorn.protocols.http" \
+            --hidden-import "uvicorn.protocols.http.auto" \
+            --hidden-import "uvicorn.protocols.websockets" \
+            --hidden-import "uvicorn.protocols.websockets.auto" \
+            --hidden-import "engine.api.server" \
+            --clean \
+            engine/main.py
+          test -f dist/SentraCoreEngine
+
+      - name: Validate engine runs (health check)
+        run: |
+          chmod +x dist/SentraCoreEngine
+          ./dist/SentraCoreEngine &
+          PID=$!
+          OK=0
+          for i in {1..40}; do
+            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+              OK=1
+              break
+            fi
+            sleep 0.5
+          done
+          kill $PID || true
+          if [ "$OK" -ne 1 ]; then
+            echo "Engine health check failed"
+            exit 1
+          fi
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build dashboard (Flutter macOS)
+        working-directory: dashboard
+        run: |
+          flutter pub get
+          flutter build macos --release
+
+      - name: Bundle engine into .app + sign (ad-hoc)
+        run: |
+          APP="$(ls dashboard/build/macos/Build/Products/Release/"*.app | head -n 1)"
+          test -d "$APP"
+          chmod +x dist/SentraCoreEngine
+          cp dist/SentraCoreEngine "$APP/Contents/MacOS/SentraCoreEngine"
+          chmod +x "$APP/Contents/MacOS/SentraCoreEngine"
+          codesign --force --deep --sign - "$APP"
+
+      - name: Package (zip)
+        run: |
+          APP="$(ls dashboard/build/macos/Build/Products/Release/"*.app | head -n 1)"
+          zip -r "SentraCore_macOS_${RELEASE_VERSION}.zip" "$APP"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SentraCore_macOS_app
+          path: SentraCore_macOS_*.zip
+
+  linux-bundle:
+    name: Linux bundle + engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          if [[ "$REF" == v* ]]; then VER="${REF:1}"; else VER="$REF"; fi
+          echo "RELEASE_VERSION=$VER" >> "$GITHUB_ENV"
+          echo "Release version: $VER"
+
+      - name: Install Linux desktop build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev \
+            libfuse2 curl
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Inject version into project files
+        run: |
+          python - <<'PY'
+          import os, re, pathlib
+          ver = os.environ["RELEASE_VERSION"]
+          run = os.environ.get("GITHUB_RUN_NUMBER","1")
+          p = pathlib.Path("dashboard/pubspec.yaml")
+          p.write_text(re.sub(r"^version:\s*.+$", f"version: {ver}+{run}", p.read_text(), flags=re.M))
+          init = pathlib.Path("engine/__init__.py")
+          init.write_text(re.sub(r'__version__\s*=\s*\"[^\"]+\"', f'__version__ = \"{ver}\"', init.read_text()))
+          srv = pathlib.Path("engine/api/server.py")
+          srv.write_text(re.sub(r'version=\"[^\"]+\"', f'version=\"{ver}\"', srv.read_text()))
+          PY
+
+      - name: Install engine deps + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build engine (PyInstaller)
+        run: |
+          python -m PyInstaller --name "SentraCoreEngine" \
+            --onefile \
+            --hidden-import "uvicorn.logging" \
+            --hidden-import "uvicorn.loops" \
+            --hidden-import "uvicorn.loops.auto" \
+            --hidden-import "uvicorn.protocols" \
+            --hidden-import "uvicorn.protocols.http" \
+            --hidden-import "uvicorn.protocols.http.auto" \
+            --hidden-import "uvicorn.protocols.websockets" \
+            --hidden-import "uvicorn.protocols.websockets.auto" \
+            --hidden-import "engine.api.server" \
+            --clean \
+            engine/main.py
+          test -f dist/SentraCoreEngine
+
+      - name: Validate engine runs (health check)
+        run: |
+          chmod +x dist/SentraCoreEngine
+          ./dist/SentraCoreEngine &
+          PID=$!
+          OK=0
+          for i in {1..40}; do
+            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+              OK=1
+              break
+            fi
+            sleep 0.5
+          done
+          kill $PID || true
+          if [ "$OK" -ne 1 ]; then
+            echo "Engine health check failed"
+            exit 1
+          fi
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build dashboard (Flutter Linux)
+        working-directory: dashboard
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      - name: Package (AppImage)
+        run: |
+          # Create an AppDir with Flutter bundle + engine
+          rm -rf SentraCore.AppDir
+          mkdir -p SentraCore.AppDir/usr/bin
+          cp -R dashboard/build/linux/x64/release/bundle/* SentraCore.AppDir/usr/bin/
+          cp dist/SentraCoreEngine SentraCore.AppDir/usr/bin/SentraCoreEngine
+          chmod +x SentraCore.AppDir/usr/bin/SentraCoreEngine
+
+          # AppRun launcher
+          cat > SentraCore.AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          set -e
+          HERE="$(dirname "$(readlink -f "$0")")"
+          cd "$HERE/usr/bin"
+          # Start engine in background (best-effort) and stop it when UI exits.
+          ./SentraCoreEngine >/dev/null 2>&1 &
+          ENGINE_PID=$!
+          trap "kill $ENGINE_PID >/dev/null 2>&1 || true" EXIT
+          # Wait until engine responds (avoid UI starting before backend).
+          OK=0
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+              OK=1
+              break
+            fi
+            sleep 0.5
+          done
+          exec ./sentracore_dashboard "$@"
+          EOF
+          chmod +x SentraCore.AppDir/AppRun
+
+          # Desktop entry
+          cat > SentraCore.AppDir/sentracore.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=SentraCore
+          Exec=sentracore_dashboard
+          Icon=sentracore
+          Categories=Utility;
+          EOF
+
+          # Minimal icon (1x1 PNG) to satisfy appimagetool
+          printf 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7cS2kAAAAASUVORK5CYII=' | base64 -d > SentraCore.AppDir/sentracore.png
+
+          # Download appimagetool and build AppImage
+          curl -L -o appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+          ./appimagetool SentraCore.AppDir SentraCore_linux.AppImage
+          test -f SentraCore_linux.AppImage
+
+      - name: Rename AppImage with version
+        run: |
+          mv SentraCore_linux.AppImage "SentraCore_linux_${RELEASE_VERSION}.AppImage"
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SentraCore_Linux_bundle
+          path: SentraCore_linux_*.AppImage
+
+  github-release:
+    name: Publish GitHub Release
+    needs: [windows-installer-x64, macos-app, linux-bundle]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create GitHub Release (attach assets)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/SentraCore_Setup_v*.exe
+            artifacts/**/SentraCore_macOS_*.zip
+            artifacts/**/SentraCore_linux_*.AppImage
+

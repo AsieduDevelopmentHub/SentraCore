@@ -112,7 +112,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="SentraCore API",
         description="Local system behavior intelligence API",
-        version="1.0.0",
+        version="1.0.2",
         docs_url="/docs",
         redoc_url="/redoc",
     )

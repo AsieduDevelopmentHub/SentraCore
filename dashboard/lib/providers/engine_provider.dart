@@ -19,7 +19,7 @@ class EngineProvider extends ChangeNotifier {
     required DesktopNotificationService notifications,
   })  : _settings = settings,
         _notifications = notifications {
-    _service = EngineService();
+    _service = EngineService(port: settings.lastEngineHttpPort);
   }
 
   final SettingsProvider _settings;
@@ -103,7 +103,7 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
     _service.dispose();
-    _service = EngineService();
+    _service = EngineService(port: _settings.lastEngineHttpPort);
     _connected = false;
     _currentState = null;
     _cooldownDeadline = null;
@@ -122,8 +122,7 @@ class EngineProvider extends ChangeNotifier {
     }
 
     final out = await EngineBundledLauncher.ensureReady(
-      host: EngineService.defaultHost,
-      port: EngineService.defaultPort,
+      preferredPort: _settings.lastEngineHttpPort,
     );
 
     if (!out.success && (out.message?.isNotEmpty ?? false)) {
@@ -135,6 +134,14 @@ class EngineProvider extends ChangeNotifier {
       if (_connectionError == 'Starting engine, please wait…') {
         _connectionError = '';
       }
+    }
+
+    if (out.success) {
+      if (out.activePort != _service.port) {
+        _service.dispose();
+        _service = EngineService(port: out.activePort);
+      }
+      await _settings.setLastEngineHttpPort(out.activePort);
     }
 
     _tryConnect();

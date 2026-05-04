@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider extends ChangeNotifier {
   static const _kDesktopNotif = 'desktop_notifications';
   static const _kTheme = 'theme_mode';
+  static const _kLastEnginePort = 'engine_last_http_port';
   static const _kAlertCpu = 'alert_cpu_percent';
   static const _kAlertMem = 'alert_memory_percent';
   static const _kAlertDisk = 'alert_disk_pressure';
@@ -19,6 +20,7 @@ class SettingsProvider extends ChangeNotifier {
   double _alertDiskPressure = 80;
   bool _safeguardEnabled = false;
   String _safeguardProcessNames = '';
+  int _lastEngineHttpPort = 8740;
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -29,6 +31,7 @@ class SettingsProvider extends ChangeNotifier {
   double get alertDiskPressure => _alertDiskPressure;
   bool get safeguardEnabled => _safeguardEnabled;
   String get safeguardProcessNames => _safeguardProcessNames;
+  int get lastEngineHttpPort => _lastEngineHttpPort;
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -46,6 +49,7 @@ class SettingsProvider extends ChangeNotifier {
     _alertDiskPressure = p.getDouble(_kAlertDisk) ?? 80;
     _safeguardEnabled = p.getBool(_kSafeguardOn) ?? false;
     _safeguardProcessNames = p.getString(_kSafeguardNames) ?? '';
+    _lastEngineHttpPort = p.getInt(_kLastEnginePort) ?? 8740;
     notifyListeners();
   }
 
@@ -63,6 +67,14 @@ class SettingsProvider extends ChangeNotifier {
     await p.setDouble(_kAlertDisk, _alertDiskPressure);
     await p.setBool(_kSafeguardOn, _safeguardEnabled);
     await p.setString(_kSafeguardNames, _safeguardProcessNames);
+    await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
+  }
+
+  Future<void> setLastEngineHttpPort(int port) async {
+    _lastEngineHttpPort = port.clamp(1, 65535);
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
+    notifyListeners();
   }
 
   void setDesktopNotifications(bool v) {

@@ -32,7 +32,12 @@ from engine.api.server import create_app, set_engine, ws_manager
 from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import SystemCollector
-from engine.config import API_HOST, API_PORT, COLLECTION_INTERVAL_SEC, DATASTORE_DIR
+from engine.config import API_HOST, COLLECTION_INTERVAL_SEC, DATASTORE_DIR
+from engine.runtime_info import (
+    allocate_listen_port,
+    clear_engine_runtime,
+    write_engine_runtime,
+)
 from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
@@ -395,10 +400,12 @@ def main() -> None:
     _configure_logging()
 
     # Avoid print() in packaged --noconsole builds (stdout may be None).
+    listen_host, listen_port = allocate_listen_port()
+
     logger.info("%s v%s", __app_name__, __version__)
-    logger.info("API: http://%s:%s", API_HOST, API_PORT)
-    logger.info("Docs: http://%s:%s/docs", API_HOST, API_PORT)
-    logger.info("WebSocket: ws://%s:%s/ws/live", API_HOST, API_PORT)
+    logger.info("API: http://%s:%s", listen_host, listen_port)
+    logger.info("Docs: http://%s:%s/docs", listen_host, listen_port)
+    logger.info("WebSocket: ws://%s:%s/ws/live", listen_host, listen_port)
     logger.info("Interval: %ss", COLLECTION_INTERVAL_SEC)
 
     # Create engine and register with API
@@ -413,10 +420,11 @@ def main() -> None:
     # it assumes sys.stderr is a stream with .isatty(). Disable uvicorn's log config
     # and rely on our own engine logging (file-backed when no console).
     safe_stream = getattr(sys, "stderr", None) is not None
+    write_engine_runtime(listen_host, listen_port)
     config = uvicorn.Config(
         app=app,
-        host=API_HOST,
-        port=API_PORT,
+        host=listen_host,
+        port=listen_port,
         log_level="warning",
         access_log=False,
         log_config=None if not safe_stream else uvicorn.config.LOGGING_CONFIG,
@@ -428,6 +436,7 @@ def main() -> None:
         logger.info("Received signal %d, shutting down...", signum)
         engine.stop()
         server.should_exit = True
+        clear_engine_runtime()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -453,11 +462,14 @@ def main() -> None:
                 await task
             except asyncio.CancelledError:
                 pass
+        clear_engine_runtime()
 
     try:
         asyncio.run(run_all())
     except KeyboardInterrupt:
         pass
+    finally:
+        clear_engine_runtime()
 
     logger.info("%s shut down cleanly.", __app_name__)
 

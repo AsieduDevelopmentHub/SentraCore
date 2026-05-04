@@ -59,6 +59,8 @@ On startup, the engine will:
 | `GET http://localhost:8740/api/v1/alerts` | Alert history with Root Cause Analysis |
 | `GET http://localhost:8740/api/v1/preferences` | User alert thresholds and safeguard process list |
 | `PUT http://localhost:8740/api/v1/preferences` | Update preferences (JSON body; persisted under datastore) |
+
+**Dynamic HTTP port:** if `8740` is already in use, the engine binds the next free port up to `65535` and writes `engine_runtime.json` in the datastore (`http_host`, `http_port`). The Flutter dashboard discovers the active port via that file, a cached last-known port, and a short local scan starting at `8740`.
 | `WS ws://localhost:8740/ws/live` | Real-time state broadcast (WebSocket) |
 
 ---

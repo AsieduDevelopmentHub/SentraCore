@@ -34,6 +34,23 @@ class EnginePortResolver {
     }
   }
 
+  /// If [engine_runtime.json] points at [port] but nothing healthy listens there,
+  /// remove the file so discovery does not keep preferring a dead process (e.g.
+  /// after taskkill / crash where the engine could not clear the file).
+  static Future<void> clearStaleRuntimeFileIfPortDead(int port) async {
+    final path = _runtimeFilePath();
+    if (path == null) return;
+    try {
+      final f = File(path);
+      if (!f.existsSync()) return;
+      final j = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+      final recorded = (j['http_port'] as num?)?.toInt();
+      if (recorded != port) return;
+      if (await engineHealthy(EngineService.defaultHost, port)) return;
+      await f.delete();
+    } catch (_) {}
+  }
+
   /// True when [GET /api/v1/health] reports the orchestrator is registered.
   static Future<bool> engineHealthy(String host, int port) async {
     try {
@@ -68,8 +85,11 @@ class EnginePortResolver {
       }
 
       final fromFile = _readPortFromRuntimeFile();
-      if (fromFile != null && await engineHealthy(host, fromFile)) {
-        return fromFile;
+      if (fromFile != null) {
+        if (await engineHealthy(host, fromFile)) {
+          return fromFile;
+        }
+        await clearStaleRuntimeFileIfPortDead(fromFile);
       }
 
       for (var p = scanStart; p < scanEndExclusive; p++) {

@@ -73,6 +73,14 @@ class EngineBundledLauncher {
         return EngineBootstrapOutcome(success: true, activePort: port);
       }
 
+      // Cold start can exceed one poll window; retry discovery before failing.
+      await Future<void>.delayed(const Duration(seconds: 2));
+      port =
+          await EnginePortResolver.discoverPort(preferredPort: preferredPort);
+      if (port != null) {
+        return EngineBootstrapOutcome(success: true, activePort: port);
+      }
+
       return EngineBootstrapOutcome(
         success: false,
         message:

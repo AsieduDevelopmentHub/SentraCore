@@ -29,6 +29,7 @@ Name: "{group}\Uninstall SentraCore"; Filename: "{uninstallexe}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
+Name: "postinstallengine"; Description: "Start SentraCore Engine once after installation"; GroupDescription: "After installation:"
 Name: "startup"; Description: "Run SentraCore Engine automatically when Windows starts"; GroupDescription: "Background Service:"
 
 [Registry]
@@ -36,8 +37,8 @@ Name: "startup"; Description: "Run SentraCore Engine automatically when Windows 
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SentraCoreEngine"; ValueData: """{app}\SentraCoreEngine.exe"""; Tasks: startup
 
 [Run]
-; Optionally run the engine right after installation
-Filename: "{app}\SentraCoreEngine.exe"; Description: "Start SentraCore Engine (Background)"; Flags: nowait postinstall runhidden
+; Optional: first engine start (dashboard can still start the engine later if unchecked)
+Filename: "{app}\SentraCoreEngine.exe"; Description: "Start SentraCore Engine now"; Flags: nowait postinstall runhidden; Tasks: postinstallengine
 ; Optionally launch the dashboard
 Filename: "{app}\sentracore_dashboard.exe"; Description: "Launch SentraCore Dashboard"; Flags: nowait postinstall
 

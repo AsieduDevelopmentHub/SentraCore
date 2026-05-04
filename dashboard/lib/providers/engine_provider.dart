@@ -205,7 +205,9 @@ class EngineProvider extends ChangeNotifier {
         (_) => _fetchEvents(),
       );
 
-      _connected = true;
+      // Stay "disconnected" in UI until first live frame arrives (avoids false
+      // positive if the socket dies immediately after subscribe).
+      _connected = false;
       notifyListeners();
       unawaited(_fetchProcesses());
       unawaited(_fetchEvents());

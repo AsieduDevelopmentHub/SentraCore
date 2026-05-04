@@ -1,11 +1,11 @@
 [Setup]
 AppName=SentraCore
-AppVersion=1.0.2
+AppVersion=1.0.3
 AppPublisher=SentraCore Development Team
 DefaultDirName={autopf}\SentraCore
 DefaultGroupName=SentraCore
 OutputDir=..\dist
-OutputBaseFilename=SentraCore_Setup_v1.0.2
+OutputBaseFilename=SentraCore_Setup_v1.0.3
 Compression=lzma
 SolidCompression=yes
 ; Use the same brandmark icon as the dashboard

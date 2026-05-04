@@ -1,7 +1,7 @@
 name: sentracore_dashboard
 description: SentraCore System Intelligence Dashboard — real-time system health monitoring, stress visualization, and root-cause analysis.
 publish_to: 'none'
-version: 1.0.2+1
+version: 1.0.3+1
 
 environment:
   sdk: ^3.6.0

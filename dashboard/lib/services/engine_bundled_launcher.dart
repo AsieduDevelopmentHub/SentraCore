@@ -1,34 +1,41 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
-import 'package:sentracore_dashboard/services/engine_port_resolver.dart';
-import 'package:sentracore_dashboard/services/engine_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:sentracore_dashboard/services/engine_config_store.dart';
 
-/// Outcome of trying to ensure the packaged engine is running (Windows install).
+/// Outcome of the deterministic engine lifecycle FSM.
 class EngineBootstrapOutcome {
   final bool success;
   final String? message;
-
-  /// Port where [GET /api/v1/health] succeeded (or fallback when skipped).
+  final String activeHost;
   final int activePort;
 
   const EngineBootstrapOutcome({
     required this.success,
     this.message,
-    this.activePort = EngineService.defaultPort,
+    required this.activeHost,
+    required this.activePort,
   });
 }
 
-/// Starts [SentraCoreEngine.exe] next to the dashboard when installed via Inno Setup,
-/// then waits until the HTTP API is up on whatever port the engine chose (8740+).
+/// Deterministic engine lifecycle: single serial gate, config-only contract,
+/// bounded health wait (25s / 500ms), max 3 restart cycles, no auto-retry after [failed].
 class EngineBundledLauncher {
   EngineBundledLauncher._();
 
   static Process? _ownedProcess;
   static bool _engineStartedByApp = false;
+  static bool _busy = false;
+
+  static const Duration _healthWindow = Duration(seconds: 25);
+  static const Duration _healthTick = Duration(milliseconds: 500);
+  static const int _maxRestartCycles = 3;
 
   static bool get engineStartedByApp => _engineStartedByApp;
 
-  /// Path to the packaged engine exe, or null if not present (e.g. dev builds).
   static String? bundledEngineExecutablePath() {
     final dir = File(Platform.resolvedExecutable).parent;
     final name =
@@ -37,71 +44,179 @@ class EngineBundledLauncher {
     return candidate.existsSync() ? candidate.path : null;
   }
 
-  /// Discover a running engine; if not present, start bundled engine from the app
-  /// executable directory and wait until [/api/v1/health] is ready.
-  static Future<EngineBootstrapOutcome> ensureReady(
-      {int? preferredPort,
-      Duration timeout = const Duration(seconds: 25)}) async {
-    _engineStartedByApp = false;
+  static Future<EngineBootstrapOutcome> ensureReadyUserRetry() =>
+      ensureReady(userRetry: true);
 
-    var port = await EnginePortResolver.discoverPort(
-      preferredPort: preferredPort,
-      timeoutSeconds: timeout.inSeconds,
-      scanStart: EngineService.defaultPort,
-      scanEndExclusive: EngineService.defaultPort + 1,
-    );
-    if (port != null) {
-      return EngineBootstrapOutcome(success: true, activePort: port);
+  static Future<EngineBootstrapOutcome> ensureReady(
+      {bool userRetry = false}) async {
+    while (_busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    _busy = true;
+    try {
+      return await _ensureReadyImpl(
+        userRetry: userRetry,
+        forceRestart: false,
+      );
+    } finally {
+      _busy = false;
+    }
+  }
+
+  /// Watchdog path: only if this app started the engine.
+  static Future<void> recoverOwnedAfterStall() async {
+    if (!_engineStartedByApp) return;
+    while (_busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    _busy = true;
+    try {
+      await stopOwnedEngine();
+      await _ensureReadyImpl(
+        userRetry: false,
+        forceRestart: true,
+      );
+    } finally {
+      _busy = false;
+    }
+  }
+
+  static Future<EngineBootstrapOutcome> _ensureReadyImpl({
+    required bool userRetry,
+    required bool forceRestart,
+  }) async {
+    var cfg = await EngineConfigStore.readOrCreate();
+
+    if (cfg.status == EngineStatus.failed && !userRetry) {
+      return EngineBootstrapOutcome(
+        success: false,
+        message: cfg.lastError.isEmpty ? 'Backend failed.' : cfg.lastError,
+        activeHost: cfg.host,
+        activePort: cfg.port,
+      );
+    }
+
+    if (userRetry && cfg.status == EngineStatus.failed) {
+      cfg = cfg.copyWith(
+        status: EngineStatus.starting,
+        lastError: '',
+        pid: 0,
+      );
+      await EngineConfigStore.writeAtomic(cfg);
+    }
+
+    if (!forceRestart) {
+      final diskRunning =
+          await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
+      if (diskRunning != null) {
+        _engineStartedByApp =
+            _ownedProcess != null && diskRunning.pid == _ownedProcess!.pid;
+        if (!_engineStartedByApp) {
+          _ownedProcess = null;
+        }
+        return EngineBootstrapOutcome(
+          success: true,
+          activeHost: diskRunning.host,
+          activePort: diskRunning.port,
+        );
+      }
     }
 
     final exe = bundledEngineExecutablePath();
     if (exe == null) {
-      return const EngineBootstrapOutcome(
-        success: false,
-        message: 'Backend engine not found next to the app.',
-        activePort: EngineService.defaultPort,
+      cfg = cfg.copyWith(
+        status: EngineStatus.failed,
+        lastError: 'Backend engine not found next to the app.',
+        pid: 0,
       );
-    }
-
-    // Start engine from app executable directory (single source of truth).
-    try {
-      _ownedProcess = await Process.start(
-        exe,
-        const <String>[],
-        workingDirectory: File(exe).parent.path,
-        // Keep a handle so we can stop it on app exit.
-        mode: Platform.isWindows
-            ? ProcessStartMode.detachedWithStdio
-            : ProcessStartMode.normal,
-      );
-      _engineStartedByApp = true;
-    } catch (e) {
+      await EngineConfigStore.writeAtomic(cfg);
       return EngineBootstrapOutcome(
         success: false,
-        message: 'Could not start SentraCoreEngine: $e',
-        activePort: EngineService.defaultPort,
+        message: cfg.lastError,
+        activeHost: cfg.host,
+        activePort: cfg.port,
       );
     }
 
-    // Strict readiness gate: health must go green within timeout.
-    port = await EnginePortResolver.discoverPort(
-      preferredPort: preferredPort ?? EngineService.defaultPort,
-      timeoutSeconds: timeout.inSeconds,
-      scanStart: EngineService.defaultPort,
-      scanEndExclusive: EngineService.defaultPort + 1,
-    );
-    if (port != null) {
-      return EngineBootstrapOutcome(success: true, activePort: port);
+    for (var cycle = 0; cycle < _maxRestartCycles; cycle++) {
+      await stopOwnedEngine();
+
+      cfg = await EngineConfigStore.readOrCreate();
+      final bindHost = cfg.bindHost ?? EngineConfigStore.bindHostForOs();
+      final startPort = cfg.port;
+      final newPort = await _findFirstFreeTcpPort(bindHost, startPort);
+
+      final nextStatus =
+          cycle == 0 ? EngineStatus.starting : EngineStatus.restarting;
+      cfg = cfg.copyWith(
+        port: newPort,
+        status: nextStatus,
+        bindHost: bindHost,
+        lastError: '',
+        pid: 0,
+      );
+      await EngineConfigStore.writeAtomic(cfg);
+
+      final started = await _startOwnedEngine(exe);
+      if (!started || _ownedProcess == null) {
+        cfg = cfg.copyWith(
+          status: EngineStatus.failed,
+          lastError: 'Could not start SentraCoreEngine.',
+          pid: 0,
+        );
+        await EngineConfigStore.writeAtomic(cfg);
+        return EngineBootstrapOutcome(
+          success: false,
+          message: cfg.lastError,
+          activeHost: cfg.host,
+          activePort: cfg.port,
+        );
+      }
+
+      final childPid = _ownedProcess!.pid;
+      cfg = cfg.copyWith(
+        status: EngineStatus.healthChecking,
+        pid: childPid,
+        lastError: '',
+      );
+      await EngineConfigStore.writeAtomic(cfg);
+
+      final runningCfg =
+          await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
+      if (runningCfg != null &&
+          runningCfg.status == EngineStatus.running &&
+          runningCfg.pid == childPid &&
+          await _strictHealth(runningCfg.host, runningCfg.port)) {
+        return EngineBootstrapOutcome(
+          success: true,
+          activeHost: runningCfg.host,
+          activePort: runningCfg.port,
+        );
+      }
+
+      await stopOwnedEngine();
+      cfg = (await EngineConfigStore.readOrCreate()).copyWith(
+        status: EngineStatus.restarting,
+        lastError: 'Health check did not reach RUNNING in time.',
+        pid: 0,
+      );
+      await EngineConfigStore.writeAtomic(cfg);
     }
 
-    return const EngineBootstrapOutcome(
+    cfg = (await EngineConfigStore.readOrCreate()).copyWith(
+      status: EngineStatus.failed,
+      lastError: 'Exceeded maximum restart attempts.',
+      pid: 0,
+    );
+    await EngineConfigStore.writeAtomic(cfg);
+    return EngineBootstrapOutcome(
       success: false,
-      message: 'Backend did not become ready in time.',
-      activePort: EngineService.defaultPort,
+      message: cfg.lastError,
+      activeHost: cfg.host,
+      activePort: cfg.port,
     );
   }
 
-  /// Stop the engine only if it was started by this launcher.
   static Future<void> stopOwnedEngine() async {
     if (!_engineStartedByApp) return;
     final p = _ownedProcess;
@@ -109,15 +224,101 @@ class EngineBundledLauncher {
     _engineStartedByApp = false;
     if (p == null) return;
     try {
-      // Try graceful terminate first.
       p.kill();
-      // Give it a moment.
       await Future<void>.delayed(const Duration(milliseconds: 400));
-      if (p.kill(ProcessSignal.sigkill)) {
-        // best-effort
+      p.kill(ProcessSignal.sigkill);
+    } catch (_) {}
+    try {
+      final cur = await EngineConfigStore.read();
+      if (cur != null) {
+        await EngineConfigStore.writeAtomic(
+          cur.copyWith(
+            status: EngineStatus.stopped,
+            pid: 0,
+          ),
+        );
       }
-    } catch (_) {
-      // Best effort.
+    } catch (_) {}
+  }
+
+  static Future<EngineConfig?> _waitRunningOnDiskWithin(
+    String connectHost,
+    Duration window,
+  ) async {
+    final deadline = DateTime.now().add(window);
+    while (DateTime.now().isBefore(deadline)) {
+      final disk = await EngineConfigStore.read();
+      if (disk != null && disk.status == EngineStatus.failed) {
+        return null;
+      }
+      if (disk != null &&
+          disk.status == EngineStatus.running &&
+          disk.pid != 0 &&
+          await _strictHealth(connectHost, disk.port)) {
+        return disk;
+      }
+      await Future<void>.delayed(_healthTick);
     }
+    return null;
+  }
+
+  static Future<bool> _strictHealth(String host, int port) async {
+    try {
+      final uri = Uri.parse('http://$host:$port/api/v1/health');
+      final r = await http.get(uri).timeout(const Duration(seconds: 2));
+      if (r.statusCode != 200) return false;
+      final j = jsonDecode(r.body);
+      if (j is! Map<String, dynamic>) return false;
+      return j['engine'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<int> _findFirstFreeTcpPort(
+      String bindHost, int startPort) async {
+    final addr = bindHost == '0.0.0.0'
+        ? InternetAddress.anyIPv4
+        : InternetAddress(bindHost);
+    for (var p = startPort; p <= 65535; p++) {
+      try {
+        final s = await ServerSocket.bind(addr, p);
+        await s.close();
+        return p;
+      } catch (_) {}
+    }
+    throw const SocketException('No free TCP port found.');
+  }
+
+  static Future<bool> _startOwnedEngine(String exe) async {
+    try {
+      _ownedProcess = await Process.start(
+        exe,
+        const <String>[],
+        workingDirectory: File(exe).parent.path,
+        mode: Platform.isWindows
+            ? ProcessStartMode.detachedWithStdio
+            : ProcessStartMode.normal,
+        environment: {
+          ...Platform.environment,
+          'SENTRACORE_ENGINE_CONFIG': _engineConfigPath(),
+        },
+      );
+      _engineStartedByApp = true;
+      return true;
+    } catch (e, st) {
+      developer.log(
+        'Engine start failed',
+        name: 'EngineBundledLauncher',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  static String _engineConfigPath() {
+    final dir = File(Platform.resolvedExecutable).parent;
+    return '${dir.path}${Platform.pathSeparator}${EngineConfigStore.fileName}';
   }
 }

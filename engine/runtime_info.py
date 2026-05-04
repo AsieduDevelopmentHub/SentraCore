@@ -1,21 +1,20 @@
 """
-SentraCore — Engine HTTP listen address persisted for local clients.
-
-The dashboard discovers which port the engine bound when 8740 is occupied.
+SentraCore — Engine HTTP listen address allocation.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import socket
-from pathlib import Path
+from platform import system
 
-from engine.config import API_HOST, API_PORT, DATASTORE_DIR
+from engine.engine_config import (
+    EngineConfig,
+    read_engine_config,
+    write_engine_config_atomic,
+)
 
 logger = logging.getLogger(__name__)
-
-RUNTIME_FILE: Path = DATASTORE_DIR / "engine_runtime.json"
 
 
 def find_first_free_tcp_port(host: str, first_port: int, last_port: int = 65535) -> int:
@@ -36,34 +35,39 @@ def find_first_free_tcp_port(host: str, first_port: int, last_port: int = 65535)
     raise RuntimeError(msg)
 
 
-def write_engine_runtime(http_host: str, http_port: int) -> None:
-    """Write listen address for local UIs (Flutter) to discover quickly."""
-    RUNTIME_FILE.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"http_host": http_host, "http_port": http_port}
-    RUNTIME_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    logger.info("Wrote engine runtime: %s", RUNTIME_FILE)
-
-
-def clear_engine_runtime() -> None:
-    """Remove runtime file on clean shutdown (best-effort)."""
-    try:
-        RUNTIME_FILE.unlink(missing_ok=True)
-    except OSError as exc:
-        logger.debug("Could not remove runtime file: %s", exc)
+def _default_bind_host_for_os() -> str:
+    return "0.0.0.0" if system().lower() == "linux" else "127.0.0.1"
 
 
 def allocate_listen_port() -> tuple[str, int]:
     """
-    Pick host and port for the HTTP API.
+    Pick bind host and port for the HTTP API using engine-config.json.
 
-    Starts at API_PORT and increments until a bind succeeds.
+    - Reads starting port from engine-config.json (single source of truth).
+    - If port is occupied, increments until a bind succeeds.
+    - Updates config only when the bound port differs (status: restarting).
     """
-    host = API_HOST
-    port = find_first_free_tcp_port(host, API_PORT)
-    if port != API_PORT:
-        logger.warning(
-            "Default port %s busy; listening on %s instead (local-only discovery).",
-            API_PORT,
-            port,
+    cfg = read_engine_config()
+    if cfg is None:
+        raise RuntimeError(
+            "engine-config.json missing/invalid. The desktop app must create it before starting the engine."
         )
-    return host, port
+
+    bind_host = cfg.bind_host or _default_bind_host_for_os()
+    start_port = int(cfg.port)
+    port = find_first_free_tcp_port(bind_host, start_port)
+
+    if port != start_port:
+        logger.warning("Requested port %s busy; rebinding to %s.", start_port, port)
+        write_engine_config_atomic(
+            EngineConfig(
+                host=cfg.host,
+                port=port,
+                status="restarting",
+                bind_host=bind_host,
+                pid=cfg.pid,
+                last_error=cfg.last_error,
+            )
+        )
+
+    return bind_host, port

@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider extends ChangeNotifier {
   static const _kDesktopNotif = 'desktop_notifications';
   static const _kTheme = 'theme_mode';
-  static const _kLastEnginePort = 'engine_last_http_port';
   static const _kAlertCpu = 'alert_cpu_percent';
   static const _kAlertMem = 'alert_memory_percent';
   static const _kAlertDisk = 'alert_disk_pressure';
@@ -26,7 +25,6 @@ class SettingsProvider extends ChangeNotifier {
 
   /// Engine + UI: lenient | normal | strict (anomaly label bands).
   String _anomalySensitivity = 'normal';
-  int _lastEngineHttpPort = 8740;
 
   Timer? _autoSaveDebounce;
   static const Duration _autoSaveDebounceWindow = Duration(milliseconds: 350);
@@ -41,7 +39,6 @@ class SettingsProvider extends ChangeNotifier {
   bool get safeguardEnabled => _safeguardEnabled;
   String get safeguardProcessNames => _safeguardProcessNames;
   String get anomalySensitivity => _anomalySensitivity;
-  int get lastEngineHttpPort => _lastEngineHttpPort;
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -63,7 +60,6 @@ class SettingsProvider extends ChangeNotifier {
     if (!_isValidAnomalySensitivity(_anomalySensitivity)) {
       _anomalySensitivity = 'normal';
     }
-    _lastEngineHttpPort = p.getInt(_kLastEnginePort) ?? 8740;
     notifyListeners();
   }
 
@@ -82,7 +78,6 @@ class SettingsProvider extends ChangeNotifier {
     await p.setBool(_kSafeguardOn, _safeguardEnabled);
     await p.setString(_kSafeguardNames, _safeguardProcessNames);
     await p.setString(_kAnomalySensitivity, _anomalySensitivity);
-    await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
   }
 
   void _scheduleAutoSave() {
@@ -90,13 +85,6 @@ class SettingsProvider extends ChangeNotifier {
     _autoSaveDebounce = Timer(_autoSaveDebounceWindow, () {
       unawaited(save());
     });
-  }
-
-  Future<void> setLastEngineHttpPort(int port) async {
-    _lastEngineHttpPort = port.clamp(1, 65535);
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
-    notifyListeners();
   }
 
   void setDesktopNotifications(bool v) {

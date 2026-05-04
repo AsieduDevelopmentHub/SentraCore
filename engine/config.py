@@ -167,9 +167,5 @@ ALERT_COOLDOWN_SEC: float = 60.0
 # API Server
 # ---------------------------------------------------------------------------
 
-# API server host and port
-API_HOST: str = "127.0.0.1"
-API_PORT: int = 8740
-
 # WebSocket broadcast interval (seconds) — matches collection interval
 WS_BROADCAST_INTERVAL: float = COLLECTION_INTERVAL_SEC

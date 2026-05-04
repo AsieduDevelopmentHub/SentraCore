@@ -9,9 +9,6 @@ import 'package:sentracore_dashboard/models/system_state.dart';
 ///
 /// Handles both REST API calls and WebSocket real-time streaming.
 class EngineService {
-  static const String defaultHost = '127.0.0.1';
-  static const int defaultPort = 8740;
-
   final String host;
   final int port;
 
@@ -21,7 +18,7 @@ class EngineService {
   WebSocketChannel? _liveChannel;
   WebSocketChannel? _alertChannel;
 
-  EngineService({this.host = defaultHost, this.port = defaultPort}) {
+  EngineService({required this.host, required this.port}) {
     _baseUrl = 'http://$host:$port';
     _wsUrl = 'ws://$host:$port';
   }

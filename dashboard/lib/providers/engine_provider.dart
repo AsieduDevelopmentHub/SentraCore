@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io' show Platform, Process;
-
 import 'package:flutter/foundation.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
 import 'package:sentracore_dashboard/providers/history_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/services/engine_bundled_launcher.dart';
+import 'package:sentracore_dashboard/services/engine_config_store.dart';
 import 'package:sentracore_dashboard/services/engine_service.dart';
 
 /// Central state management for the SentraCore dashboard.
@@ -22,7 +21,11 @@ class EngineProvider extends ChangeNotifier {
   })  : _settings = settings,
         _notifications = notifications,
         _history = history {
-    _service = EngineService(port: settings.lastEngineHttpPort);
+    final disk = EngineConfigStore.tryReadSync();
+    _service = EngineService(
+      host: disk?.host ?? EngineConfigStore.connectHostForUi(),
+      port: disk?.port ?? 8740,
+    );
   }
 
   final SettingsProvider _settings;
@@ -137,6 +140,10 @@ class EngineProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
+    final pre = await EngineConfigStore.read();
+    if (pre != null && pre.status == EngineStatus.failed) {
+      return;
+    }
     _alertFeedFromWs.clear();
     _liveDataWatchdog?.cancel();
     _liveDataWatchdog = null;
@@ -147,7 +154,8 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
     _service.dispose();
-    _service = EngineService(port: _settings.lastEngineHttpPort);
+    final cfg = await EngineConfigStore.readOrCreate();
+    _service = EngineService(host: cfg.host, port: cfg.port);
     _connected = false;
     _currentState = null;
     _cooldownDeadline = null;
@@ -165,9 +173,7 @@ class EngineProvider extends ChangeNotifier {
       notifyListeners();
     }
 
-    final out = await EngineBundledLauncher.ensureReady(
-      preferredPort: _settings.lastEngineHttpPort,
-    );
+    final out = await EngineBundledLauncher.ensureReady();
 
     if (!out.success && (out.message?.isNotEmpty ?? false)) {
       _bootstrapErrorPending = true;
@@ -181,14 +187,15 @@ class EngineProvider extends ChangeNotifier {
     }
 
     if (out.success) {
-      if (out.activePort != _service.port) {
+      if (out.activePort != _service.port || out.activeHost != _service.host) {
         _service.dispose();
-        _service = EngineService(port: out.activePort);
+        _service = EngineService(host: out.activeHost, port: out.activePort);
       }
-      await _settings.setLastEngineHttpPort(out.activePort);
+      _tryConnect();
+      return;
     }
 
-    _tryConnect();
+    notifyListeners();
   }
 
   void _tryConnect() {
@@ -284,19 +291,7 @@ class EngineProvider extends ChangeNotifier {
       _connectionError = 'No live data from engine; restarting engine…';
       notifyListeners();
 
-      if (Platform.isWindows &&
-          EngineBundledLauncher.bundledEngineExecutablePath() != null) {
-        try {
-          await Process.run(
-            'taskkill',
-            const ['/F', '/IM', 'SentraCoreEngine.exe'],
-            runInShell: true,
-          );
-        } catch (_) {
-          // Process may already be gone.
-        }
-        await Future<void>.delayed(const Duration(seconds: 1));
-      }
+      await EngineBundledLauncher.recoverOwnedAfterStall();
 
       _liveSub?.cancel();
       _alertSub?.cancel();
@@ -312,14 +307,22 @@ class EngineProvider extends ChangeNotifier {
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      _liveDataWatchdog?.cancel();
-      _liveDataWatchdog = null;
-      _liveSub?.cancel();
-      _alertSub?.cancel();
-      _processFetchTimer?.cancel();
-      _eventFetchTimer?.cancel();
-      unawaited(_bootstrapAndConnect());
+      unawaited(_reconnectTick());
     });
+  }
+
+  Future<void> _reconnectTick() async {
+    final cfg = await EngineConfigStore.read();
+    if (cfg != null && cfg.status == EngineStatus.failed) {
+      return;
+    }
+    _liveDataWatchdog?.cancel();
+    _liveDataWatchdog = null;
+    _liveSub?.cancel();
+    _alertSub?.cancel();
+    _processFetchTimer?.cancel();
+    _eventFetchTimer?.cancel();
+    await _bootstrapAndConnect();
   }
 
   void _onAlertPayload(Map<String, dynamic> payload) {

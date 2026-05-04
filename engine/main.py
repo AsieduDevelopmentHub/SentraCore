@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import signal
 import sys
 import time
@@ -33,11 +34,12 @@ from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import ProcessInfo, SystemCollector
 from engine.config import COLLECTION_INTERVAL_SEC, DATASTORE_DIR
-from engine.runtime_info import (
-    allocate_listen_port,
-    clear_engine_runtime,
-    write_engine_runtime,
+from engine.engine_config import (
+    EngineConfig,
+    read_engine_config,
+    write_engine_config_atomic,
 )
+from engine.runtime_info import allocate_listen_port
 from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
@@ -486,7 +488,19 @@ def main() -> None:
     # it assumes sys.stderr is a stream with .isatty(). Disable uvicorn's log config
     # and rely on our own engine logging (file-backed when no console).
     safe_stream = getattr(sys, "stderr", None) is not None
-    write_engine_runtime(listen_host, listen_port)
+    # Flip engine-config.json to running once uvicorn is configured.
+    cfg = read_engine_config()
+    if cfg is not None:
+        write_engine_config_atomic(
+            EngineConfig(
+                host=cfg.host,
+                port=listen_port,
+                status="running",
+                bind_host=cfg.bind_host,
+                last_error="",
+                pid=os.getpid(),
+            )
+        )
     config = uvicorn.Config(
         app=app,
         host=listen_host,
@@ -502,7 +516,6 @@ def main() -> None:
         logger.info("Received signal %d, shutting down...", signum)
         engine.stop()
         server.should_exit = True
-        clear_engine_runtime()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -528,14 +541,11 @@ def main() -> None:
                 await task
             except asyncio.CancelledError:
                 pass
-        clear_engine_runtime()
 
     try:
         asyncio.run(run_all())
     except KeyboardInterrupt:
         pass
-    finally:
-        clear_engine_runtime()
 
     logger.info("%s shut down cleanly.", __app_name__)
 

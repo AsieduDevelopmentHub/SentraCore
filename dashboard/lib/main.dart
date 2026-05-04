@@ -31,7 +31,7 @@ class _StartupGateAppState extends State<StartupGateApp> {
     _boot = _bootstrap();
   }
 
-  Future<_BootResult> _bootstrap() async {
+  Future<_BootResult> _bootstrap({bool userRetry = false}) async {
     final notifications = DesktopNotificationService();
     await notifications.init(
       onDidReceiveNotificationResponse: (response) {
@@ -45,10 +45,9 @@ class _StartupGateAppState extends State<StartupGateApp> {
     await settings.load();
 
     // READY GATE (strict): do not enter the app until backend is healthy.
-    final out = await EngineBundledLauncher.ensureReady(
-      preferredPort: settings.lastEngineHttpPort,
-      timeout: const Duration(seconds: 25),
-    );
+    final out = userRetry
+        ? await EngineBundledLauncher.ensureReadyUserRetry()
+        : await EngineBundledLauncher.ensureReady();
     return _BootResult(
         settings: settings, notifications: notifications, gate: out);
   }
@@ -77,7 +76,8 @@ class _StartupGateAppState extends State<StartupGateApp> {
             darkTheme: dark,
             home: _StartupError(
               message: data.gate.message ?? 'Backend failed to start.',
-              onRetry: () => setState(() => _boot = _bootstrap()),
+              onRetry: () =>
+                  setState(() => _boot = _bootstrap(userRetry: true)),
             ),
           );
         }

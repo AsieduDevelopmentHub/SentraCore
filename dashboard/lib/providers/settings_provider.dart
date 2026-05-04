@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,6 +27,9 @@ class SettingsProvider extends ChangeNotifier {
   /// Engine + UI: lenient | normal | strict (anomaly label bands).
   String _anomalySensitivity = 'normal';
   int _lastEngineHttpPort = 8740;
+
+  Timer? _autoSaveDebounce;
+  static const Duration _autoSaveDebounceWindow = Duration(milliseconds: 350);
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -80,6 +85,13 @@ class SettingsProvider extends ChangeNotifier {
     await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
   }
 
+  void _scheduleAutoSave() {
+    _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = Timer(_autoSaveDebounceWindow, () {
+      unawaited(save());
+    });
+  }
+
   Future<void> setLastEngineHttpPort(int port) async {
     _lastEngineHttpPort = port.clamp(1, 65535);
     final p = await SharedPreferences.getInstance();
@@ -90,42 +102,50 @@ class SettingsProvider extends ChangeNotifier {
   void setDesktopNotifications(bool v) {
     _desktopNotifications = v;
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setThemeMode(ThemeMode m) {
     _themeMode = m;
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void toggleTheme() {
     _themeMode =
         _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setAlertCpuPercent(double v) {
     _alertCpuPercent = v.clamp(1, 100);
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setAlertMemoryPercent(double v) {
     _alertMemoryPercent = v.clamp(1, 100);
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setAlertDiskPressure(double v) {
     _alertDiskPressure = v.clamp(1, 100);
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setSafeguardEnabled(bool v) {
     _safeguardEnabled = v;
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void setSafeguardProcessNames(String v) {
     _safeguardProcessNames = v;
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   static bool _isValidAnomalySensitivity(String v) {
@@ -136,6 +156,7 @@ class SettingsProvider extends ChangeNotifier {
     final s = v.toLowerCase().trim();
     _anomalySensitivity = _isValidAnomalySensitivity(s) ? s : 'normal';
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   List<String> _parseSafeguardLines() {
@@ -175,6 +196,7 @@ class SettingsProvider extends ChangeNotifier {
     }
     _safeguardProcessNames = lines.join('\n');
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   void addSafeguardProcessNameLine(String raw) {
@@ -201,6 +223,7 @@ class SettingsProvider extends ChangeNotifier {
         '${json['anomaly_sensitivity'] ?? 'normal'}'.toLowerCase().trim();
     _anomalySensitivity = _isValidAnomalySensitivity(sens) ? sens : 'normal';
     notifyListeners();
+    _scheduleAutoSave();
   }
 
   Map<String, dynamic> toEngineJson() {
@@ -213,5 +236,12 @@ class SettingsProvider extends ChangeNotifier {
       'safeguard_process_names': lines,
       'anomaly_sensitivity': _anomalySensitivity,
     };
+  }
+
+  @override
+  void dispose() {
+    _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = null;
+    super.dispose();
   }
 }

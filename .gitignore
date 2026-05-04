@@ -5,6 +5,7 @@
 # Runtime data (machine-specific, auto-generated)
 engine/datastore/baseline.json
 engine/datastore/user_preferences.json
+engine/datastore/engine_runtime.json
 
 # Flutter dashboard build artifacts
 dashboard/.dart_tool/

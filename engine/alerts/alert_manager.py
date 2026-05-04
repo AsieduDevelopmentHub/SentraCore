@@ -177,7 +177,22 @@ class AlertManager:
     @property
     def is_in_cooldown(self) -> bool:
         """Whether the alert manager is currently in cooldown."""
-        return (time.time() - self._last_alert_time) < self._cooldown_sec
+        if self._last_alert_time <= 0:
+            return False
+        return self.cooldown_remaining_sec > 0
+
+    @property
+    def cooldown_total_sec(self) -> float:
+        """Configured cooldown duration after an alert fires."""
+        return float(self._cooldown_sec)
+
+    @property
+    def cooldown_remaining_sec(self) -> float:
+        """Seconds until another alert may fire (0 if not in cooldown)."""
+        if self._last_alert_time <= 0:
+            return 0.0
+        rem = self._cooldown_sec - (time.time() - self._last_alert_time)
+        return max(0.0, rem)
 
     @property
     def consecutive_high_count(self) -> int:

@@ -3,6 +3,8 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
+import 'package:sentracore_dashboard/providers/settings_provider.dart';
+import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/services/engine_service.dart';
 
 /// Central state management for the SentraCore dashboard.
@@ -10,7 +12,18 @@ import 'package:sentracore_dashboard/services/engine_service.dart';
 /// Connects to the Python engine via WebSocket, maintains a history
 /// of system states for charting, and exposes reactive state to the UI.
 class EngineProvider extends ChangeNotifier {
-  final EngineService _service = EngineService();
+  EngineProvider({
+    required SettingsProvider settings,
+    required DesktopNotificationService notifications,
+  })  : _settings = settings,
+        _notifications = notifications {
+    _service =
+        EngineService(host: settings.engineHost, port: settings.enginePort);
+  }
+
+  final SettingsProvider _settings;
+  final DesktopNotificationService _notifications;
+  late EngineService _service;
 
   // ── Connection State ──
   bool _connected = false;
@@ -28,6 +41,16 @@ class EngineProvider extends ChangeNotifier {
   PredictionResult? get prediction => _currentState?.prediction;
   StabilityIndex? get stability => _currentState?.stability;
   EngineInfo? get engineInfo => _currentState?.engine;
+
+  /// Monotonic deadline for alert cooldown UI (smooth countdown between engine ticks).
+  DateTime? _cooldownDeadline;
+
+  /// Seconds remaining in alert cooldown (0 if none), updated every second while active.
+  int get displayCooldownRemainingSec {
+    if (_cooldownDeadline == null) return 0;
+    final s = _cooldownDeadline!.difference(DateTime.now()).inSeconds;
+    return s < 0 ? 0 : s;
+  }
 
   // ── History for Charts (last 60 data points = ~2 minutes) ──
   static const int _historySize = 60;
@@ -54,13 +77,34 @@ class EngineProvider extends ChangeNotifier {
 
   // ── Subscriptions ──
   StreamSubscription? _liveSub;
+  StreamSubscription? _alertSub;
   Timer? _processFetchTimer;
   Timer? _eventFetchTimer;
   Timer? _reconnectTimer;
+  Timer? _cooldownTicker;
 
   // ── Connection ──
 
   void connect() {
+    _tryConnect();
+  }
+
+  Future<void> reconnect() async {
+    _liveSub?.cancel();
+    _alertSub?.cancel();
+    _processFetchTimer?.cancel();
+    _eventFetchTimer?.cancel();
+    _reconnectTimer?.cancel();
+    _cooldownTicker?.cancel();
+    _service.dispose();
+    _service = EngineService(
+      host: _settings.engineHost,
+      port: _settings.enginePort,
+    );
+    _connected = false;
+    _currentState = null;
+    _cooldownDeadline = null;
+    notifyListeners();
     _tryConnect();
   }
 
@@ -85,7 +129,8 @@ class EngineProvider extends ChangeNotifier {
         },
       );
 
-      // Fetch processes and events periodically via REST
+      _alertSub = _service.connectAlerts().listen(_onAlertPayload);
+
       _processFetchTimer = Timer.periodic(
         const Duration(seconds: 5),
         (_) => _fetchProcesses(),
@@ -109,10 +154,46 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
       _liveSub?.cancel();
+      _alertSub?.cancel();
       _processFetchTimer?.cancel();
       _eventFetchTimer?.cancel();
       _tryConnect();
     });
+  }
+
+  void _onAlertPayload(Map<String, dynamic> payload) {
+    final message = payload['message'] as String? ?? 'System stress alert';
+    if (_settings.desktopNotificationsEnabled) {
+      unawaited(_notifications.show(
+        title: 'SentraCore alert',
+        body:
+            message.length > 256 ? '${message.substring(0, 253)}...' : message,
+      ));
+    }
+  }
+
+  void _syncCooldownTicker(SystemState state) {
+    _cooldownTicker?.cancel();
+    final a = state.alert;
+    if (a.inCooldown && a.cooldownRemainingSec > 0) {
+      _cooldownDeadline = DateTime.now().add(
+        Duration(
+          milliseconds:
+              (a.cooldownRemainingSec * 1000).round().clamp(0, 86400000),
+        ),
+      );
+      _cooldownTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (_cooldownDeadline == null ||
+            !_cooldownDeadline!.isAfter(DateTime.now())) {
+          _cooldownTicker?.cancel();
+          _cooldownTicker = null;
+          _cooldownDeadline = null;
+        }
+        notifyListeners();
+      });
+    } else {
+      _cooldownDeadline = null;
+    }
   }
 
   // ── Data Handling ──
@@ -124,6 +205,7 @@ class EngineProvider extends ChangeNotifier {
     }
 
     _currentState = state;
+    _syncCooldownTicker(state);
 
     // Update history ring buffers
     if (state.normalized != null) {
@@ -154,7 +236,6 @@ class EngineProvider extends ChangeNotifier {
   Future<void> _fetchProcesses() async {
     try {
       _processes = await _service.getProcesses();
-      // Don't notify here — the live stream already triggers rebuilds
     } catch (_) {}
   }
 
@@ -164,14 +245,23 @@ class EngineProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<Map<String, dynamic>> processAction(int pid, String action) async {
+    final r = await _service.postProcessAction(pid, action);
+    await _fetchProcesses();
+    notifyListeners();
+    return r ?? {'ok': false, 'error': 'No response'};
+  }
+
   // ── Cleanup ──
 
   @override
   void dispose() {
     _liveSub?.cancel();
+    _alertSub?.cancel();
     _processFetchTimer?.cancel();
     _eventFetchTimer?.cancel();
     _reconnectTimer?.cancel();
+    _cooldownTicker?.cancel();
     _service.dispose();
     super.dispose();
   }

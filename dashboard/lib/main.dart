@@ -3,30 +3,52 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/screens/dashboard_screen.dart';
+import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 
-void main() {
-  runApp(const SentraCoreApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final notifications = DesktopNotificationService();
+  await notifications.init();
+  final settings = SettingsProvider();
+  await settings.load();
+  runApp(SentraCoreApp(
+    settings: settings,
+    notifications: notifications,
+  ));
 }
 
 class SentraCoreApp extends StatelessWidget {
-  const SentraCoreApp({super.key});
+  const SentraCoreApp({
+    super.key,
+    required this.settings,
+    required this.notifications,
+  });
+
+  final SettingsProvider settings;
+  final DesktopNotificationService notifications;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => EngineProvider()..connect()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        Provider<DesktopNotificationService>.value(value: notifications),
+        ChangeNotifierProvider<SettingsProvider>.value(value: settings),
+        ChangeNotifierProvider(
+          create: (_) => EngineProvider(
+            settings: settings,
+            notifications: notifications,
+          )..connect(),
+        ),
       ],
       child: Consumer<SettingsProvider>(
-        builder: (context, settings, _) {
+        builder: (context, s, _) {
           return MaterialApp(
             title: 'SentraCore Intelligence',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: settings.themeMode,
+            themeMode: s.themeMode,
             home: const DashboardScreen(),
           );
         },

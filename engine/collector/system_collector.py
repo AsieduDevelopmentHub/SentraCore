@@ -127,6 +127,16 @@ class SystemCollector:
         self._cpu_count = psutil.cpu_count(logical=True) or 1
         self._primed = False
 
+    def _normalize_process_cpu(self, raw: float) -> float:
+        """
+        psutil reports per-process CPU as a sum across logical CPUs, so values
+        can exceed 100. Convert to an approximate share of total CPU (0–100).
+        """
+        if raw <= 0:
+            return 0.0
+        n = max(self._cpu_count, 1)
+        return max(0.0, min(100.0, raw / n))
+
     def prime(self) -> None:
         """
         Prime the CPU percent measurement.
@@ -227,11 +237,12 @@ class SystemCollector:
         ):
             try:
                 info = proc.info
+                raw_cpu = float(info.get("cpu_percent") or 0.0)
                 proc_list.append(
                     ProcessInfo(
                         pid=info["pid"],
                         name=info["name"] or "Unknown",
-                        cpu_percent=info.get("cpu_percent") or 0.0,
+                        cpu_percent=self._normalize_process_cpu(raw_cpu),
                         memory_percent=info.get("memory_percent") or 0.0,
                         memory_rss=(
                             info.get("memory_info") or type("", (), {"rss": 0})()

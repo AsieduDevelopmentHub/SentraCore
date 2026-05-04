@@ -23,6 +23,7 @@ import signal
 import sys
 import time
 
+import psutil
 import uvicorn
 
 from engine import __app_name__, __version__
@@ -108,6 +109,10 @@ class SentraCoreEngine:
             "alert": {
                 "total_fired": self.alert_manager.total_alerts,
                 "in_cooldown": self.alert_manager.is_in_cooldown,
+                "cooldown_total_sec": round(self.alert_manager.cooldown_total_sec, 2),
+                "cooldown_remaining_sec": round(
+                    self.alert_manager.cooldown_remaining_sec, 2
+                ),
                 "consecutive_high": self.alert_manager.consecutive_high_count,
                 "last_alert": self._last_alert.to_dict() if self._last_alert else None,
             },
@@ -131,6 +136,46 @@ class SentraCoreEngine:
     def get_recent_events(self):
         """Return recent system events."""
         return self.event_logger.get_recent_events()
+
+    def process_action(self, pid: int, action: str) -> dict:
+        """
+        Apply a lifecycle or scheduling action to a process (local engine only).
+
+        Actions: terminate, kill, lower_priority, normal_priority
+        """
+        allowed = {"terminate", "kill", "lower_priority", "normal_priority"}
+        if action not in allowed:
+            return {
+                "ok": False,
+                "error": f"Invalid action; use one of {sorted(allowed)}",
+            }
+
+        try:
+            proc = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            return {"ok": False, "error": "Process not found"}
+
+        try:
+            if action == "terminate":
+                proc.terminate()
+            elif action == "kill":
+                proc.kill()
+            elif action == "lower_priority":
+                if sys.platform == "win32":
+                    proc.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+                else:
+                    proc.nice(10)
+            elif action == "normal_priority":
+                if sys.platform == "win32":
+                    proc.nice(psutil.NORMAL_PRIORITY_CLASS)
+                else:
+                    proc.nice(0)
+            return {"ok": True}
+        except (psutil.AccessDenied, PermissionError) as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception as exc:  # noqa: BLE001 — surface unexpected errors to client
+            logger.warning("process_action failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
 
     def get_baseline(self) -> dict:
         """Return baseline statistics."""

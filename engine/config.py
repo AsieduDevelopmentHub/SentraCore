@@ -17,6 +17,7 @@ from pathlib import Path
 # Root directory of the app package
 APP_DIR = Path(__file__).parent
 
+
 def _writable_datastore_dir() -> Path:
     """
     Resolve a writable datastore directory.

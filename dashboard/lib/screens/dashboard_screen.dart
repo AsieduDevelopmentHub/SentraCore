@@ -5,6 +5,7 @@ import 'package:sentracore_dashboard/screens/overview_screen.dart';
 import 'package:sentracore_dashboard/screens/performance_screen.dart';
 import 'package:sentracore_dashboard/screens/processes_screen.dart';
 import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
+import 'package:sentracore_dashboard/screens/settings_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
@@ -26,6 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     PerformanceScreen(),
     ProcessesScreen(),
     DiagnosticsScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -203,10 +205,13 @@ class _SentraNavRail extends StatelessWidget {
               'Processes'),
           _navItem(context, 3, Icons.troubleshoot_outlined,
               Icons.troubleshoot_rounded, 'Diagnostics'),
+          _navItem(context, 4, Icons.settings_outlined, Icons.settings_rounded,
+              'Settings'),
           const Spacer(),
           // Theme Toggle
           Consumer<SettingsProvider>(
             builder: (context, settings, _) => IconButton(
+              tooltip: 'Toggle light / dark',
               onPressed: () => settings.toggleTheme(),
               icon: Icon(
                 settings.isDarkMode

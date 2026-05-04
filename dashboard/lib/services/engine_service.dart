@@ -57,6 +57,26 @@ class EngineService {
     return [];
   }
 
+  Future<Map<String, dynamic>?> postProcessAction(
+      int pid, String action) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/processes/$pid/action');
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'action': action}),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>?> getBaseline() async {
     return _get('/api/v1/baseline');
   }

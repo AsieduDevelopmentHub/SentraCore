@@ -115,3 +115,15 @@ class TestAlertManager:
         assert mgr.total_alerts == 0
         assert mgr.is_in_cooldown is False
         assert mgr.consecutive_high_count == 0
+
+    def test_cooldown_remaining_after_fire(self):
+        mgr = AlertManager(threshold=70.0, consecutive_count=1, cooldown_sec=120.0)
+        mgr.evaluate(_make_stress(80.0), [_make_process()])
+        assert mgr.cooldown_total_sec == 120.0
+        assert mgr.cooldown_remaining_sec > 0
+        assert mgr.is_in_cooldown is True
+
+    def test_cooldown_remaining_zero_before_first_alert(self):
+        mgr = AlertManager(threshold=70.0, consecutive_count=3, cooldown_sec=60.0)
+        assert mgr.cooldown_remaining_sec == 0.0
+        assert mgr.is_in_cooldown is False

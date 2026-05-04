@@ -14,7 +14,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 if TYPE_CHECKING:
@@ -157,6 +157,18 @@ def create_app() -> FastAPI:
         return {
             "processes": [p.to_dict() for p in _engine.get_top_processes()],
         }
+
+    @app.post("/api/v1/processes/{pid}/action")
+    async def post_process_action(pid: int, body: dict = Body(default_factory=dict)):
+        """
+        Control a tracked process: terminate, kill, or adjust CPU priority
+        (lower / normal). Requires sufficient OS permissions.
+        """
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+
+        action = (body.get("action") or "").strip()
+        return _engine.process_action(pid, action)
 
     @app.get("/api/v1/events")
     async def get_events():

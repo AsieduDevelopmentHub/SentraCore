@@ -195,6 +195,8 @@ class DiskIoData {
 class AlertInfo {
   final int totalFired;
   final bool inCooldown;
+  final double cooldownTotalSec;
+  final double cooldownRemainingSec;
   final int consecutiveHigh;
   final String? lastMessage;
   final RootCauseAnalysis? lastRootCause;
@@ -202,6 +204,8 @@ class AlertInfo {
   AlertInfo({
     required this.totalFired,
     required this.inCooldown,
+    this.cooldownTotalSec = 0,
+    this.cooldownRemainingSec = 0,
     required this.consecutiveHigh,
     this.lastMessage,
     this.lastRootCause,
@@ -211,6 +215,8 @@ class AlertInfo {
     return AlertInfo(
       totalFired: json['total_fired'] ?? 0,
       inCooldown: json['in_cooldown'] ?? false,
+      cooldownTotalSec: (json['cooldown_total_sec'] ?? 0).toDouble(),
+      cooldownRemainingSec: (json['cooldown_remaining_sec'] ?? 0).toDouble(),
       consecutiveHigh: json['consecutive_high'] ?? 0,
       lastMessage:
           json['last_alert'] != null ? json['last_alert']['message'] : null,

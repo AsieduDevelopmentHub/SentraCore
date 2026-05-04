@@ -169,7 +169,7 @@ class CorrelationEngine:
         if trigger:
             score += 30.0  # Extra confidence if we have a matching event
 
-        return score
+        return min(100.0, score)
 
     def _generate_summary(
         self,

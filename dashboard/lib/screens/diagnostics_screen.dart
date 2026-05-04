@@ -410,18 +410,74 @@ class _AlertSummaryCard extends StatelessWidget {
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _AlertStat(
-                    'Total Fired', '${alert.totalFired}', AppTheme.error),
-                _AlertStat('Consecutive High', '${alert.consecutiveHigh}',
-                    AppTheme.warning),
-                _AlertStat(
-                    'Cooldown',
-                    alert.inCooldown ? 'Active' : 'Inactive',
-                    alert.inCooldown
-                        ? AppTheme.info
-                        : AppTheme.textMutedFor(context)),
+                Expanded(
+                  child: _AlertStat(
+                    'Total Fired',
+                    '${alert.totalFired}',
+                    AppTheme.error,
+                  ),
+                ),
+                Expanded(
+                  child: _AlertStat(
+                    'Consecutive High',
+                    '${alert.consecutiveHigh}',
+                    AppTheme.warning,
+                  ),
+                ),
+                Expanded(
+                  child: Consumer<EngineProvider>(
+                    builder: (context, eng, _) {
+                      final total = alert.cooldownTotalSec > 0
+                          ? alert.cooldownTotalSec
+                          : 60.0;
+                      final remaining = eng.displayCooldownRemainingSec > 0
+                          ? eng.displayCooldownRemainingSec
+                          : (alert.inCooldown
+                              ? alert.cooldownRemainingSec.ceil()
+                              : 0);
+                      final active = alert.inCooldown || remaining > 0;
+                      final frac = active && total > 0
+                          ? (remaining / total).clamp(0.0, 1.0)
+                          : 0.0;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text('Cooldown',
+                              style: TextStyle(
+                                  color: AppTheme.textMutedFor(context),
+                                  fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Text(
+                            active ? '${remaining}s' : 'Ready',
+                            style: TextStyle(
+                              color: active
+                                  ? AppTheme.info
+                                  : AppTheme.textMutedFor(context),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (active) ...[
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: frac,
+                                minHeight: 4,
+                                backgroundColor: Theme.of(context)
+                                    .dividerColor
+                                    .withValues(alpha: 0.25),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.info.withValues(alpha: 0.85)),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           ],
@@ -480,7 +536,7 @@ class _RcaDetailCard extends StatelessWidget {
                       color: AppTheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                    'Confidence: ${(rca.confidenceScore * 100).toStringAsFixed(0)}%',
+                    'Confidence: ${rca.confidenceScore.clamp(0, 100).toStringAsFixed(0)}%',
                     style: TextStyle(
                         color: AppTheme.primary,
                         fontSize: 11,

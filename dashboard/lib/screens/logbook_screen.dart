@@ -901,6 +901,7 @@ class _TopProcessesPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 8),
             Row(
               children: [
                 Text(

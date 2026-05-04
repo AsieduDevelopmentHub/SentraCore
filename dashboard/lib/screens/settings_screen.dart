@@ -112,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               Text(
                 'When CPU, memory, or disk pressure stays at or above these '
-                'levels for several samples, an alert fires (same signals as the dashboard).',
+                'levels for several samples, an alert fires.',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 12,
@@ -161,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 'Separate from resource alerts above. This only changes when '
                 'NORMAL / ELEVATED / HIGH / SEVERE is shown for baseline deviation '
-                '(z-scores). Stricter = labels shift at lower scores.',
+                '(z-scores).',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 12,
@@ -224,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'After an alert fires, the engine may end matching processes '
                 '(graceful terminate) to reduce load. Choose names from what '
                 'the engine currently sees, or add another name manually. '
-                'Use only for apps you accept losing unsaved work.',
+                '',
                 style: TextStyle(
                   color: AppTheme.textMutedFor(context),
                   fontSize: 12,
@@ -279,9 +279,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         !engine.connected
-                            ? 'Connect to the engine to load process names from this PC.'
+                            ? 'Connect to the engine to load process names.'
                             : pickNames.isEmpty
-                                ? 'No processes yet — tap Refresh after the engine runs a few seconds.'
+                                ? 'No processes yet.'
                                 : 'Checked names are allowed for safeguard termination.',
                         style: TextStyle(
                           color: AppTheme.textMutedFor(context),
@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(color: AppTheme.textPrimaryFor(context)),
                   ),
                   subtitle: Text(
-                    'Windows toast when the engine fires an alert',
+                    'Windows toast when an alert fires',
                     style: TextStyle(
                       color: AppTheme.textMutedFor(context),
                       fontSize: 12,

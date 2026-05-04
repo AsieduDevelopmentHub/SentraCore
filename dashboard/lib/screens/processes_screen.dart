@@ -127,16 +127,7 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'Grouped by app name. Entries disappear shortly after a PID '
-                      'stops appearing in the engine top list (ended or dropped out). '
-                      'Memory % is per instance.',
-                      style: TextStyle(
-                        color: AppTheme.textMutedFor(context),
-                        fontSize: 10,
-                        height: 1.2,
-                      ),
-                    ),
+                    const SizedBox.shrink(),
                   ],
                 ),
               ),

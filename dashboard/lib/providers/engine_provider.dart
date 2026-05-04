@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, Process;
 
 import 'package:flutter/foundation.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
@@ -104,6 +104,22 @@ class EngineProvider extends ChangeNotifier {
   Timer? _eventFetchTimer;
   Timer? _reconnectTimer;
   Timer? _cooldownTicker;
+  Timer? _liveDataWatchdog;
+
+  /// Last successful [/ws/live] payload, or null until the first frame after subscribe.
+  DateTime? _lastLiveStateAt;
+
+  /// When the current live WebSocket subscription was opened.
+  DateTime? _wsSubscribeAt;
+
+  /// Throttle bundled-engine kills from the stale-data watchdog.
+  DateTime? _lastBundledEngineKillAttempt;
+
+  static const Duration _liveDataStaleThreshold = Duration(seconds: 30);
+  static const Duration _liveDataWatchdogInterval = Duration(seconds: 8);
+  static const Duration _bundledEngineKillCooldown = Duration(seconds: 50);
+
+  bool _recoveringLive = false;
 
   /// When true, [_connectionError] may hold a bootstrap failure; do not clear it in [_tryConnect].
   bool _bootstrapErrorPending = false;
@@ -118,6 +134,8 @@ class EngineProvider extends ChangeNotifier {
 
   Future<void> reconnect() async {
     _alertFeedFromWs.clear();
+    _liveDataWatchdog?.cancel();
+    _liveDataWatchdog = null;
     _liveSub?.cancel();
     _alertSub?.cancel();
     _processFetchTimer?.cancel();
@@ -179,6 +197,8 @@ class EngineProvider extends ChangeNotifier {
       _liveSub = stream.listen(
         _onStateReceived,
         onError: (error) {
+          _liveDataWatchdog?.cancel();
+          _liveDataWatchdog = null;
           _connected = false;
           _bootstrapErrorPending = false;
           _connectionError = 'Connection lost. Retrying...';
@@ -186,6 +206,8 @@ class EngineProvider extends ChangeNotifier {
           _scheduleReconnect();
         },
         onDone: () {
+          _liveDataWatchdog?.cancel();
+          _liveDataWatchdog = null;
           _connected = false;
           _bootstrapErrorPending = false;
           _connectionError = 'Disconnected. Retrying...';
@@ -208,10 +230,19 @@ class EngineProvider extends ChangeNotifier {
       // Stay "disconnected" in UI until first live frame arrives (avoids false
       // positive if the socket dies immediately after subscribe).
       _connected = false;
+      _wsSubscribeAt = DateTime.now();
+      _lastLiveStateAt = null;
+      _liveDataWatchdog?.cancel();
+      _liveDataWatchdog = Timer.periodic(
+        _liveDataWatchdogInterval,
+        (_) => _checkLiveDataStale(),
+      );
       notifyListeners();
       unawaited(_fetchProcesses());
       unawaited(_fetchEvents());
     } catch (e) {
+      _liveDataWatchdog?.cancel();
+      _liveDataWatchdog = null;
       _connected = false;
       _bootstrapErrorPending = false;
       _connectionError = 'Cannot connect to engine. Is it running?';
@@ -220,9 +251,65 @@ class EngineProvider extends ChangeNotifier {
     }
   }
 
+  void _checkLiveDataStale() {
+    if (_liveSub == null || _recoveringLive) return;
+    final reference = _lastLiveStateAt ?? _wsSubscribeAt;
+    if (reference == null) return;
+    if (DateTime.now().difference(reference) < _liveDataStaleThreshold) {
+      return;
+    }
+    final lastKill = _lastBundledEngineKillAttempt;
+    if (lastKill != null &&
+        DateTime.now().difference(lastKill) < _bundledEngineKillCooldown) {
+      return;
+    }
+    unawaited(_recoverStalledLiveChannel());
+  }
+
+  /// HTTP/WS up but no live telemetry (hung orchestrator): restart bundled engine
+  /// on Windows, then bootstrap again.
+  Future<void> _recoverStalledLiveChannel() async {
+    if (_recoveringLive) return;
+    _recoveringLive = true;
+    _liveDataWatchdog?.cancel();
+    _liveDataWatchdog = null;
+    _reconnectTimer?.cancel();
+    _lastBundledEngineKillAttempt = DateTime.now();
+    try {
+      _connected = false;
+      _connectionError = 'No live data from engine; restarting engine…';
+      notifyListeners();
+
+      if (Platform.isWindows &&
+          EngineBundledLauncher.bundledEngineExecutablePath() != null) {
+        try {
+          await Process.run(
+            'taskkill',
+            const ['/F', '/IM', 'SentraCoreEngine.exe'],
+            runInShell: true,
+          );
+        } catch (_) {
+          // Process may already be gone.
+        }
+        await Future<void>.delayed(const Duration(seconds: 1));
+      }
+
+      _liveSub?.cancel();
+      _alertSub?.cancel();
+      _processFetchTimer?.cancel();
+      _eventFetchTimer?.cancel();
+
+      await _bootstrapAndConnect();
+    } finally {
+      _recoveringLive = false;
+    }
+  }
+
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      _liveDataWatchdog?.cancel();
+      _liveDataWatchdog = null;
       _liveSub?.cancel();
       _alertSub?.cancel();
       _processFetchTimer?.cancel();
@@ -292,6 +379,7 @@ class EngineProvider extends ChangeNotifier {
   }
 
   void _onStateReceived(SystemState state) {
+    _lastLiveStateAt = DateTime.now();
     if (!_didPullEnginePrefs) {
       unawaited(_maybePullEnginePreferences());
     }
@@ -358,6 +446,7 @@ class EngineProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _liveDataWatchdog?.cancel();
     _liveSub?.cancel();
     _alertSub?.cancel();
     _processFetchTimer?.cancel();

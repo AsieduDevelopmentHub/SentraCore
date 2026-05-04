@@ -45,23 +45,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
               bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                'Settings',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settings',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Alert thresholds, optional process safeguard, appearance',
+                      style: TextStyle(
+                        color: AppTheme.textMutedFor(context),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'Alert thresholds, optional process safeguard, appearance',
-                style: TextStyle(
-                  color: AppTheme.textMutedFor(context),
-                  fontSize: 11,
-                ),
+              IconButton.filledTonal(
+                tooltip: 'Save preferences',
+                onPressed: () async {
+                  await settings.save();
+                  if (!context.mounted) return;
+                  final eng = context.read<EngineProvider>();
+                  final ok = await eng.pushUserPreferences();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        ok
+                            ? 'Preferences saved'
+                            : 'Saved locally; engine was offline — will sync when connected',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.save_outlined),
               ),
             ],
           ),
@@ -423,27 +449,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: settings.desktopNotificationsEnabled,
                   onChanged: settings.setDesktopNotifications,
                 ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () async {
-                  await settings.save();
-                  if (!context.mounted) return;
-                  final eng = context.read<EngineProvider>();
-                  final ok = await eng.pushUserPreferences();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        ok
-                            ? 'Preferences saved'
-                            : 'Saved locally; engine was offline — will sync when connected',
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save preferences'),
               ),
             ],
           ),

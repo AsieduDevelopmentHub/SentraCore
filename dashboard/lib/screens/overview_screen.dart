@@ -621,21 +621,25 @@ class _StatsStrip extends StatelessWidget {
                 ? AppTheme.success
                 : AppTheme.textMutedFor(context),
           ),
+          _StatTile(
+            label: 'Stability',
+            value: provider.stability != null
+                ? provider.stability!.score.toStringAsFixed(0)
+                : '—',
+            valueColor: AppTheme.stressLow,
+          ),
         ];
 
-        // Aim for 3 + 2 when space allows by computing width from constraints.
-        // This avoids the common 4 + 1 wrap that happens with a fixed tile width.
-        const gap = 14.0;
-        const minTileWidth = 180.0;
-        final canDoThree =
-            (c.maxWidth - (gap * 2)) / 3 >= minTileWidth; // 3 columns
-        final cols = canDoThree ? 3 : 2;
+        // Prefer a clean 3x2 grid on wide layouts.
+        final isWide = c.maxWidth >= 780;
+        final cols = isWide ? 3 : 2;
+        final gap = 14.0;
         final itemWidth = (c.maxWidth - (gap * (cols - 1))) / cols;
         return Wrap(
           spacing: gap,
           runSpacing: gap,
           children: [
-            for (final t in tiles) SizedBox(width: itemWidth, child: t),
+            for (final t in tiles) SizedBox(width: itemWidth, child: t)
           ],
         );
       },

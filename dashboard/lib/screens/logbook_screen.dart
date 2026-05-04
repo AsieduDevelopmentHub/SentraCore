@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/models/history_sample.dart';
 import 'package:sentracore_dashboard/providers/history_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 class LogbookScreen extends StatefulWidget {
   const LogbookScreen({super.key});
@@ -94,41 +95,50 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         padding: const EdgeInsets.all(12),
                         child: Column(
                           children: [
-                            Expanded(
-                              child: _HistoryChart(
-                                title: 'CPU',
-                                color: AppTheme.primary,
-                                samples: filtered,
-                                selector: (s) => s.cpuPercent,
-                                suffix: '%',
-                                maxY: 100,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Expanded(
-                              child: _HistoryChart(
-                                title: 'Memory',
-                                color: AppTheme.accent,
-                                samples: filtered,
-                                selector: (s) => s.memPercent,
-                                suffix: '%',
-                                maxY: 100,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Expanded(
-                              child: _HistoryChart(
-                                title: 'Disk pressure',
-                                color: AppTheme.warning,
-                                samples: filtered,
-                                selector: (s) => s.diskPressurePercent,
-                                suffix: '%',
-                                maxY: 100,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
+                            // 3 charts in one row (wide), stacked (narrow).
                             SizedBox(
-                              height: 220,
+                              height: 260,
+                              child: ResponsiveRowColumn(
+                                spacing: 12,
+                                useIntrinsicHeight: false,
+                                breakpoint: 980,
+                                children: [
+                                  Expanded(
+                                    child: _HistoryChart(
+                                      title: 'CPU',
+                                      color: AppTheme.primary,
+                                      samples: filtered,
+                                      selector: (s) => s.cpuPercent,
+                                      suffix: '%',
+                                      maxY: 100,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _HistoryChart(
+                                      title: 'Memory',
+                                      color: AppTheme.accent,
+                                      samples: filtered,
+                                      selector: (s) => s.memPercent,
+                                      suffix: '%',
+                                      maxY: 100,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _HistoryChart(
+                                      title: 'Disk pressure',
+                                      color: AppTheme.warning,
+                                      samples: filtered,
+                                      selector: (s) => s.diskPressurePercent,
+                                      suffix: '%',
+                                      maxY: 100,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Give the latest processes plenty of space.
+                            Expanded(
                               child: _TopProcessesCard(sample: filtered.last),
                             ),
                           ],

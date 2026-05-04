@@ -122,7 +122,8 @@ class SentraCoreEngine:
                 "consecutive_high": self.alert_manager.consecutive_high_count,
                 "last_alert": self._last_alert.to_dict() if self._last_alert else None,
                 "recent_alerts": [
-                    a.to_dict() for a in self.alert_manager.get_recent_alerts(30)
+                    a.to_summary_dict()
+                    for a in self.alert_manager.get_recent_alerts(50)
                 ],
             },
             "buffers": {
@@ -206,6 +207,37 @@ class SentraCoreEngine:
             return {"ok": False, "error": str(exc)}
         return {"ok": True, "preferences": prefs.to_dict()}
 
+    @staticmethod
+    def _safeguard_target_keys(names: list[str]) -> set[str]:
+        """Expand user-entered / UI-picked names for loose matching to psutil names."""
+        out: set[str] = set()
+        for raw in names:
+            s = str(raw).strip().lower()
+            if not s:
+                continue
+            out.add(canonical_process_name(s))
+            out.add(s)
+            base = s.removesuffix(".exe")
+            out.add(base)
+            out.add(f"{base}.exe")
+        return {x for x in out if x}
+
+    @staticmethod
+    def _process_name_matches_safeguard(process_name: str, targets: set[str]) -> bool:
+        p = process_name.strip().lower()
+        if not p:
+            return False
+        if canonical_process_name(process_name) in targets:
+            return True
+        if p in targets:
+            return True
+        base = p.removesuffix(".exe")
+        if base in targets:
+            return True
+        if f"{base}.exe" in targets:
+            return True
+        return False
+
     def _apply_safeguard(
         self,
         prefs: UserPreferences,
@@ -219,11 +251,7 @@ class SentraCoreEngine:
         """
         if not prefs.safeguard_enabled:
             return
-        targets = {
-            canonical_process_name(str(n))
-            for n in prefs.safeguard_process_names
-            if str(n).strip()
-        }
+        targets = self._safeguard_target_keys(prefs.safeguard_process_names)
         if not targets:
             return
 
@@ -241,8 +269,7 @@ class SentraCoreEngine:
 
         terminated = 0
         for pid, name in ordered:
-            key = canonical_process_name(name)
-            if key not in targets:
+            if not self._process_name_matches_safeguard(name, targets):
                 continue
             res = self.process_action(pid, "terminate")
             if res.get("ok"):

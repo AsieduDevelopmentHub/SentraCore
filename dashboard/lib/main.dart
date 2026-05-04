@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
+import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/screens/dashboard_screen.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
@@ -9,7 +11,14 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final notifications = DesktopNotificationService();
-  await notifications.init();
+  await notifications.init(
+    onDidReceiveNotificationResponse: (response) {
+      if (response.notificationResponseType ==
+          NotificationResponseType.selectedNotification) {
+        DashboardNavigation.openAlertsFromNotification();
+      }
+    },
+  );
   final settings = SettingsProvider();
   await settings.load();
   runApp(SentraCoreApp(

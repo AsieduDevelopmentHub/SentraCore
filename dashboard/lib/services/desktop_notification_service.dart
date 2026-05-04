@@ -1,7 +1,14 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    show
+        FlutterLocalNotificationsPlugin,
+        InitializationSettings,
+        NotificationResponse,
+        WindowsInitializationSettings,
+        WindowsNotificationDetails,
+        NotificationDetails;
 
 /// Windows toast-style alerts via flutter_local_notifications.
 class DesktopNotificationService {
@@ -11,7 +18,10 @@ class DesktopNotificationService {
       FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
-  Future<void> init() async {
+  Future<void> init({
+    void Function(NotificationResponse response)?
+        onDidReceiveNotificationResponse,
+  }) async {
     if (kIsWeb || !Platform.isWindows) {
       _ready = false;
       return;
@@ -25,6 +35,7 @@ class DesktopNotificationService {
             guid: 'c3d4e5f6-a7b8-4c9d-0e1f-223344556677',
           ),
         ),
+        onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
       );
       _ready = true;
     } catch (_) {

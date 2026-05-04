@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/screens/overview_screen.dart';
 import 'package:sentracore_dashboard/screens/performance_screen.dart';
@@ -21,6 +22,21 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   bool _navExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    DashboardNavigation.selectMainTab = (i) {
+      if (!mounted) return;
+      setState(() => _selectedIndex = i.clamp(0, 4));
+    };
+  }
+
+  @override
+  void dispose() {
+    DashboardNavigation.selectMainTab = null;
+    super.dispose();
+  }
 
   static const _pages = [
     OverviewScreen(),

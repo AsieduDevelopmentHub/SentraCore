@@ -76,6 +76,27 @@ class EngineProvider extends ChangeNotifier {
   List<SystemEvent> _events = [];
   List<SystemEvent> get events => _events;
 
+  /// Each [/ws/alerts] push (one per fired alert). Merged with engine [recent_alerts] for UI.
+  static const int _maxAlertFeed = 120;
+  final List<AlertRecord> _alertFeedFromWs = [];
+
+  /// Newest-first list for Diagnostics; deduped against live state history.
+  List<AlertRecord> get mergedAlertHistory {
+    final fromEngine =
+        _currentState?.alert.recentAlerts ?? const <AlertRecord>[];
+    final seen = <String>{};
+    String dedupeKey(AlertRecord r) =>
+        '${r.timestamp.toStringAsFixed(3)}::${r.message}';
+    final merged = <AlertRecord>[];
+    for (final r in [..._alertFeedFromWs, ...fromEngine]) {
+      if (seen.add(dedupeKey(r))) {
+        merged.add(r);
+      }
+    }
+    merged.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return merged;
+  }
+
   // ── Subscriptions ──
   StreamSubscription? _liveSub;
   StreamSubscription? _alertSub;
@@ -96,6 +117,7 @@ class EngineProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
+    _alertFeedFromWs.clear();
     _liveSub?.cancel();
     _alertSub?.cancel();
     _processFetchTimer?.cancel();
@@ -208,6 +230,12 @@ class EngineProvider extends ChangeNotifier {
   }
 
   void _onAlertPayload(Map<String, dynamic> payload) {
+    try {
+      _alertFeedFromWs.insert(0, AlertRecord.fromJson(payload));
+      if (_alertFeedFromWs.length > _maxAlertFeed) {
+        _alertFeedFromWs.removeRange(_maxAlertFeed, _alertFeedFromWs.length);
+      }
+    } catch (_) {}
     final message = payload['message'] as String? ?? 'System stress alert';
     if (_settings.desktopNotificationsEnabled) {
       unawaited(_notifications.show(
@@ -216,6 +244,7 @@ class EngineProvider extends ChangeNotifier {
             message.length > 256 ? '${message.substring(0, 253)}...' : message,
       ));
     }
+    notifyListeners();
   }
 
   void _syncCooldownTicker(SystemState state) {

@@ -251,12 +251,18 @@ class AlertInfo {
           json['last_alert'] != null && json['last_alert']['root_cause'] != null
               ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
               : null,
-      recentAlerts: recent is List
-          ? recent
-              .whereType<Map>()
-              .map((e) => AlertRecord.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
-          : const [],
+      recentAlerts: () {
+        if (recent is! List) return const <AlertRecord>[];
+        final out = <AlertRecord>[];
+        for (final e in recent) {
+          if (e is Map<String, dynamic>) {
+            out.add(AlertRecord.fromJson(e));
+          } else if (e is Map) {
+            out.add(AlertRecord.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+        return out;
+      }(),
     );
   }
 }

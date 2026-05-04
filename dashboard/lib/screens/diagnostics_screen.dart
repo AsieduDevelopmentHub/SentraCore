@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/models/system_state.dart';
+import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
@@ -18,14 +19,21 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen>
   late final TabController _tabController;
   String _eventSeverityFilter = 'all';
 
+  void _focusAlertsTab() {
+    if (!mounted || _tabController.length < 2) return;
+    _tabController.animateTo(1);
+  }
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    DashboardNavigation.focusDiagnosticsAlertsTab = _focusAlertsTab;
   }
 
   @override
   void dispose() {
+    DashboardNavigation.focusDiagnosticsAlertsTab = null;
     _tabController.dispose();
     super.dispose();
   }
@@ -369,7 +377,7 @@ class _AlertsRcaTab extends StatelessWidget {
     }
 
     final rca = alert.lastRootCause;
-    final history = alert.recentAlerts;
+    final history = provider.mergedAlertHistory;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

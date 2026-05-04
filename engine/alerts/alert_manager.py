@@ -50,6 +50,15 @@ class Alert:
             "root_cause": self.root_cause,
         }
 
+    def to_summary_dict(self) -> dict:
+        """Compact form for live-state history lists (smaller WebSocket payloads)."""
+        return {
+            "timestamp": self.timestamp,
+            "stress_score": round(self.stress_score, 2),
+            "level": self.level,
+            "message": self.message,
+        }
+
 
 AlertCallback = Callable[["Alert"], None]
 

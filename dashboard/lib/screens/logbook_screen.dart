@@ -182,11 +182,22 @@ class _LogbookScreenState extends State<LogbookScreen> {
     final initialStart =
         _customRange?.start ?? now.subtract(const Duration(days: 7));
     final initialEnd = _customRange?.end ?? now;
-    final picked = await showDateRangePicker(
+    final picked = await showModalBottomSheet<DateTimeRange>(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: now.add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final base = Theme.of(ctx);
+        final themed = base.copyWith(
+          colorScheme: base.colorScheme.copyWith(primary: AppTheme.primary),
+        );
+        return Theme(
+          data: themed,
+          child: _CompactRangePickerSheet(
+            initial: DateTimeRange(start: initialStart, end: initialEnd),
+          ),
+        );
+      },
     );
     if (picked == null) return;
     if (!context.mounted) return;
@@ -281,6 +292,22 @@ class _HistoryHeader extends StatelessWidget {
               ),
             ),
             SegmentedButton<_HistoryRange>(
+              style: ButtonStyle(
+                side: const WidgetStatePropertyAll(BorderSide.none),
+                backgroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? AppTheme.primary.withValues(alpha: 0.18)
+                      : AppTheme.surfaceLightFor(context),
+                ),
+                foregroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? AppTheme.primary
+                      : AppTheme.textMutedFor(context),
+                ),
+                overlayColor: WidgetStatePropertyAll(
+                  AppTheme.primary.withValues(alpha: 0.10),
+                ),
+              ),
               segments: const [
                 ButtonSegment(value: _HistoryRange.day, label: Text('Day')),
                 ButtonSegment(value: _HistoryRange.week, label: Text('Week')),
@@ -294,6 +321,10 @@ class _HistoryHeader extends StatelessWidget {
             IconButton.filledTonal(
               tooltip: 'Pick date range',
               onPressed: onPickCustomRange,
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.primary.withValues(alpha: 0.18),
+                foregroundColor: AppTheme.primary,
+              ),
               icon: const Icon(Icons.date_range_outlined),
             ),
             IconButton(
@@ -338,6 +369,235 @@ class _HistoryHeader extends StatelessWidget {
   String _fmtDate(DateTime dt) {
     String two(int v) => v < 10 ? '0$v' : '$v';
     return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
+  }
+}
+
+class _CompactRangePickerSheet extends StatefulWidget {
+  final DateTimeRange initial;
+  const _CompactRangePickerSheet({required this.initial});
+
+  @override
+  State<_CompactRangePickerSheet> createState() =>
+      _CompactRangePickerSheetState();
+}
+
+class _CompactRangePickerSheetState extends State<_CompactRangePickerSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _pickingStart = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _start = DateTime(
+      widget.initial.start.year,
+      widget.initial.start.month,
+      widget.initial.start.day,
+    );
+    _end = DateTime(
+      widget.initial.end.year,
+      widget.initial.end.month,
+      widget.initial.end.day,
+    );
+    if (_end.isBefore(_start)) _end = _start;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxH = MediaQuery.of(context).size.height * 0.72;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxH),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Date range',
+                    style: TextStyle(
+                      color: AppTheme.textPrimaryFor(context),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      final now = DateTime.now();
+                      setState(() {
+                        _start = DateTime(now.year, now.month, now.day);
+                        _end = _start;
+                        _pickingStart = true;
+                      });
+                    },
+                    child: Text('Today',
+                        style: TextStyle(color: AppTheme.primary)),
+                  ),
+                  const SizedBox(width: 6),
+                  TextButton(
+                    onPressed: () {
+                      final now = DateTime.now();
+                      setState(() {
+                        _end = DateTime(now.year, now.month, now.day);
+                        _start = _end.subtract(const Duration(days: 7));
+                        _pickingStart = false;
+                      });
+                    },
+                    child:
+                        Text('7d', style: TextStyle(color: AppTheme.primary)),
+                  ),
+                  const SizedBox(width: 6),
+                  TextButton(
+                    onPressed: () {
+                      final now = DateTime.now();
+                      setState(() {
+                        _end = DateTime(now.year, now.month, now.day);
+                        _start = _end.subtract(const Duration(days: 30));
+                        _pickingStart = false;
+                      });
+                    },
+                    child:
+                        Text('30d', style: TextStyle(color: AppTheme.primary)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLightFor(context),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    _RangeChip(
+                      label: 'Start',
+                      value: _fmt(_start),
+                      active: _pickingStart,
+                      onTap: () => setState(() => _pickingStart = true),
+                    ),
+                    const SizedBox(width: 10),
+                    _RangeChip(
+                      label: 'End',
+                      value: _fmt(_end),
+                      active: !_pickingStart,
+                      onTap: () => setState(() => _pickingStart = false),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(
+                        context,
+                        DateTimeRange(start: _start, end: _end),
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: CalendarDatePicker(
+                  initialDate: _pickingStart ? _start : _end,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  onDateChanged: (d) {
+                    setState(() {
+                      final day = DateTime(d.year, d.month, d.day);
+                      if (_pickingStart) {
+                        _start = day;
+                        if (_end.isBefore(_start)) _end = _start;
+                      } else {
+                        _end = day;
+                        if (_end.isBefore(_start)) _start = _end;
+                      }
+                    });
+                  },
+                ),
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_fmt(_start)} → ${_fmt(_end)}',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _fmt(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
+  }
+}
+
+class _RangeChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _RangeChip({
+    required this.label,
+    required this.value,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = active
+        ? AppTheme.primary.withValues(alpha: 0.16)
+        : Theme.of(context).colorScheme.surface;
+    final fg = active ? AppTheme.primary : AppTheme.textSecondaryFor(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

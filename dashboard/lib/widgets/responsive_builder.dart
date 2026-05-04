@@ -41,11 +41,15 @@ class ResponsiveRowColumn extends StatelessWidget {
             }
           }
 
-          final row = Row(
+          // Note: don't wrap LayoutBuilder output with IntrinsicHeight; Flutter
+          // disallows intrinsic sizing for LayoutBuilder (see flutter.logs).
+          //
+          // We still stretch the Row so cards line up when their children use
+          // Expanded/Flexible properly.
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: rowChildren,
           );
-          return useIntrinsicHeight ? IntrinsicHeight(child: row) : row;
         } else {
           // Narrow: Stack vertically.
           // We need to strip out any `Expanded` or `Flexible` widgets since

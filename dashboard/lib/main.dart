@@ -3,7 +3,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/providers/history_provider.dart';
-import 'package:sentracore_dashboard/providers/logbook_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/screens/dashboard_screen.dart';
@@ -47,9 +46,6 @@ class SentraCoreApp extends StatelessWidget {
         ChangeNotifierProvider<SettingsProvider>.value(value: settings),
         ChangeNotifierProvider<HistoryProvider>(
           create: (_) => HistoryProvider()..load(),
-        ),
-        ChangeNotifierProvider<LogbookProvider>(
-          create: (_) => LogbookProvider()..load(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => EngineProvider(

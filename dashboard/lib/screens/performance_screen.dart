@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
+import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
@@ -494,6 +495,7 @@ class _AnomalyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final anomaly = provider.currentState?.anomaly;
+    final sens = context.watch<SettingsProvider>().anomalySensitivity;
 
     return Card(
       child: Padding(
@@ -511,10 +513,54 @@ class _AnomalyCard extends StatelessWidget {
                       fontSize: 13)),
             ]),
             Divider(color: Theme.of(context).dividerColor, height: 20),
+            Text(
+              'Label bands follow anomaly sensitivity in Settings '
+              '($sens). Resource alert sliders do not change z-scores.',
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 10,
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 8),
             if (anomaly == null)
               Text('No data',
                   style: TextStyle(color: AppTheme.textMutedFor(context)))
             else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Score (0–100)',
+                    style: TextStyle(
+                      color: AppTheme.textSecondaryFor(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    anomaly.score.toStringAsFixed(1),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimaryFor(context),
+                    ),
+                  ),
+                ],
+              ),
+              if (anomaly.isSustained)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 6),
+                  child: Text(
+                    'Sustained deviation (feeds stress boost)',
+                    style: TextStyle(
+                      color: AppTheme.warning,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(height: 6),
               _MetricBar('CPU Z-Score', anomaly.cpuZScore, 4, AppTheme.primary),
               const SizedBox(height: 8),
               _MetricBar(

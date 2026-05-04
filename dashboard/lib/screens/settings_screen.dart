@@ -117,6 +117,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              Text(
+                'Anomaly labels',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Separate from resource alerts above. This only changes when '
+                'NORMAL / ELEVATED / HIGH / SEVERE is shown for baseline deviation '
+                '(z-scores). Stricter = labels shift at lower scores.',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'lenient',
+                        label: Text('Lenient'),
+                      ),
+                      ButtonSegment(
+                        value: 'normal',
+                        label: Text('Normal'),
+                      ),
+                      ButtonSegment(
+                        value: 'strict',
+                        label: Text('Strict'),
+                      ),
+                    ],
+                    selected: {settings.anomalySensitivity},
+                    onSelectionChanged: (set) {
+                      settings.setAnomalySensitivity(set.first);
+                    },
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Safeguard (optional)',

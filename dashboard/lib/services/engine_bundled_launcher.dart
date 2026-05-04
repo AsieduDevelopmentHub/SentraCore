@@ -7,6 +7,7 @@ import 'package:sentracore_dashboard/services/engine_service.dart';
 class EngineBootstrapOutcome {
   final bool success;
   final String? message;
+
   /// Port where [GET /api/v1/health] succeeded (or fallback when skipped).
   final int activePort;
 
@@ -32,16 +33,19 @@ class EngineBundledLauncher {
   }
 
   /// Discover a running engine, optionally starting the Windows bundled exe first.
-  static Future<EngineBootstrapOutcome> ensureReady({int? preferredPort}) async {
+  static Future<EngineBootstrapOutcome> ensureReady(
+      {int? preferredPort}) async {
     if (!Platform.isWindows) {
-      final p = await EnginePortResolver.discoverPort(preferredPort: preferredPort);
+      final p =
+          await EnginePortResolver.discoverPort(preferredPort: preferredPort);
       return EngineBootstrapOutcome(
         success: true,
         activePort: p ?? EngineService.defaultPort,
       );
     }
 
-    var port = await EnginePortResolver.discoverPort(preferredPort: preferredPort);
+    var port =
+        await EnginePortResolver.discoverPort(preferredPort: preferredPort);
     if (port != null) {
       return EngineBootstrapOutcome(success: true, activePort: port);
     }
@@ -63,7 +67,8 @@ class EngineBundledLauncher {
         );
       }
 
-      port = await EnginePortResolver.discoverPort(preferredPort: preferredPort);
+      port =
+          await EnginePortResolver.discoverPort(preferredPort: preferredPort);
       if (port != null) {
         return EngineBootstrapOutcome(success: true, activePort: port);
       }
@@ -77,6 +82,7 @@ class EngineBundledLauncher {
     }
 
     // Windows dev: no bundled exe — try default port only (same as legacy skip).
-    return EngineBootstrapOutcome(success: true, activePort: EngineService.defaultPort);
+    return EngineBootstrapOutcome(
+        success: true, activePort: EngineService.defaultPort);
   }
 }

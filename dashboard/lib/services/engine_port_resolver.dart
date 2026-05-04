@@ -38,9 +38,7 @@ class EnginePortResolver {
   static Future<bool> engineHealthy(String host, int port) async {
     try {
       final uri = Uri.parse('http://$host:$port/api/v1/health');
-      final r = await http
-          .get(uri)
-          .timeout(const Duration(milliseconds: 900));
+      final r = await http.get(uri).timeout(const Duration(milliseconds: 900));
       if (r.statusCode != 200) return false;
       final j = jsonDecode(r.body) as Map<String, dynamic>;
       return j['engine'] == true;

@@ -32,7 +32,7 @@ from engine.api.server import create_app, set_engine, ws_manager
 from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import SystemCollector
-from engine.config import API_HOST, COLLECTION_INTERVAL_SEC, DATASTORE_DIR
+from engine.config import COLLECTION_INTERVAL_SEC, DATASTORE_DIR
 from engine.runtime_info import (
     allocate_listen_port,
     clear_engine_runtime,
@@ -121,6 +121,9 @@ class SentraCoreEngine:
                 ),
                 "consecutive_high": self.alert_manager.consecutive_high_count,
                 "last_alert": self._last_alert.to_dict() if self._last_alert else None,
+                "recent_alerts": [
+                    a.to_dict() for a in self.alert_manager.get_recent_alerts(30)
+                ],
             },
             "buffers": {
                 "short": {
@@ -306,7 +309,12 @@ class SentraCoreEngine:
                 trend = self.trend_analyzer.analyze(self.buffer)
                 self._current_trend = trend
 
-                anomaly = self.anomaly_detector.detect(normalized, self.baseline)
+                prefs = UserPreferences.load()
+                anomaly = self.anomaly_detector.detect(
+                    normalized,
+                    self.baseline,
+                    level_thresholds=prefs.anomaly_level_thresholds(),
+                )
                 self._current_anomaly = anomaly
 
                 # 8. Compute stress (Multi-State)
@@ -327,7 +335,6 @@ class SentraCoreEngine:
                 # 10. Evaluate alerts (user thresholds) + optional safeguard
                 top_procs = self.process_tracker.get_top_consumers(5)
                 recent_events = self.event_logger.get_recent_events(20)
-                prefs = UserPreferences.load()
                 alert = self.alert_manager.evaluate(
                     stress, top_procs, recent_events, prefs=prefs
                 )

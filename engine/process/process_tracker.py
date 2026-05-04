@@ -14,7 +14,11 @@ from collections import deque
 from dataclasses import dataclass
 
 from engine.collector.system_collector import ProcessInfo
-from engine.config import PROCESS_WINDOW_SIZE, TOP_PROCESSES_COUNT
+from engine.config import (
+    PROCESS_MISS_SNAPSHOTS_BEFORE_PRUNE,
+    PROCESS_WINDOW_SIZE,
+    TOP_PROCESSES_COUNT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +63,7 @@ class _ProcessWindow:
     mem_history: deque[float]
     last_seen_cpu: float = 0.0
     last_seen_mem: float = 0.0
+    miss_snapshots: int = 0
 
     def __init__(self, name: str, window_size: int) -> None:
         self.name = name
@@ -85,9 +90,11 @@ class ProcessTracker:
         self,
         window_size: int = PROCESS_WINDOW_SIZE,
         top_count: int = TOP_PROCESSES_COUNT,
+        miss_prune_snapshots: int = PROCESS_MISS_SNAPSHOTS_BEFORE_PRUNE,
     ) -> None:
         self._window_size = window_size
         self._top_count = top_count
+        self._miss_prune_snapshots = max(1, int(miss_prune_snapshots))
         self._tracked: dict[int, _ProcessWindow] = {}
         self._active_pids: set[int] = set()
 
@@ -115,8 +122,15 @@ class ProcessTracker:
 
         self._active_pids = current_pids
 
-        # Prune stale processes that haven't been seen for 2x window size
-        self._prune_stale()
+        for pid, window in self._tracked.items():
+            if pid in current_pids:
+                window.miss_snapshots = 0
+            else:
+                window.miss_snapshots += 1
+
+        for pid in list(self._tracked):
+            if self._tracked[pid].miss_snapshots >= self._miss_prune_snapshots:
+                del self._tracked[pid]
 
     def get_top_consumers(self, n: int | None = None) -> list[ProcessImpact]:
         """
@@ -171,16 +185,6 @@ class ProcessTracker:
     def get_active_count(self) -> int:
         """Number of currently active (recently seen) processes."""
         return len(self._active_pids)
-
-    def _prune_stale(self) -> None:
-        """Remove processes not seen for an extended period."""
-        stale_pids = [
-            pid
-            for pid in self._tracked
-            if pid not in self._active_pids and not self._tracked[pid].cpu_history
-        ]
-        for pid in stale_pids:
-            del self._tracked[pid]
 
     def reset(self) -> None:
         """Clear all tracking data."""

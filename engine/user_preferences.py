@@ -48,11 +48,24 @@ class UserPreferences:
     alert_disk_pressure: float = 80.0
     safeguard_enabled: bool = False
     safeguard_process_names: list[str] = field(default_factory=list)
+    #: Maps to anomaly label bands (normal / elevated / high / severe) vs score 0–100.
+    #: One of: lenient, normal, strict.
+    anomaly_sensitivity: str = "normal"
 
     @classmethod
     def default(cls) -> UserPreferences:
         """In-memory defaults (no disk read)."""
         return cls()
+
+    def anomaly_level_thresholds(self) -> tuple[float, float, float]:
+        """Upper bounds for elevated, high, severe (anomaly score 0–100)."""
+        presets = {
+            "lenient": (40.0, 65.0, 88.0),
+            "normal": (30.0, 60.0, 85.0),
+            "strict": (18.0, 42.0, 70.0),
+        }
+        k = (self.anomaly_sensitivity or "normal").lower().strip()
+        return presets.get(k, presets["normal"])
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -63,6 +76,8 @@ class UserPreferences:
     def from_dict(cls, data: dict[str, Any]) -> UserPreferences:
         raw_names = _parse_name_list(data.get("safeguard_process_names"))
         names = sorted({canonical_process_name(n) for n in raw_names if str(n).strip()})
+        raw_sens = str(data.get("anomaly_sensitivity", "normal")).lower().strip()
+        sens = raw_sens if raw_sens in ("lenient", "normal", "strict") else "normal"
         return cls(
             alert_cpu_percent=_clamp(
                 float(data.get("alert_cpu_percent", 85.0)), 1.0, 100.0
@@ -75,6 +90,7 @@ class UserPreferences:
             ),
             safeguard_enabled=bool(data.get("safeguard_enabled", False)),
             safeguard_process_names=names,
+            anomaly_sensitivity=sens,
         )
 
     def save(self) -> None:

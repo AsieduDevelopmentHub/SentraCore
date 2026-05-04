@@ -8,6 +8,11 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 enum _SortKey { name, pid, cpu, memory, impact }
 
+/// Fixed column widths so CPU / Mem / Impact stay aligned and readable.
+const double _kColCpu = 58;
+const double _kColMem = 60;
+const double _kColImp = 46;
+
 /// Groups multiple PIDs that share the same image name.
 class _ProcessGroup {
   _ProcessGroup(this.name, List<ProcessImpact> raw)
@@ -19,17 +24,13 @@ class _ProcessGroup {
 
   int get count => members.length;
 
-  int get minPid =>
-      members.map((p) => p.pid).fold(0x7fffffff, math.min);
+  int get minPid => members.map((p) => p.pid).fold(0x7fffffff, math.min);
 
-  double get sumCpu =>
-      members.fold<double>(0, (a, p) => a + p.cpuImpact);
+  double get sumCpu => members.fold<double>(0, (a, p) => a + p.cpuImpact);
 
-  double get sumMem =>
-      members.fold<double>(0, (a, p) => a + p.memoryPercent);
+  double get sumMem => members.fold<double>(0, (a, p) => a + p.memoryPercent);
 
-  double get sumImpact =>
-      members.fold<double>(0, (a, p) => a + p.impactScore);
+  double get sumImpact => members.fold<double>(0, (a, p) => a + p.impactScore);
 }
 
 /// Screen 3: Process list — grouped by name, compact rows, per-PID actions.
@@ -127,7 +128,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Grouped by app name. Top by impact — not every process. '
+                      'Grouped by app name. Entries disappear shortly after a PID '
+                      'stops appearing in the engine top list (ended or dropped out). '
                       'Memory % is per instance.',
                       style: TextStyle(
                         color: AppTheme.textMutedFor(context),
@@ -139,8 +141,7 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceLightFor(context),
                   borderRadius: BorderRadius.circular(4),
@@ -249,7 +250,8 @@ class _ProcessesScreenState extends State<ProcessesScreen> {
                 IconButton(
                   tooltip: _sortAscending ? 'Ascending' : 'Descending',
                   visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
                   icon: Icon(
                     _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                     size: 18,
@@ -459,26 +461,27 @@ class _GroupedProcessTile extends StatelessWidget {
           InkWell(
             onTap: onToggle,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
               child: Row(
                 children: [
                   Icon(
                     expanded ? Icons.expand_more : Icons.chevron_right,
-                    size: 18,
+                    size: 20,
                     color: muted,
                   ),
                   Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(color: sev.$2, shape: BoxShape.circle),
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration:
+                        BoxDecoration(color: sev.$2, shape: BoxShape.circle),
                   ),
                   Expanded(
                     child: Text(
                       group.name,
                       style: TextStyle(
                         color: AppTheme.textPrimaryFor(context),
-                        fontSize: 12.5,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -487,23 +490,36 @@ class _GroupedProcessTile extends StatelessWidget {
                   ),
                   Text(
                     '×${group.count}',
-                    style: TextStyle(color: muted, fontSize: 10),
+                    style: TextStyle(color: muted, fontSize: 11),
                   ),
-                  const SizedBox(width: 8),
-                  _MiniStat('CPU', group.sumCpu, AppTheme.primary),
-                  const SizedBox(width: 8),
-                  _MiniStat('Mem', group.sumMem, AppTheme.accent),
-                  const SizedBox(width: 8),
-                  Text(
-                    group.sumImpact.toStringAsFixed(0),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.stressColor(
-                        _stressLevelForScore(
-                          group.members
-                              .map((e) => e.impactScore)
-                              .reduce(math.max),
+                  const SizedBox(width: 10),
+                  _MetricColumn(
+                    label: 'CPU',
+                    value: group.sumCpu,
+                    color: AppTheme.primary,
+                    width: _kColCpu,
+                  ),
+                  _MetricColumn(
+                    label: 'Mem',
+                    value: group.sumMem,
+                    color: AppTheme.accent,
+                    width: _kColMem,
+                  ),
+                  SizedBox(
+                    width: _kColImp,
+                    child: Text(
+                      group.sumImpact.toStringAsFixed(0),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        color: AppTheme.stressColor(
+                          _stressLevelForScore(
+                            group.members
+                                .map((e) => e.impactScore)
+                                .reduce(math.max),
+                          ),
                         ),
                       ),
                     ),
@@ -527,9 +543,8 @@ class _GroupedProcessTile extends StatelessWidget {
                 ],
               ],
             ),
-            crossFadeState: expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
+            crossFadeState:
+                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 180),
           ),
         ],
@@ -552,32 +567,46 @@ class _GroupedProcessTile extends StatelessWidget {
   }
 }
 
-class _MiniStat extends StatelessWidget {
+class _MetricColumn extends StatelessWidget {
   final String label;
   final double value;
   final Color color;
+  final double width;
 
-  const _MiniStat(this.label, this.value, this.color);
+  const _MetricColumn({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.width,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 8, color: AppTheme.textMutedFor(context)),
-        ),
-        Text(
-          '${value.toStringAsFixed(1)}%',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: color,
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: AppTheme.textMutedFor(context),
+            ),
           ),
-        ),
-      ],
+          Text(
+            '${value.toStringAsFixed(1)}%',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -624,14 +653,14 @@ class _CompactPidRow extends StatelessWidget {
     final muted = AppTheme.textMutedFor(context);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(indent ? 28 : 8, 4, 4, 4),
+      padding: EdgeInsets.fromLTRB(indent ? 28 : 10, 8, 8, 8),
       child: Row(
         children: [
           if (!indent) ...[
             Container(
-              width: 6,
-              height: 6,
-              margin: const EdgeInsets.only(right: 6),
+              width: 7,
+              height: 7,
+              margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(color: sev.$2, shape: BoxShape.circle),
             ),
             Expanded(
@@ -639,7 +668,7 @@ class _CompactPidRow extends StatelessWidget {
                 p.name,
                 style: TextStyle(
                   color: AppTheme.textPrimaryFor(context),
-                  fontSize: 12.5,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
@@ -652,39 +681,56 @@ class _CompactPidRow extends StatelessWidget {
                 'PID ${p.pid}',
                 style: TextStyle(
                   color: AppTheme.textSecondaryFor(context),
-                  fontSize: 11,
+                  fontSize: 12,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
-          if (indent) const SizedBox(width: 4),
-          Text(
-            '${p.cpuImpact.toStringAsFixed(1)}%',
-            style: TextStyle(fontSize: 10, color: AppTheme.primary),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${p.memoryPercent.toStringAsFixed(1)}%',
-            style: TextStyle(fontSize: 10, color: AppTheme.accent),
-          ),
-          const SizedBox(width: 6),
           SizedBox(
-            width: 28,
+            width: _kColCpu,
+            child: Text(
+              '${p.cpuImpact.toStringAsFixed(1)}%',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          SizedBox(
+            width: _kColMem,
+            child: Text(
+              '${p.memoryPercent.toStringAsFixed(1)}%',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.accent,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          SizedBox(
+            width: _kColImp,
             child: Text(
               p.impactScore.toStringAsFixed(0),
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                color:
+                    AppTheme.stressColor(_stressLevelForScore(p.impactScore)),
               ),
             ),
           ),
           PopupMenuButton<String>(
             tooltip: 'Actions',
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            iconSize: 18,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+            iconSize: 22,
             icon: Icon(Icons.more_vert, color: muted),
             onSelected: onAction,
             itemBuilder: (ctx) => [

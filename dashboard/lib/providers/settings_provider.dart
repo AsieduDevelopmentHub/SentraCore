@@ -11,6 +11,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _kAlertDisk = 'alert_disk_pressure';
   static const _kSafeguardOn = 'safeguard_enabled';
   static const _kSafeguardNames = 'safeguard_process_names';
+  static const _kAnomalySensitivity = 'anomaly_sensitivity';
 
   ThemeMode _themeMode = ThemeMode.dark;
   bool _desktopNotifications = true;
@@ -20,6 +21,9 @@ class SettingsProvider extends ChangeNotifier {
   double _alertDiskPressure = 80;
   bool _safeguardEnabled = false;
   String _safeguardProcessNames = '';
+
+  /// Engine + UI: lenient | normal | strict (anomaly label bands).
+  String _anomalySensitivity = 'normal';
   int _lastEngineHttpPort = 8740;
 
   ThemeMode get themeMode => _themeMode;
@@ -31,6 +35,7 @@ class SettingsProvider extends ChangeNotifier {
   double get alertDiskPressure => _alertDiskPressure;
   bool get safeguardEnabled => _safeguardEnabled;
   String get safeguardProcessNames => _safeguardProcessNames;
+  String get anomalySensitivity => _anomalySensitivity;
   int get lastEngineHttpPort => _lastEngineHttpPort;
 
   Future<void> load() async {
@@ -49,6 +54,10 @@ class SettingsProvider extends ChangeNotifier {
     _alertDiskPressure = p.getDouble(_kAlertDisk) ?? 80;
     _safeguardEnabled = p.getBool(_kSafeguardOn) ?? false;
     _safeguardProcessNames = p.getString(_kSafeguardNames) ?? '';
+    _anomalySensitivity = p.getString(_kAnomalySensitivity) ?? 'normal';
+    if (!_isValidAnomalySensitivity(_anomalySensitivity)) {
+      _anomalySensitivity = 'normal';
+    }
     _lastEngineHttpPort = p.getInt(_kLastEnginePort) ?? 8740;
     notifyListeners();
   }
@@ -67,6 +76,7 @@ class SettingsProvider extends ChangeNotifier {
     await p.setDouble(_kAlertDisk, _alertDiskPressure);
     await p.setBool(_kSafeguardOn, _safeguardEnabled);
     await p.setString(_kSafeguardNames, _safeguardProcessNames);
+    await p.setString(_kAnomalySensitivity, _anomalySensitivity);
     await p.setInt(_kLastEnginePort, _lastEngineHttpPort);
   }
 
@@ -115,6 +125,16 @@ class SettingsProvider extends ChangeNotifier {
 
   void setSafeguardProcessNames(String v) {
     _safeguardProcessNames = v;
+    notifyListeners();
+  }
+
+  static bool _isValidAnomalySensitivity(String v) {
+    return v == 'lenient' || v == 'normal' || v == 'strict';
+  }
+
+  void setAnomalySensitivity(String v) {
+    final s = v.toLowerCase().trim();
+    _anomalySensitivity = _isValidAnomalySensitivity(s) ? s : 'normal';
     notifyListeners();
   }
 
@@ -177,6 +197,9 @@ class SettingsProvider extends ChangeNotifier {
     } else {
       _safeguardProcessNames = '';
     }
+    final sens =
+        '${json['anomaly_sensitivity'] ?? 'normal'}'.toLowerCase().trim();
+    _anomalySensitivity = _isValidAnomalySensitivity(sens) ? sens : 'normal';
     notifyListeners();
   }
 
@@ -188,6 +211,7 @@ class SettingsProvider extends ChangeNotifier {
       'alert_disk_pressure': _alertDiskPressure,
       'safeguard_enabled': _safeguardEnabled,
       'safeguard_process_names': lines,
+      'anomaly_sensitivity': _anomalySensitivity,
     };
   }
 }

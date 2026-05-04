@@ -51,7 +51,11 @@ class AnomalyDetector:
         self._consecutive_anomaly_count = 0
 
     def detect(
-        self, normalized: NormalizedSnapshot, baseline: BaselineModel
+        self,
+        normalized: NormalizedSnapshot,
+        baseline: BaselineModel,
+        *,
+        level_thresholds: tuple[float, float, float] | None = None,
     ) -> AnomalyResult:
         """
         Detect anomalies using current snapshot and active baseline.
@@ -93,12 +97,14 @@ class AnomalyDetector:
             self._consecutive_anomaly_count >= self._sustained_threshold_cycles
         )
 
-        # Level
-        if score < 30.0:
+        t_elevated, t_high, t_severe = level_thresholds or (30.0, 60.0, 85.0)
+
+        # Level (bands from user preference anomaly_sensitivity)
+        if score < t_elevated:
             level = "normal"
-        elif score < 60.0:
+        elif score < t_high:
             level = "elevated"
-        elif score < 85.0:
+        elif score < t_severe:
             level = "high"
         else:
             level = "severe"

@@ -95,3 +95,15 @@ class TestProcessTracker:
 
         assert tracker.get_active_count() == 0
         assert tracker.get_top_consumers() == []
+
+    def test_prune_after_missing_from_snapshots(self):
+        """PID not in collector top list for N cycles is dropped (exited or fell out)."""
+        tracker = ProcessTracker(window_size=3, miss_prune_snapshots=3)
+        tracker.update((_make_proc(1, "gone.exe", 50.0, 10.0),))
+        assert 1 in [p.pid for p in tracker.get_top_consumers(5)]
+
+        tracker.update((_make_proc(2, "other.exe", 40.0, 10.0),))
+        tracker.update((_make_proc(2, "other.exe", 40.0, 10.0),))
+        tracker.update((_make_proc(2, "other.exe", 40.0, 10.0),))
+
+        assert 1 not in [p.pid for p in tracker.get_top_consumers(5)]

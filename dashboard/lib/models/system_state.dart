@@ -192,6 +192,30 @@ class DiskIoData {
   }
 }
 
+/// One fired resource alert (from engine history).
+class AlertRecord {
+  final double timestamp;
+  final double stressScore;
+  final String level;
+  final String message;
+
+  AlertRecord({
+    required this.timestamp,
+    required this.stressScore,
+    required this.level,
+    required this.message,
+  });
+
+  factory AlertRecord.fromJson(Map<String, dynamic> json) {
+    return AlertRecord(
+      timestamp: (json['timestamp'] ?? 0).toDouble(),
+      stressScore: (json['stress_score'] ?? 0).toDouble(),
+      level: json['level']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+    );
+  }
+}
+
 class AlertInfo {
   final int totalFired;
   final bool inCooldown;
@@ -200,6 +224,7 @@ class AlertInfo {
   final int consecutiveHigh;
   final String? lastMessage;
   final RootCauseAnalysis? lastRootCause;
+  final List<AlertRecord> recentAlerts;
 
   AlertInfo({
     required this.totalFired,
@@ -209,9 +234,11 @@ class AlertInfo {
     required this.consecutiveHigh,
     this.lastMessage,
     this.lastRootCause,
+    this.recentAlerts = const [],
   });
 
   factory AlertInfo.fromJson(Map<String, dynamic> json) {
+    final recent = json['recent_alerts'];
     return AlertInfo(
       totalFired: json['total_fired'] ?? 0,
       inCooldown: json['in_cooldown'] ?? false,
@@ -224,6 +251,12 @@ class AlertInfo {
           json['last_alert'] != null && json['last_alert']['root_cause'] != null
               ? RootCauseAnalysis.fromJson(json['last_alert']['root_cause'])
               : null,
+      recentAlerts: recent is List
+          ? recent
+              .whereType<Map>()
+              .map((e) => AlertRecord.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
     );
   }
 }
@@ -416,12 +449,16 @@ class TrendResult {
 
 /// Anomaly detection result from the Python AnomalyDetector.
 class AnomalyResult {
+  final double score;
+  final bool isSustained;
   final double cpuZScore;
   final double memoryZScore;
   final double diskZScore;
   final String level;
 
   AnomalyResult({
+    this.score = 0,
+    this.isSustained = false,
     required this.cpuZScore,
     required this.memoryZScore,
     required this.diskZScore,
@@ -429,15 +466,30 @@ class AnomalyResult {
   });
 
   factory AnomalyResult.fromJson(Map<String, dynamic> json) {
-    return AnomalyResult(
-      cpuZScore:
-          (json['cpu_z_score'] ?? json['cpu_zscore'] ?? 0).toDouble().abs(),
-      memoryZScore: (json['memory_z_score'] ?? json['memory_zscore'] ?? 0)
+    double cpuZ;
+    double memZ;
+    double diskZ;
+    final zs = json['z_scores'];
+    if (zs is Map) {
+      cpuZ = ((zs['cpu'] ?? 0) as num).toDouble().abs();
+      memZ = ((zs['memory'] ?? 0) as num).toDouble().abs();
+      diskZ = ((zs['disk'] ?? 0) as num).toDouble().abs();
+    } else {
+      cpuZ = (json['cpu_z_score'] ?? json['cpu_zscore'] ?? 0).toDouble().abs();
+      memZ = (json['memory_z_score'] ?? json['memory_zscore'] ?? 0)
           .toDouble()
-          .abs(),
-      diskZScore:
-          (json['disk_z_score'] ?? json['disk_zscore'] ?? 0).toDouble().abs(),
-      level: json['level'] ?? 'normal',
+          .abs();
+      diskZ =
+          (json['disk_z_score'] ?? json['disk_zscore'] ?? 0).toDouble().abs();
+    }
+
+    return AnomalyResult(
+      score: (json['score'] ?? 0).toDouble(),
+      isSustained: json['is_sustained'] == true,
+      cpuZScore: cpuZ,
+      memoryZScore: memZ,
+      diskZScore: diskZ,
+      level: json['level']?.toString() ?? 'normal',
     );
   }
 }

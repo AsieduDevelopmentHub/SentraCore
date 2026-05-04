@@ -369,19 +369,126 @@ class _AlertsRcaTab extends StatelessWidget {
     }
 
     final rca = alert.lastRootCause;
+    final history = alert.recentAlerts;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Alert summary card
           _AlertSummaryCard(alert: alert),
+          if (history.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              'Recent alerts (newest first)',
+              style: TextStyle(
+                color: AppTheme.textPrimaryFor(context),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Each line is a fired resource alert while the engine was running.',
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...history.map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _AlertHistoryTile(record: a),
+              ),
+            ),
+          ] else if (alert.totalFired > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                'Detailed history will appear after the next live update from the engine.',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 12,
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
-          // RCA card
           if (rca != null)
             _RcaDetailCard(rca: rca, message: alert.lastMessage ?? ''),
         ],
+      ),
+    );
+  }
+}
+
+String _formatAlertTime(double ts) {
+  try {
+    final dt =
+        DateTime.fromMillisecondsSinceEpoch((ts * 1000).toInt()).toLocal();
+    return '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}:'
+        '${dt.second.toString().padLeft(2, '0')}';
+  } catch (_) {
+    return ts.toStringAsFixed(0);
+  }
+}
+
+class _AlertHistoryTile extends StatelessWidget {
+  final AlertRecord record;
+  const _AlertHistoryTile({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.notifications_outlined,
+                    size: 16, color: AppTheme.error.withValues(alpha: 0.85)),
+                const SizedBox(width: 8),
+                Text(
+                  _formatAlertTime(record.timestamp),
+                  style: TextStyle(
+                    color: AppTheme.textMutedFor(context),
+                    fontSize: 11,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Stress ${record.stressScore.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: AppTheme.textSecondaryFor(context),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  record.level.toUpperCase(),
+                  style: TextStyle(
+                    color: AppTheme.warning,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              record.message,
+              style: TextStyle(
+                color: AppTheme.textPrimaryFor(context),
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

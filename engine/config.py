@@ -130,6 +130,10 @@ TOP_PROCESSES_COUNT: int = 10
 # Sliding window size for process impact calculation (in samples)
 PROCESS_WINDOW_SIZE: int = 30  # ~1 minute of data
 
+# Drop a PID from the tracker after this many snapshots without appearing in
+# the collector's top-N process list (exited, or fell out of the top list).
+PROCESS_MISS_SNAPSHOTS_BEFORE_PRUNE: int = 5
+
 # ---------------------------------------------------------------------------
 # Event Logger
 # ---------------------------------------------------------------------------

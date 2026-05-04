@@ -33,204 +33,164 @@ class _LogbookScreenState extends State<LogbookScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'History',
-                  style: TextStyle(
-                    color: AppTheme.textPrimaryFor(context),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                SegmentedButton<_HistoryRange>(
-                  segments: const [
-                    ButtonSegment(value: _HistoryRange.day, label: Text('Day')),
-                    ButtonSegment(
-                        value: _HistoryRange.week, label: Text('Week')),
-                    ButtonSegment(
-                        value: _HistoryRange.month, label: Text('Month')),
-                    ButtonSegment(
-                        value: _HistoryRange.quarter, label: Text('3 mo')),
-                  ],
-                  selected: {_range},
-                  onSelectionChanged: (set) => setState(() {
-                    _range = set.first;
-                    _customRange = null;
-                  }),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  tooltip: 'Pick date range',
-                  onPressed: () async {
-                    final now = DateTime.now();
-                    final initialStart = _customRange?.start ??
-                        now.subtract(const Duration(days: 7));
-                    final initialEnd = _customRange?.end ?? now;
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: now.add(const Duration(days: 365)),
-                      initialDateRange:
-                          DateTimeRange(start: initialStart, end: initialEnd),
-                    );
-                    if (picked == null) return;
-                    if (!context.mounted) return;
-                    setState(() => _customRange = picked);
-                  },
-                  icon: const Icon(Icons.date_range_outlined),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Clear history',
-                  onPressed: all.isEmpty
-                      ? null
-                      : () async {
-                          final ok = await _confirmClear(context);
-                          if (!ok) return;
-                          if (!context.mounted) return;
-                          context.read<HistoryProvider>().clear();
-                        },
-                  icon: const Icon(Icons.delete_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Automated history (sampled every ${HistoryProvider.sampleInterval.inSeconds}s) for CPU / memory / disk. Stored locally on this PC.',
-              style: TextStyle(
-                color: AppTheme.textMutedFor(context),
-                fontSize: 12,
-                height: 1.35,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: _HistoryHeader(
+                range: _range,
+                customRange: _customRange,
+                hasAnyData: all.isNotEmpty,
+                onSelectRange: (r) => setState(() {
+                  _range = r;
+                  _customRange = null;
+                }),
+                onPickCustomRange: () => _pickDateRange(context),
+                onClear: all.isEmpty
+                    ? null
+                    : () async {
+                        final ok = await _confirmClear(context);
+                        if (!ok) return;
+                        if (!context.mounted) return;
+                        context.read<HistoryProvider>().clear();
+                      },
               ),
             ),
-            if (_customRange != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Range: ${_fmtDate(_customRange!.start)} → ${_fmtDate(_customRange!.end)}',
-                style: TextStyle(
-                  color: AppTheme.textSecondaryFor(context),
-                  fontSize: 11,
-                ),
+          ),
+          if (filtered.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              sliver: SliverToBoxAdapter(
+                child: Card(child: _EmptyHistory(loaded: history.loaded)),
               ),
-            ],
-            const SizedBox(height: 12),
-            Expanded(
-              child: filtered.isEmpty
-                  ? Card(child: _EmptyHistory(loaded: history.loaded))
-                  : LayoutBuilder(
+            )
+          else ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              sliver: SliverToBoxAdapter(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: LayoutBuilder(
                       builder: (context, c) {
                         final isWide = c.maxWidth >= 980;
-
-                        final charts = isWide
-                            ? SizedBox(
-                                height: 280,
-                                child: ResponsiveRowColumn(
-                                  spacing: 12,
-                                  useIntrinsicHeight: false,
-                                  breakpoint: 980,
-                                  children: [
-                                    Expanded(
-                                      child: _HistoryChart(
-                                        title: 'CPU',
-                                        color: AppTheme.primary,
-                                        samples: filtered,
-                                        selector: (s) => s.cpuPercent,
-                                        suffix: '%',
-                                        maxY: 100,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _HistoryChart(
-                                        title: 'Memory',
-                                        color: AppTheme.accent,
-                                        samples: filtered,
-                                        selector: (s) => s.memPercent,
-                                        suffix: '%',
-                                        maxY: 100,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _HistoryChart(
-                                        title: 'Disk pressure',
-                                        color: AppTheme.warning,
-                                        samples: filtered,
-                                        selector: (s) => s.diskPressurePercent,
-                                        suffix: '%',
-                                        maxY: 100,
-                                      ),
-                                    ),
-                                  ],
+                        if (isWide) {
+                          return SizedBox(
+                            height: 280,
+                            child: ResponsiveRowColumn(
+                              spacing: 12,
+                              useIntrinsicHeight: false,
+                              breakpoint: 980,
+                              children: [
+                                Expanded(
+                                  child: _HistoryChart(
+                                    title: 'CPU',
+                                    color: AppTheme.primary,
+                                    samples: filtered,
+                                    selector: (s) => s.cpuPercent,
+                                    suffix: '%',
+                                    maxY: 100,
+                                  ),
                                 ),
-                              )
-                            : Column(
-                                children: [
-                                  SizedBox(
-                                    height: 220,
-                                    child: _HistoryChart(
-                                      title: 'CPU',
-                                      color: AppTheme.primary,
-                                      samples: filtered,
-                                      selector: (s) => s.cpuPercent,
-                                      suffix: '%',
-                                      maxY: 100,
-                                    ),
+                                Expanded(
+                                  child: _HistoryChart(
+                                    title: 'Memory',
+                                    color: AppTheme.accent,
+                                    samples: filtered,
+                                    selector: (s) => s.memPercent,
+                                    suffix: '%',
+                                    maxY: 100,
                                   ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    height: 220,
-                                    child: _HistoryChart(
-                                      title: 'Memory',
-                                      color: AppTheme.accent,
-                                      samples: filtered,
-                                      selector: (s) => s.memPercent,
-                                      suffix: '%',
-                                      maxY: 100,
-                                    ),
+                                ),
+                                Expanded(
+                                  child: _HistoryChart(
+                                    title: 'Disk pressure',
+                                    color: AppTheme.warning,
+                                    samples: filtered,
+                                    selector: (s) => s.diskPressurePercent,
+                                    suffix: '%',
+                                    maxY: 100,
                                   ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    height: 220,
-                                    child: _HistoryChart(
-                                      title: 'Disk pressure',
-                                      color: AppTheme.warning,
-                                      samples: filtered,
-                                      selector: (s) => s.diskPressurePercent,
-                                      suffix: '%',
-                                      maxY: 100,
-                                    ),
-                                  ),
-                                ],
-                              );
-
-                        // Separate sections: charts card + latest processes card.
+                                ),
+                              ],
+                            ),
+                          );
+                        }
                         return Column(
                           children: [
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: charts,
+                            SizedBox(
+                              height: 220,
+                              child: _HistoryChart(
+                                title: 'CPU',
+                                color: AppTheme.primary,
+                                samples: filtered,
+                                selector: (s) => s.cpuPercent,
+                                suffix: '%',
+                                maxY: 100,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Expanded(
-                              child: _TopProcessesCard(sample: filtered.last),
+                            SizedBox(
+                              height: 220,
+                              child: _HistoryChart(
+                                title: 'Memory',
+                                color: AppTheme.accent,
+                                samples: filtered,
+                                selector: (s) => s.memPercent,
+                                suffix: '%',
+                                maxY: 100,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 220,
+                              child: _HistoryChart(
+                                title: 'Disk pressure',
+                                color: AppTheme.warning,
+                                samples: filtered,
+                                selector: (s) => s.diskPressurePercent,
+                                suffix: '%',
+                                maxY: 100,
+                              ),
                             ),
                           ],
                         );
                       },
                     ),
+                  ),
+                ),
+              ),
+            ),
+            // Processes section: small viewport when charts visible; becomes full
+            // height once user scrolls charts offscreen.
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              sliver: SliverFillRemaining(
+                hasScrollBody: true,
+                child: _TopProcessesPanel(sample: filtered.last),
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
+  }
+
+  Future<void> _pickDateRange(BuildContext context) async {
+    final now = DateTime.now();
+    final initialStart =
+        _customRange?.start ?? now.subtract(const Duration(days: 7));
+    final initialEnd = _customRange?.end ?? now;
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now.add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+    );
+    if (picked == null) return;
+    if (!context.mounted) return;
+    setState(() => _customRange = picked);
   }
 
   List<HistorySample> _filter(
@@ -259,11 +219,6 @@ class _LogbookScreenState extends State<LogbookScreen> {
     return src.where((s) => s.at.isAfter(minAt)).toList();
   }
 
-  String _fmtDate(DateTime dt) {
-    String two(int v) => v < 10 ? '0$v' : '$v';
-    return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
-  }
-
   Future<bool> _confirmClear(BuildContext context) async {
     final res = await showDialog<bool>(
       context: context,
@@ -289,6 +244,102 @@ class _LogbookScreenState extends State<LogbookScreen> {
 }
 
 enum _HistoryRange { day, week, month, quarter }
+
+class _HistoryHeader extends StatelessWidget {
+  final _HistoryRange range;
+  final DateTimeRange? customRange;
+  final bool hasAnyData;
+  final ValueChanged<_HistoryRange> onSelectRange;
+  final VoidCallback onPickCustomRange;
+  final VoidCallback? onClear;
+
+  const _HistoryHeader({
+    required this.range,
+    required this.customRange,
+    required this.hasAnyData,
+    required this.onSelectRange,
+    required this.onPickCustomRange,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              'History',
+              style: TextStyle(
+                color: AppTheme.textPrimaryFor(context),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SegmentedButton<_HistoryRange>(
+              segments: const [
+                ButtonSegment(value: _HistoryRange.day, label: Text('Day')),
+                ButtonSegment(value: _HistoryRange.week, label: Text('Week')),
+                ButtonSegment(value: _HistoryRange.month, label: Text('Month')),
+                ButtonSegment(
+                    value: _HistoryRange.quarter, label: Text('3 mo')),
+              ],
+              selected: {range},
+              onSelectionChanged: (set) => onSelectRange(set.first),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'Pick date range',
+              onPressed: onPickCustomRange,
+              icon: const Icon(Icons.date_range_outlined),
+            ),
+            IconButton(
+              tooltip: 'Clear history',
+              onPressed: onClear,
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Automated history (sampled every ${HistoryProvider.sampleInterval.inSeconds}s) for CPU / memory / disk. Stored locally on this PC.',
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 12,
+            height: 1.35,
+          ),
+        ),
+        if (customRange != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Range: ${_fmtDate(customRange!.start)} → ${_fmtDate(customRange!.end)}',
+            style: TextStyle(
+              color: AppTheme.textSecondaryFor(context),
+              fontSize: 11,
+            ),
+          ),
+        ] else if (!hasAnyData) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Tip: leave SentraCore running to build history.',
+            style: TextStyle(
+              color: AppTheme.textMutedFor(context),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _fmtDate(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
+  }
+}
 
 class _EmptyHistory extends StatelessWidget {
   final bool loaded;
@@ -504,6 +555,86 @@ class _TopProcessesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final procs = sample.topProcesses;
+    // This widget is used inside the full-height processes panel; it should be scrollable.
+    if (procs.isEmpty) {
+      return Align(
+        alignment: Alignment.topLeft,
+        child: Text(
+          'No process data yet.',
+          style: TextStyle(color: AppTheme.textMutedFor(context)),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: procs.length,
+      separatorBuilder: (_, __) => Divider(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
+        height: 12,
+      ),
+      itemBuilder: (context, i) {
+        final p = procs[i];
+        return Row(
+          children: [
+            Expanded(
+              child: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textPrimaryFor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _cell(context, 'CPU', '${p.cpuPercent.toStringAsFixed(1)}%'),
+            const SizedBox(width: 10),
+            _cell(context, 'Mem', '${p.memPercent.toStringAsFixed(1)}%'),
+            const SizedBox(width: 10),
+            _cell(context, 'Imp', p.impact.toStringAsFixed(0)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _cell(BuildContext context, String k, String v) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          k,
+          style: TextStyle(
+            color: AppTheme.textMutedFor(context),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+        Text(
+          v,
+          style: TextStyle(
+            color: AppTheme.textSecondaryFor(context),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // _fmt removed (header handled by _TopProcessesPanel)
+}
+
+class _TopProcessesPanel extends StatelessWidget {
+  final HistorySample sample;
+  const _TopProcessesPanel({required this.sample});
+
+  @override
+  Widget build(BuildContext context) {
+    // A "full height" card that can scroll its contents. When charts are visible,
+    // it appears as a small viewport; once charts scroll away, it becomes the
+    // main full-screen content.
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -530,91 +661,12 @@ class _TopProcessesCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (procs.isEmpty)
-              Text(
-                'No process data yet.',
-                style: TextStyle(color: AppTheme.textMutedFor(context)),
-              )
-            else
-              ..._fixedRows(context, procs),
+            Expanded(
+              child: _TopProcessesCard(sample: sample),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  List<Widget> _fixedRows(
-      BuildContext context, List<HistoryProcessSample> procs) {
-    final show = procs.take(10).toList();
-    final rows = <Widget>[];
-    for (var i = 0; i < show.length; i++) {
-      final p = show[i];
-      if (i > 0) {
-        rows.add(
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-            height: 12,
-          ),
-        );
-      }
-      rows.add(
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                p.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppTheme.textPrimaryFor(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            _cell(context, 'CPU', '${p.cpuPercent.toStringAsFixed(1)}%'),
-            const SizedBox(width: 10),
-            _cell(context, 'Mem', '${p.memPercent.toStringAsFixed(1)}%'),
-            const SizedBox(width: 10),
-            _cell(context, 'Imp', p.impact.toStringAsFixed(0)),
-          ],
-        ),
-      );
-    }
-    if (procs.length > show.length) {
-      rows.add(const SizedBox(height: 10));
-      rows.add(
-        Text(
-          '… and ${procs.length - show.length} more',
-          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 11),
-        ),
-      );
-    }
-    return rows;
-  }
-
-  Widget _cell(BuildContext context, String k, String v) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          k,
-          style: TextStyle(
-            color: AppTheme.textMutedFor(context),
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.4,
-          ),
-        ),
-        Text(
-          v,
-          style: TextStyle(
-            color: AppTheme.textSecondaryFor(context),
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 

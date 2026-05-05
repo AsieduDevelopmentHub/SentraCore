@@ -12,6 +12,7 @@ permissions:
 env:
   # Derived from tag at runtime (e.g. v1.0.3 -> 1.0.3)
   RELEASE_VERSION: ""
+  # Starting port written into engine-config.json in CI (engine may increment).
   ENGINE_PORT: "8740"
 
 jobs:
@@ -93,12 +94,33 @@ jobs:
       - name: Validate engine runs (health check)
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath ".\\dist\\SentraCoreEngine.exe" -PassThru -WindowStyle Hidden
+          $cfgPath = Resolve-Path ".\\dist\\engine-config.json"
+          # Kill anything listening on the start port (best-effort).
+          $startPort = [int]${env:ENGINE_PORT}
+          $pids = (Get-NetTCPConnection -State Listen -LocalPort $startPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique)
+          foreach ($pid in $pids) { try { Stop-Process -Id $pid -Force } catch {} }
+          # Write engine-config.json next to engine (single source of truth).
+          $cfg = @{
+            host = "127.0.0.1"
+            port = $startPort
+            bind_host = "127.0.0.1"
+            status = "stopped"
+            last_error = ""
+            pid = 0
+          } | ConvertTo-Json
+          $tmp = "$cfgPath.tmp"
+          $cfg | Out-File -FilePath $tmp -Encoding utf8
+          Move-Item -Force $tmp $cfgPath
+          $p = Start-Process -FilePath ".\\dist\\SentraCoreEngine.exe" -PassThru -WindowStyle Hidden -Environment @{ "SENTRACORE_ENGINE_CONFIG" = "$cfgPath" }
           try {
             $ok = $false
             for ($i=0; $i -lt 40; $i++) {
               try {
-                $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:${env:ENGINE_PORT}/api/v1/health"
+                $cfgDisk = $null
+                try { $cfgDisk = Get-Content "$cfgPath" -Raw | ConvertFrom-Json } catch {}
+                $host = if ($cfgDisk -and $cfgDisk.host) { $cfgDisk.host } else { "127.0.0.1" }
+                $port = if ($cfgDisk -and $cfgDisk.port) { [int]$cfgDisk.port } else { $startPort }
+                $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://$host`:$port/api/v1/health"
                 if ($r.StatusCode -eq 200) { $ok = $true; break }
               } catch {}
               Start-Sleep -Milliseconds 500
@@ -106,6 +128,7 @@ jobs:
             if (-not $ok) { throw "Engine health check failed" }
           } finally {
             try { Stop-Process -Id $p.Id -Force } catch {}
+            try { Stop-Process -Name "SentraCoreEngine" -Force } catch {}
           }
 
       - name: Setup Flutter
@@ -210,17 +233,43 @@ jobs:
       - name: Validate engine runs (health check)
         run: |
           chmod +x dist/SentraCoreEngine
-          ./dist/SentraCoreEngine &
+          START_PORT="${ENGINE_PORT:-8740}"
+          # Kill anything on start port (best-effort).
+          lsof -ti "tcp:${START_PORT}" | xargs kill -9 2>/dev/null || true
+          # Write engine-config.json next to engine.
+          cat > dist/engine-config.json <<EOF
+          {
+            "host": "127.0.0.1",
+            "port": ${START_PORT},
+            "bind_host": "127.0.0.1",
+            "status": "stopped",
+            "last_error": "",
+            "pid": 0
+          }
+          EOF
+          SENTRACORE_ENGINE_CONFIG="$(pwd)/dist/engine-config.json" ./dist/SentraCoreEngine &
           PID=$!
           OK=0
           for i in {1..40}; do
-            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+            PORT="$(python - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("dist/engine-config.json")
+          try:
+            j = json.loads(p.read_text())
+            print(int(j.get("port", 0)) or 0)
+          except Exception:
+            print(0)
+          PY
+          )"
+            if [ -z "$PORT" ] || [ "$PORT" = "0" ]; then PORT="$START_PORT"; fi
+            if curl -fsS --max-time 2 "http://127.0.0.1:${PORT}/api/v1/health" >/dev/null; then
               OK=1
               break
             fi
             sleep 0.5
           done
           kill $PID || true
+          pkill -f SentraCoreEngine || true
           if [ "$OK" -ne 1 ]; then
             echo "Engine health check failed"
             exit 1
@@ -330,17 +379,41 @@ jobs:
       - name: Validate engine runs (health check)
         run: |
           chmod +x dist/SentraCoreEngine
-          ./dist/SentraCoreEngine &
+          START_PORT="${ENGINE_PORT:-8740}"
+          fuser -k "${START_PORT}/tcp" 2>/dev/null || true
+          cat > dist/engine-config.json <<EOF
+          {
+            "host": "127.0.0.1",
+            "port": ${START_PORT},
+            "bind_host": "0.0.0.0",
+            "status": "stopped",
+            "last_error": "",
+            "pid": 0
+          }
+          EOF
+          SENTRACORE_ENGINE_CONFIG="$(pwd)/dist/engine-config.json" ./dist/SentraCoreEngine &
           PID=$!
           OK=0
           for i in {1..40}; do
-            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+            PORT="$(python - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("dist/engine-config.json")
+          try:
+            j = json.loads(p.read_text())
+            print(int(j.get("port", 0)) or 0)
+          except Exception:
+            print(0)
+          PY
+          )"
+            if [ -z "$PORT" ] || [ "$PORT" = "0" ]; then PORT="$START_PORT"; fi
+            if curl -fsS --max-time 2 "http://127.0.0.1:${PORT}/api/v1/health" >/dev/null; then
               OK=1
               break
             fi
             sleep 0.5
           done
           kill $PID || true
+          pkill -f SentraCoreEngine || true
           if [ "$OK" -ne 1 ]; then
             echo "Engine health check failed"
             exit 1
@@ -373,19 +446,38 @@ jobs:
           set -e
           HERE="$(dirname "$(readlink -f "$0")")"
           cd "$HERE/usr/bin"
+          # Create engine-config.json (single source of truth) next to binaries.
+          if [ ! -f "./engine-config.json" ]; then
+            cat > "./engine-config.json" <<'JSON'
+          {
+            "host": "127.0.0.1",
+            "port": 8740,
+            "bind_host": "0.0.0.0",
+            "status": "stopped",
+            "last_error": "",
+            "pid": 0
+          }
+          JSON
+          fi
           # Start engine in background (best-effort) and stop it when UI exits.
-          ./SentraCoreEngine >/dev/null 2>&1 &
+          SENTRACORE_ENGINE_CONFIG="$HERE/usr/bin/engine-config.json" ./SentraCoreEngine >/dev/null 2>&1 &
           ENGINE_PID=$!
-          trap "kill $ENGINE_PID >/dev/null 2>&1 || true" EXIT
+          trap "kill $ENGINE_PID >/dev/null 2>&1 || true; pkill -f SentraCoreEngine >/dev/null 2>&1 || true" EXIT
           # Wait until engine responds (avoid UI starting before backend).
           OK=0
           for i in $(seq 1 40); do
-            if curl -fsS --max-time 2 "http://127.0.0.1:${ENGINE_PORT}/api/v1/health" >/dev/null; then
+            PORT="$(sed -n 's/.*\"port\"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p' ./engine-config.json | head -n 1)"
+            if [ -z "$PORT" ]; then PORT="8740"; fi
+            if curl -fsS --max-time 2 "http://127.0.0.1:${PORT}/api/v1/health" >/dev/null; then
               OK=1
               break
             fi
             sleep 0.5
           done
+          if [ "$OK" -ne 1 ]; then
+            echo "Engine health check failed"
+            exit 1
+          fi
           exec ./sentracore_dashboard "$@"
           EOF
           chmod +x SentraCore.AppDir/AppRun

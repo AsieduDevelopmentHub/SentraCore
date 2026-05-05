@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="SentraCore installation, requirements, and API overview." />
+    <title>Documentation — SentraCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="logo" href="../index.html">SentraCore</a>
+        <nav class="nav-desktop" aria-label="Primary">
+          <a href="download.html">Download</a>
+          <a href="about.html">About</a>
+          <a href="docs.html">Docs</a>
+        </nav>
+        <div class="nav-cta">
+          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Download</a>
+        </div>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-expanded="false"
+          aria-label="Open menu"
+        >
+          <span></span>
+        </button>
+      </div>
+      <div class="nav-panel" data-nav-panel>
+        <a href="download.html">Download</a>
+        <a href="about.html">About</a>
+        <a href="docs.html">Docs</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container">
+          <h1>Documentation</h1>
+          <p class="lead">
+            Practical notes for installing SentraCore from releases, running locally, and hitting core API
+            endpoints. For deeper detail, see the repository README and source.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section-alt">
+        <div class="container prose">
+          <h2>Installation (from releases)</h2>
+          <ol>
+            <li>Visit GitHub Releases and open the <strong>latest</strong> tag.</li>
+            <li>Download the artifact for your OS (Windows installer, macOS zip, Linux AppImage).</li>
+            <li>
+              <strong>Windows:</strong> run the installer; shortcuts place the dashboard and engine under the
+              chosen install path.
+            </li>
+            <li>
+              <strong>macOS:</strong> unzip, move the <code>.app</code> to Applications if you like, and open
+              it—Gatekeeper may prompt on first launch for unsigned/ad-hoc builds.
+            </li>
+            <li>
+              <strong>Linux:</strong> <code>chmod +x</code> the AppImage, then execute it from a terminal or
+              file manager.
+            </li>
+          </ol>
+
+          <h2>System requirements (typical)</h2>
+          <ul>
+            <li><strong>Windows:</strong> 64-bit Windows 10 or newer recommended.</li>
+            <li><strong>macOS:</strong> recent macOS on Apple Silicon or Intel (CI builds target arm64).</li>
+            <li><strong>Linux:</strong> x86_64 glibc-based distro with FUSE/libfuse as needed for AppImage.</li>
+            <li>Network: localhost HTTP between dashboard and engine unless you configure otherwise.</li>
+          </ul>
+
+          <h2>Running from source (developers)</h2>
+          <p>
+            Clone the repository, create a Python virtual environment, install <code>requirements.txt</code>,
+            and run the engine entrypoint; use Flutter tooling inside <code>dashboard/</code> for UI
+            development. See the repo README for exact commands.
+          </p>
+
+          <h2>API overview</h2>
+          <p>
+            The engine exposes HTTP endpoints for health and API versioning. Example base URL when running
+            locally: <code>http://127.0.0.1:&lt;port&gt;</code> (port comes from your engine config).
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GET</td>
+                  <td><code>/api/v1/health</code></td>
+                  <td>Liveness / readiness check for the engine.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Additional routes live under <code>/api/v1/</code> as implemented in the codebase—consult the
+            FastAPI app for the full list.
+          </p>
+
+          <h2>Need more?</h2>
+          <p>
+            Open an issue or discussion on <a data-github-repo-link href="#">GitHub</a>—this site stays minimal
+            on purpose.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>© <span id="y"></span> SentraCore</span>
+        <div class="footer-links">
+          <a data-github-repo-link href="#">GitHub</a>
+          <a href="../index.html">Home</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/main.js"></script>
+  </body>
+</html>

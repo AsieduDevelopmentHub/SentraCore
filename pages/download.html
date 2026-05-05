@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Download SentraCore for Windows, macOS, and Linux from GitHub Releases." />
+    <title>Download — SentraCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="logo" href="../index.html">SentraCore</a>
+        <nav class="nav-desktop" aria-label="Primary">
+          <a href="download.html">Download</a>
+          <a href="about.html">About</a>
+          <a href="docs.html">Docs</a>
+        </nav>
+        <div class="nav-cta">
+          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Latest release</a>
+        </div>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-expanded="false"
+          aria-label="Open menu"
+        >
+          <span></span>
+        </button>
+      </div>
+      <div class="nav-panel" data-nav-panel>
+        <a href="download.html">Download</a>
+        <a href="about.html">About</a>
+        <a href="docs.html">Docs</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container">
+          <h1>Download for your PC</h1>
+          <p class="lead">
+            Binaries are published on GitHub Releases. Pick your platform and grab the latest installer or
+            bundle—no dependencies bundled into this page; downloads always come from GitHub.
+          </p>
+          <div class="meta-row">
+            <span class="badge">Latest</span>
+            <span class="badge" style="background: var(--border); color: var(--muted)">GitHub Releases</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="download-grid">
+            <article class="download-card">
+              <h2>Windows</h2>
+              <p>
+                Installer (<code>.exe</code>) built with Inno Setup. Includes the dashboard and packaged engine.
+              </p>
+              <a
+                class="btn btn-primary"
+                data-releases-link
+                href="#"
+                data-download-track="windows"
+                >Download for Windows</a
+              >
+            </article>
+            <article class="download-card">
+              <h2>macOS</h2>
+              <p>
+                Signed ad-hoc app bundle in a <code>.zip</code>. Copy the engine into the app in CI; unzip and
+                run locally.
+              </p>
+              <a
+                class="btn btn-primary"
+                data-releases-link
+                href="#"
+                data-download-track="macos"
+                >Download for macOS</a
+              >
+            </article>
+            <article class="download-card">
+              <h2>Linux</h2>
+              <p>
+                AppImage for x86_64. Make executable and run, or integrate with your desktop launcher.
+              </p>
+              <a
+                class="btn btn-primary"
+                data-releases-link
+                href="#"
+                data-download-track="linux"
+                >Download for Linux</a
+              >
+            </article>
+          </div>
+
+          <div class="note-box">
+            <h3>Quick start</h3>
+            <ol>
+              <li>Open the <strong>latest</strong> GitHub Release (buttons above).</li>
+              <li>Download the asset for your OS (Windows installer, macOS zip, or Linux AppImage).</li>
+              <li>Run the installer or unpack—then launch the dashboard; the engine runs as configured.</li>
+            </ol>
+            <p style="margin: 1rem 0 0; font-size: 0.9375rem; color: var(--muted)">
+              Tip: release filenames include version and CI build metadata—choose the file matching your
+              platform.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>© <span id="y"></span> SentraCore</span>
+        <div class="footer-links">
+          <a data-github-repo-link href="#">GitHub</a>
+          <a href="../index.html">Home</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/main.js"></script>
+  </body>
+</html>

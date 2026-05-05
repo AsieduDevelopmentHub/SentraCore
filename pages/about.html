@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="What SentraCore is: architecture, stack, and design goals." />
+    <title>About — SentraCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="logo" href="../index.html">SentraCore</a>
+        <nav class="nav-desktop" aria-label="Primary">
+          <a href="download.html">Download</a>
+          <a href="about.html">About</a>
+          <a href="docs.html">Docs</a>
+        </nav>
+        <div class="nav-cta">
+          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Download</a>
+        </div>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-expanded="false"
+          aria-label="Open menu"
+        >
+          <span></span>
+        </button>
+      </div>
+      <div class="nav-panel" data-nav-panel>
+        <a href="download.html">Download</a>
+        <a href="about.html">About</a>
+        <a href="docs.html">Docs</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container">
+          <h1>About SentraCore</h1>
+          <p class="lead">
+            SentraCore is a system intelligence stack: a desktop-first experience backed by a small, fast API
+            and a deployable engine—aimed at monitoring, clarity, and automation.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container prose">
+          <h2>What it is</h2>
+          <p>
+            SentraCore brings together real-time system visibility and a headless control plane. The Flutter
+            dashboard focuses on operator UX; the Python engine handles workloads and exposes a consistent HTTP
+            surface for scripts and integrations.
+          </p>
+
+          <h2>Architecture</h2>
+          <p>
+            Three layers work together but stay separable: a <strong>frontend</strong> (Flutter desktop),
+            a <strong>runtime engine</strong> (Python, packaged for distribution), and an <strong>API</strong>
+            layer (FastAPI / Starlette) for health, status, and extension points.
+          </p>
+
+          <h2>Tech stack</h2>
+          <ul>
+            <li><strong>FastAPI</strong> — modern async API, OpenAPI-friendly.</li>
+            <li><strong>Flutter</strong> — cross-platform UI for Windows, macOS, and Linux.</li>
+            <li><strong>PyInstaller</strong> — one-file style engine builds for CI and releases.</li>
+          </ul>
+
+          <h2>Design goal</h2>
+          <p>
+            Ship a monitoring and automation engine that feels intentional: low ceremony to install, predictable
+            to operate, and straightforward to embed in your own workflows.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>© <span id="y"></span> SentraCore</span>
+        <div class="footer-links">
+          <a data-github-repo-link href="#">GitHub</a>
+          <a href="../index.html">Home</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/main.js"></script>
+  </body>
+</html>

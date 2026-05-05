@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="SentraCore — system intelligence, real-time monitoring, and a fast engine with a cross-platform desktop dashboard."
+    />
+    <title>SentraCore — System intelligence for your machine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="logo" href="index.html">SentraCore</a>
+        <nav class="nav-desktop" aria-label="Primary">
+          <a href="pages/download.html">Download</a>
+          <a href="pages/about.html">About</a>
+          <a href="pages/docs.html">Docs</a>
+        </nav>
+        <div class="nav-cta">
+          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Download</a>
+        </div>
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-expanded="false"
+          aria-label="Open menu"
+        >
+          <span></span>
+        </button>
+      </div>
+      <div class="nav-panel" data-nav-panel>
+        <a href="pages/download.html">Download</a>
+        <a href="pages/about.html">About</a>
+        <a href="pages/docs.html">Docs</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <span class="hero-badge">Engine · API · Desktop</span>
+          <h1>System intelligence that stays out of your way</h1>
+          <p class="hero-lead">
+            SentraCore combines a lightweight Python engine, a fast HTTP API, and a Flutter
+            dashboard—built for real-time health visibility and automation across Windows,
+            macOS, and Linux.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" data-releases-link href="#" data-download-track="hero-primary">Download</a>
+            <a class="btn btn-secondary" href="pages/docs.html">View Docs</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-alt" id="features">
+        <div class="container">
+          <div class="section-head">
+            <h2>Built for operators and developers</h2>
+            <p>
+              A small footprint with clear boundaries: monitor, react, and integrate without a heavy stack.
+            </p>
+          </div>
+          <div class="feature-grid">
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">⚡</div>
+              <h3>Lightweight engine</h3>
+              <p>
+                Headless service packaged for production—easy to ship beside your dashboard or run as a
+                background process.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">◎</div>
+              <h3>Real-time monitoring</h3>
+              <p>
+                Live views for system stress and health signals—designed to spot issues before they become
+                outages.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">⬚</div>
+              <h3>Cross-platform desktop</h3>
+              <p>
+                Native-feeling Flutter builds for Windows, macOS, and Linux with installers and bundles in
+                GitHub Releases.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">◇</div>
+              <h3>Fast API backend</h3>
+              <p>
+                FastAPI-powered endpoints for health and control—simple to extend and automate against.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">◎</div>
+              <h3>Clear architecture</h3>
+              <p>
+                Dashboard UI, engine runtime, and HTTP API stay decoupled so you can deploy or scale each
+                piece on its own terms.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-icon" aria-hidden="true">✓</div>
+              <h3>Automation-ready</h3>
+              <p>
+                Script installs, wire CI artifacts, or embed the engine—designed as a platform, not a black
+                box.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>© <span id="y"></span> SentraCore</span>
+        <div class="footer-links">
+          <a data-github-repo-link href="#">GitHub</a>
+          <a data-releases-link href="#">Releases</a>
+          <a href="pages/docs.html">Documentation</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/main.js"></script>
+  </body>
+</html>

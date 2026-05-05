@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+# Strip Cursor co-author trailer(s) from commit message.
+# Runs after the message is composed, before the commit is finalized.
+#
+# Usage: enable repo hooks with:
+#   git config core.hooksPath .githooks
+
+MSG_FILE="${1:-}"
+if [ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ]; then
+  exit 0
+fi
+
+tmp="${MSG_FILE}.tmp.$$"
+
+# Remove any "Co-authored-by: Cursor ..." trailer lines (case-insensitive).
+# Keep all other co-authors intact.
+awk '
+BEGIN { IGNORECASE = 1 }
+/^[[:space:]]*Co-authored-by:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
+/^[[:space:]]*Co-Authored-By:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
+{ print }
+' "$MSG_FILE" > "$tmp"
+
+mv "$tmp" "$MSG_FILE"
+
+exit 0

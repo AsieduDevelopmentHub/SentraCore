@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+# Also strip Cursor trailer during message preparation (helps with templates/squash).
+# This is a best-effort duplicate of commit-msg; commit-msg is the final gate.
+
+MSG_FILE="${1:-}"
+if [ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ]; then
+  exit 0
+fi
+
+tmp="${MSG_FILE}.tmp.$$"
+
+awk '
+BEGIN { IGNORECASE = 1 }
+/^[[:space:]]*Co-authored-by:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
+/^[[:space:]]*Co-Authored-By:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
+{ print }
+' "$MSG_FILE" > "$tmp"
+
+mv "$tmp" "$MSG_FILE"
+
+exit 0

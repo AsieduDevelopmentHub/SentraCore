@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../assets/css/style.css" />
@@ -23,7 +23,9 @@
           <a href="docs.html">Docs</a>
         </nav>
         <div class="nav-cta">
-          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Latest release</a>
+          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header"
+            >Download</a
+          >
         </div>
         <button
           class="nav-toggle"
@@ -43,16 +45,18 @@
     </header>
 
     <main>
-      <section class="page-hero">
+      <section class="page-hero page-hero--mesh">
         <div class="container">
           <h1>Download for your PC</h1>
           <p class="lead">
-            Binaries are published on GitHub Releases. Pick your platform and grab the latest installer or
-            bundle—no dependencies bundled into this page; downloads always come from GitHub.
+            Pick your platform—buttons resolve to the <strong>actual release file</strong> on GitHub (Windows
+            <code>.exe</code>, macOS <code>.zip</code>, Linux <code>.AppImage</code>) so your browser can
+            download directly. All files are served from GitHub; this page only points to the latest assets.
           </p>
           <div class="meta-row">
-            <span class="badge">Latest</span>
-            <span class="badge" style="background: var(--border); color: var(--muted)">GitHub Releases</span>
+            <span class="badge">Latest tag</span>
+            <span class="tag-display" data-latest-tag>…</span>
+            <span class="badge badge--muted">from GitHub Releases</span>
           </div>
         </div>
       </section>
@@ -67,8 +71,8 @@
               </p>
               <a
                 class="btn btn-primary"
-                data-releases-link
                 href="#"
+                data-auto-download="windows"
                 data-download-track="windows"
                 >Download for Windows</a
               >
@@ -81,8 +85,8 @@
               </p>
               <a
                 class="btn btn-primary"
-                data-releases-link
                 href="#"
+                data-auto-download="macos"
                 data-download-track="macos"
                 >Download for macOS</a
               >
@@ -94,8 +98,8 @@
               </p>
               <a
                 class="btn btn-primary"
-                data-releases-link
                 href="#"
+                data-auto-download="linux"
                 data-download-track="linux"
                 >Download for Linux</a
               >
@@ -105,13 +109,13 @@
           <div class="note-box">
             <h3>Quick start</h3>
             <ol>
-              <li>Open the <strong>latest</strong> GitHub Release (buttons above).</li>
-              <li>Download the asset for your OS (Windows installer, macOS zip, or Linux AppImage).</li>
-              <li>Run the installer or unpack—then launch the dashboard; the engine runs as configured.</li>
+              <li>Click the button for your OS—your browser should download the file from GitHub’s CDN.</li>
+              <li>If a button opens the release page instead, your browser blocked the API call—use the assets list there.</li>
+              <li>Run the installer or unpack the archive, then launch the dashboard.</li>
             </ol>
-            <p style="margin: 1rem 0 0; font-size: 0.9375rem; color: var(--muted)">
-              Tip: release filenames include version and CI build metadata—choose the file matching your
-              platform.
+            <p class="tip">
+              Filenames follow CI output (e.g. <code>SentraCore_Setup_v…</code>, <code>SentraCore_macOS_…</code>,
+              <code>SentraCore_linux_…</code>).
             </p>
           </div>
         </div>

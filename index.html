@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/css/style.css" />
@@ -26,7 +26,9 @@
           <a href="pages/docs.html">Docs</a>
         </nav>
         <div class="nav-cta">
-          <a class="btn btn-primary" data-releases-link href="#" data-download-track="header">Download</a>
+          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header"
+            >Download</a
+          >
         </div>
         <button
           class="nav-toggle"
@@ -46,21 +48,30 @@
     </header>
 
     <main>
-      <section class="hero">
-        <div class="container">
-          <span class="hero-badge">Engine · API · Desktop</span>
-          <h1>System intelligence that stays out of your way</h1>
-          <p class="hero-lead">
-            SentraCore combines a lightweight Python engine, a fast HTTP API, and a Flutter
-            dashboard—built for real-time health visibility and automation across Windows,
-            macOS, and Linux.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" data-releases-link href="#" data-download-track="hero-primary">Download</a>
-            <a class="btn btn-secondary" href="pages/docs.html">View Docs</a>
-          </div>
+      <div class="hero-wrap">
+        <div class="hero-orbs" aria-hidden="true">
+          <div class="hero-orb hero-orb--a"></div>
+          <div class="hero-orb hero-orb--b"></div>
         </div>
-      </section>
+        <section class="hero">
+          <div class="container">
+            <span class="hero-badge">Engine · API · Desktop</span>
+            <h1><span>System intelligence</span> that stays out of your way</h1>
+            <p class="hero-lead">
+              SentraCore combines a lightweight Python engine, a fast HTTP API, and a Flutter
+              dashboard—built for real-time health visibility and automation across Windows,
+              macOS, and Linux.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="hero-primary"
+                >Download for Windows</a
+              >
+              <a class="btn btn-secondary" href="pages/download.html">Other platforms</a>
+              <a class="btn btn-secondary" href="pages/docs.html">View Docs</a>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <section class="section section-alt" id="features">
         <div class="container">

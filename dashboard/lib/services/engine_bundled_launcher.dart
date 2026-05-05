@@ -90,7 +90,7 @@ class EngineBundledLauncher {
     if (cfg.status == EngineStatus.failed && !userRetry) {
       return EngineBootstrapOutcome(
         success: false,
-        message: cfg.lastError.isEmpty ? 'Backend failed.' : cfg.lastError,
+        message: cfg.lastError.isEmpty ? 'Engine failed.' : cfg.lastError,
         activeHost: cfg.host,
         activePort: cfg.port,
       );
@@ -126,7 +126,7 @@ class EngineBundledLauncher {
     if (exe == null) {
       cfg = cfg.copyWith(
         status: EngineStatus.failed,
-        lastError: 'Backend engine not found next to the app.',
+        lastError: 'Engine executable not found next to the app.',
         pid: 0,
       );
       await EngineConfigStore.writeAtomic(cfg);
@@ -161,7 +161,7 @@ class EngineBundledLauncher {
       if (!started || _ownedProcess == null) {
         cfg = cfg.copyWith(
           status: EngineStatus.failed,
-          lastError: 'Could not start SentraCoreEngine.',
+          lastError: 'Could not start SentraCoreEngine (engine).',
           pid: 0,
         );
         await EngineConfigStore.writeAtomic(cfg);
@@ -318,7 +318,8 @@ class EngineBundledLauncher {
   }
 
   static String _engineConfigPath() {
-    final dir = File(Platform.resolvedExecutable).parent;
-    return '${dir.path}${Platform.pathSeparator}${EngineConfigStore.fileName}';
+    // Must be writable (installed apps may live under Program Files).
+    // EngineConfigStore owns the authoritative location.
+    return EngineConfigStore.engineConfigPath();
   }
 }

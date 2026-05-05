@@ -39,9 +39,30 @@ def engine_config_path() -> Path:
     override = os.environ.get("SENTRACORE_ENGINE_CONFIG")
     if override:
         return Path(override)
-    # Frozen builds: always the directory containing the engine executable on disk.
+    # Default: use the directory containing the engine executable if it's writable,
+    # otherwise fall back to a per-user config path.
     base = Path(sys.executable).resolve().parent
-    return base / "engine-config.json"
+    candidate = base / "engine-config.json"
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        test = base / ".write_test"
+        test.write_text("ok", encoding="utf-8")
+        test.unlink(missing_ok=True)
+        return candidate
+    except OSError:
+        pass
+
+    if system().lower() == "windows":
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            return Path(local) / "SentraCore" / "engine-config.json"
+    if system().lower() == "darwin":
+        home = Path.home()
+        return home / "Library" / "Application Support" / "SentraCore" / "engine-config.json"
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        return Path(xdg) / "sentracore" / "engine-config.json"
+    return Path.home() / ".config" / "sentracore" / "engine-config.json"
 
 
 @dataclass(frozen=True)

@@ -5,16 +5,69 @@ import 'package:flutter/services.dart';
 
 /// Single source of truth for engine host/port and lifecycle state.
 ///
-/// This file must live next to the installed desktop executable so both the UI
-/// and the packaged engine can share it deterministically.
+/// This file must be writable by the current user. On Windows/macOS installed
+/// apps often live under protected directories (e.g. Program Files), so we store
+/// config under per-user app data and pass its location to the engine via
+/// SENTRACORE_ENGINE_CONFIG.
 class EngineConfigStore {
   EngineConfigStore._();
 
   static const String fileName = 'engine-config.json';
 
+  /// Absolute path to the writable engine-config.json for this user.
+  static String engineConfigPath() => _configFile().path;
+
+  static Directory _configDir() {
+    if (Platform.isWindows) {
+      final base = Platform.environment['LOCALAPPDATA'];
+      if (base != null && base.trim().isNotEmpty) {
+        return Directory(
+            '${base.trim()}${Platform.pathSeparator}SentraCore');
+      }
+    }
+    if (Platform.isMacOS) {
+      final home = Platform.environment['HOME'];
+      if (home != null && home.trim().isNotEmpty) {
+        return Directory(
+            '${home.trim()}${Platform.pathSeparator}Library${Platform.pathSeparator}Application Support${Platform.pathSeparator}SentraCore');
+      }
+    }
+    // Linux / fallback
+    final xdg = Platform.environment['XDG_CONFIG_HOME'];
+    if (xdg != null && xdg.trim().isNotEmpty) {
+      return Directory(
+          '${xdg.trim()}${Platform.pathSeparator}sentracore');
+    }
+    final home = Platform.environment['HOME'] ?? '';
+    if (home.trim().isNotEmpty) {
+      return Directory(
+          '${home.trim()}${Platform.pathSeparator}.config${Platform.pathSeparator}sentracore');
+    }
+    // Last resort: alongside executable (may be read-only; caller handles errors).
+    return File(Platform.resolvedExecutable).parent;
+  }
+
   static File _configFile() {
+    final dir = _configDir();
+    return File('${dir.path}${Platform.pathSeparator}$fileName');
+  }
+
+  static File _legacyConfigFileNextToExe() {
     final dir = File(Platform.resolvedExecutable).parent;
     return File('${dir.path}${Platform.pathSeparator}$fileName');
+  }
+
+  static Future<void> _migrateLegacyIfPresent() async {
+    final legacy = _legacyConfigFileNextToExe();
+    final target = _configFile();
+    try {
+      if (await target.exists()) return;
+      if (!await legacy.exists()) return;
+      await target.parent.create(recursive: true);
+      await legacy.copy(target.path);
+    } catch (_) {
+      // Best-effort migration only.
+    }
   }
 
   static String connectHostForUi() => '127.0.0.1';
@@ -25,6 +78,7 @@ class EngineConfigStore {
   }
 
   static Future<EngineConfig> readOrCreate() async {
+    await _migrateLegacyIfPresent();
     final f = _configFile();
     if (!await f.exists()) {
       return _restoreFromBundledTemplate();
@@ -35,6 +89,7 @@ class EngineConfigStore {
   }
 
   static Future<EngineConfig?> read() async {
+    await _migrateLegacyIfPresent();
     final f = _configFile();
     try {
       if (!await f.exists()) return null;
@@ -58,6 +113,7 @@ class EngineConfigStore {
   }
 
   static Future<void> writeAtomic(EngineConfig cfg) async {
+    await _migrateLegacyIfPresent();
     final f = _configFile();
     final dir = f.parent;
     await dir.create(recursive: true);

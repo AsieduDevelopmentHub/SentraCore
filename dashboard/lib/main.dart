@@ -44,7 +44,7 @@ class _StartupGateAppState extends State<StartupGateApp> {
     final settings = SettingsProvider();
     await settings.load();
 
-    // READY GATE (strict): do not enter the app until backend is healthy.
+    // READY GATE (strict): do not enter the app until engine is healthy.
     final out = userRetry
         ? await EngineBundledLauncher.ensureReadyUserRetry()
         : await EngineBundledLauncher.ensureReady();
@@ -75,7 +75,7 @@ class _StartupGateAppState extends State<StartupGateApp> {
             theme: theme,
             darkTheme: dark,
             home: _StartupError(
-              message: data.gate.message ?? 'Backend failed to start.',
+              message: data.gate.message ?? 'Engine failed to start.',
               onRetry: () =>
                   setState(() => _boot = _bootstrap(userRetry: true)),
             ),
@@ -129,7 +129,7 @@ class _StartupSplash extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Starting backend…',
+              'Starting engine…',
               style: TextStyle(
                   color: AppTheme.textMutedFor(context), fontSize: 12),
             ),
@@ -158,7 +158,7 @@ class _StartupError extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Backend failed to start',
+                  'Engine failed to start',
                   style: TextStyle(
                     color: AppTheme.textPrimaryFor(context),
                     fontSize: 18,

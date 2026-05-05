@@ -10,8 +10,9 @@ permissions:
   contents: write
 
 env:
-  # Derived from tag at runtime (e.g. v1.0.3 -> 1.0.3)
+  # RELEASE_VERSION: git ref label (branch name or tag without v). ARTIFACT_VERSION: safe semver for filenames.
   RELEASE_VERSION: ""
+  ARTIFACT_VERSION: ""
   # Starting port written into engine-config.json in CI (engine may increment).
   ENGINE_PORT: "8740"
 
@@ -27,9 +28,18 @@ jobs:
         shell: pwsh
         run: |
           $ref = "${env:GITHUB_REF_NAME}"
-          if ($ref -like "v*") { $ver = $ref.Substring(1) } else { $ver = $ref }
+          $run = "${env:GITHUB_RUN_NUMBER}"
+          if ($ref -like "v*") {
+            $ver = $ref.Substring(1)
+            $artifactVer = $ver
+          } else {
+            $ver = $ref
+            # Branch/manual runs: avoid vmain in installer names; keep unique per workflow run.
+            $artifactVer = "0.0.0.$run"
+          }
           "RELEASE_VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "Release version: $ver"
+          "ARTIFACT_VERSION=$artifactVer" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release version: $ver (artifact files: v$artifactVer)"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -60,10 +70,11 @@ jobs:
           (Get-Content "engine/api/server.py") `
             -replace 'version=\"[^\"]+\"', "version=`"$ver`"" `
             | Set-Content "engine/api/server.py"
-          # Inno Setup version + output name
+          # Inno Setup version + output name (use ARTIFACT_VERSION so branch runs are not vmain)
+          $artifactVer = "${env:ARTIFACT_VERSION}"
           (Get-Content "installer/sentracore.iss") `
             -replace '^AppVersion=.*$', "AppVersion=$pubVer" `
-            -replace '^OutputBaseFilename=.*$', "OutputBaseFilename=SentraCore_Setup_v$ver" `
+            -replace '^OutputBaseFilename=.*$', "OutputBaseFilename=SentraCore_Setup_v$artifactVer" `
             | Set-Content "installer/sentracore.iss"
 
       - name: Create venv + install engine deps
@@ -180,9 +191,17 @@ jobs:
       - name: Derive version from tag
         run: |
           REF="${GITHUB_REF_NAME}"
-          if [[ "$REF" == v* ]]; then VER="${REF:1}"; else VER="$REF"; fi
+          RUN="${GITHUB_RUN_NUMBER:-0}"
+          if [[ "$REF" == v* ]]; then
+            VER="${REF:1}"
+            ART="$VER"
+          else
+            VER="$REF"
+            ART="0.0.0.${RUN}"
+          fi
           echo "RELEASE_VERSION=$VER" >> "$GITHUB_ENV"
-          echo "Release version: $VER"
+          echo "ARTIFACT_VERSION=$ART" >> "$GITHUB_ENV"
+          echo "Release version: $VER (artifact files: v$ART)"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -296,17 +315,36 @@ jobs:
 
       - name: Bundle engine into .app + sign (ad-hoc)
         run: |
-          APP="$(ls dashboard/build/macos/Build/Products/Release/*.app | head -n 1)"
-          test -d "$APP"
+          set -euo pipefail
+          RELEASE_DIR="dashboard/build/macos/Build/Products/Release"
+          if [ ! -d "$RELEASE_DIR" ]; then
+            echo "Missing Release dir: $RELEASE_DIR"
+            exit 1
+          fi
+          APP="$(find "$RELEASE_DIR" -maxdepth 1 -name "*.app" -print -quit)"
+          if [ -z "${APP}" ] || [ ! -d "$APP" ]; then
+            echo "No .app bundle under $RELEASE_DIR — contents:"
+            ls -la "$RELEASE_DIR" || true
+            exit 1
+          fi
+          echo "Using app bundle: $APP"
           chmod +x dist/SentraCoreEngine
+          codesign --force --sign - dist/SentraCoreEngine
           cp dist/SentraCoreEngine "$APP/Contents/MacOS/SentraCoreEngine"
           chmod +x "$APP/Contents/MacOS/SentraCoreEngine"
           codesign --force --deep --sign - "$APP"
 
       - name: Package (zip)
         run: |
-          APP="$(ls dashboard/build/macos/Build/Products/Release/*.app | head -n 1)"
-          zip -r "SentraCore_macOS_${RELEASE_VERSION}.zip" "$APP"
+          set -euo pipefail
+          RELEASE_DIR="dashboard/build/macos/Build/Products/Release"
+          APP="$(find "$RELEASE_DIR" -maxdepth 1 -name "*.app" -print -quit)"
+          if [ -z "${APP}" ] || [ ! -d "$APP" ]; then
+            echo "No .app bundle under $RELEASE_DIR"
+            ls -la "$RELEASE_DIR" || true
+            exit 1
+          fi
+          zip -r "SentraCore_macOS_${ARTIFACT_VERSION}.zip" "$APP"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -323,9 +361,17 @@ jobs:
       - name: Derive version from tag
         run: |
           REF="${GITHUB_REF_NAME}"
-          if [[ "$REF" == v* ]]; then VER="${REF:1}"; else VER="$REF"; fi
+          RUN="${GITHUB_RUN_NUMBER:-0}"
+          if [[ "$REF" == v* ]]; then
+            VER="${REF:1}"
+            ART="$VER"
+          else
+            VER="$REF"
+            ART="0.0.0.${RUN}"
+          fi
           echo "RELEASE_VERSION=$VER" >> "$GITHUB_ENV"
-          echo "Release version: $VER"
+          echo "ARTIFACT_VERSION=$ART" >> "$GITHUB_ENV"
+          echo "Release version: $VER (artifact files: v$ART)"
 
       - name: Install Linux desktop build deps
         run: |
@@ -512,7 +558,7 @@ jobs:
 
       - name: Rename AppImage with version
         run: |
-          mv SentraCore_linux.AppImage "SentraCore_linux_${RELEASE_VERSION}.AppImage"
+          mv SentraCore_linux.AppImage "SentraCore_linux_${ARTIFACT_VERSION}.AppImage"
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4

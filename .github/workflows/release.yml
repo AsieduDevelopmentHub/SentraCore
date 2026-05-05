@@ -94,11 +94,13 @@ jobs:
       - name: Validate engine runs (health check)
         shell: pwsh
         run: |
-          $cfgPath = Resolve-Path ".\\dist\\engine-config.json"
+          $distDir = Join-Path (Get-Location) "dist"
+          if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir | Out-Null }
+          $cfgPath = Join-Path $distDir "engine-config.json"
           # Kill anything listening on the start port (best-effort).
           $startPort = [int]${env:ENGINE_PORT}
           $pids = (Get-NetTCPConnection -State Listen -LocalPort $startPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique)
-          foreach ($pid in $pids) { try { Stop-Process -Id $pid -Force } catch {} }
+          foreach ($procId in $pids) { try { Stop-Process -Id $procId -Force } catch {} }
           # Write engine-config.json next to engine (single source of truth).
           $cfg = @{
             host = "127.0.0.1"
@@ -111,13 +113,14 @@ jobs:
           $tmp = "$cfgPath.tmp"
           $cfg | Out-File -FilePath $tmp -Encoding utf8
           Move-Item -Force $tmp $cfgPath
-          $p = Start-Process -FilePath ".\\dist\\SentraCoreEngine.exe" -PassThru -WindowStyle Hidden -Environment @{ "SENTRACORE_ENGINE_CONFIG" = "$cfgPath" }
+          $cfgFull = [System.IO.Path]::GetFullPath($cfgPath)
+          $p = Start-Process -FilePath ".\\dist\\SentraCoreEngine.exe" -PassThru -WindowStyle Hidden -Environment @{ "SENTRACORE_ENGINE_CONFIG" = $cfgFull }
           try {
             $ok = $false
             for ($i=0; $i -lt 40; $i++) {
               try {
                 $cfgDisk = $null
-                try { $cfgDisk = Get-Content "$cfgPath" -Raw | ConvertFrom-Json } catch {}
+                try { $cfgDisk = Get-Content "$cfgFull" -Raw | ConvertFrom-Json } catch {}
                 $host = if ($cfgDisk -and $cfgDisk.host) { $cfgDisk.host } else { "127.0.0.1" }
                 $port = if ($cfgDisk -and $cfgDisk.port) { [int]$cfgDisk.port } else { $startPort }
                 $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://$host`:$port/api/v1/health"

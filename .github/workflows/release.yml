@@ -47,9 +47,11 @@ jobs:
         shell: pwsh
         run: |
           $ver = "${env:RELEASE_VERSION}"
-          # Flutter pubspec version (keep build number stable for CI)
+          # Flutter pubspec / Inno require semver x.y.z; branch names (e.g. main) are invalid.
+          $pubVer = if ($ver -match '^(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.0" }
+          # Flutter pubspec version (build number from CI run)
           (Get-Content "dashboard/pubspec.yaml") `
-            -replace '^version:\s*.+$', "version: $ver+${env:GITHUB_RUN_NUMBER}" `
+            -replace '^version:\s*.+$', "version: $pubVer+${env:GITHUB_RUN_NUMBER}" `
             | Set-Content "dashboard/pubspec.yaml"
           # Engine version metadata
           (Get-Content "engine/__init__.py") `
@@ -60,7 +62,7 @@ jobs:
             | Set-Content "engine/api/server.py"
           # Inno Setup version + output name
           (Get-Content "installer/sentracore.iss") `
-            -replace '^AppVersion=.*$', "AppVersion=$ver" `
+            -replace '^AppVersion=.*$', "AppVersion=$pubVer" `
             -replace '^OutputBaseFilename=.*$', "OutputBaseFilename=SentraCore_Setup_v$ver" `
             | Set-Content "installer/sentracore.iss"
 
@@ -121,9 +123,10 @@ jobs:
               try {
                 $cfgDisk = $null
                 try { $cfgDisk = Get-Content "$cfgFull" -Raw | ConvertFrom-Json } catch {}
-                $host = if ($cfgDisk -and $cfgDisk.host) { $cfgDisk.host } else { "127.0.0.1" }
+                # Never use $host — it shadows PowerShell's automatic $Host and breaks this loop.
+                $connectHost = if ($cfgDisk -and $cfgDisk.host) { $cfgDisk.host } else { "127.0.0.1" }
                 $port = if ($cfgDisk -and $cfgDisk.port) { [int]$cfgDisk.port } else { $startPort }
-                $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://$host`:$port/api/v1/health"
+                $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://${connectHost}:${port}/api/v1/health"
                 if ($r.StatusCode -eq 200) { $ok = $true; break }
               } catch {}
               Start-Sleep -Milliseconds 500
@@ -196,13 +199,14 @@ jobs:
 
       - name: Inject version into project files
         run: |
-          VER="${RELEASE_VERSION}"
           python - <<'PY'
           import os, re, pathlib
           ver = os.environ["RELEASE_VERSION"]
-          run = os.environ.get("GITHUB_RUN_NUMBER","1")
+          run = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          m = re.match(r"^(\d+\.\d+\.\d+)", ver.strip())
+          pub_ver = m.group(1) if m else "0.0.0"
           p = pathlib.Path("dashboard/pubspec.yaml")
-          p.write_text(re.sub(r"^version:\s*.+$", f"version: {ver}+{run}", p.read_text(), flags=re.M))
+          p.write_text(re.sub(r"^version:\s*.+$", f"version: {pub_ver}+{run}", p.read_text(), flags=re.M))
           init = pathlib.Path("engine/__init__.py")
           init.write_text(re.sub(r'__version__\s*=\s*\"[^\"]+\"', f'__version__ = \"{ver}\"', init.read_text()))
           srv = pathlib.Path("engine/api/server.py")
@@ -347,9 +351,11 @@ jobs:
           python - <<'PY'
           import os, re, pathlib
           ver = os.environ["RELEASE_VERSION"]
-          run = os.environ.get("GITHUB_RUN_NUMBER","1")
+          run = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          m = re.match(r"^(\d+\.\d+\.\d+)", ver.strip())
+          pub_ver = m.group(1) if m else "0.0.0"
           p = pathlib.Path("dashboard/pubspec.yaml")
-          p.write_text(re.sub(r"^version:\s*.+$", f"version: {ver}+{run}", p.read_text(), flags=re.M))
+          p.write_text(re.sub(r"^version:\s*.+$", f"version: {pub_ver}+{run}", p.read_text(), flags=re.M))
           init = pathlib.Path("engine/__init__.py")
           init.write_text(re.sub(r'__version__\s*=\s*\"[^\"]+\"', f'__version__ = \"{ver}\"', init.read_text()))
           srv = pathlib.Path("engine/api/server.py")

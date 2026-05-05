@@ -595,7 +595,21 @@ jobs:
       - name: Create GitHub Release (attach assets)
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          name: SentraCore ${{ github.ref_name }}
+          body: |
+            ## Highlights
+            - Engine config is now **writable by default** on installed systems (prevents “stuck connecting” when the install directory is protected).
+            - Release artifacts include `engine-config.json` for Windows/macOS/Linux builds.
+            - Website: modern GitHub Pages landing site with direct-download buttons (via GitHub Releases API).
+
+            ## Downloads
+            Grab the correct asset for your OS from the files attached to this release:
+            - Windows: `SentraCore_Setup_v*.exe`
+            - macOS: `SentraCore_macOS_*.zip`
+            - Linux: `SentraCore_linux_*.AppImage`
+
+            ## Notes
+            - If your system blocks the Releases API, the website buttons fall back to the Releases page.
           files: |
             artifacts/**/SentraCore_Setup_v*.exe
             artifacts/**/SentraCore_macOS_*.zip

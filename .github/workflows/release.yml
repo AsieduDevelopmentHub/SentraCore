@@ -163,6 +163,16 @@ jobs:
           flutter build windows --release
           if (!(Test-Path "build\\windows\\x64\\runner\\Release\\sentracore_dashboard.exe")) { throw "Dashboard exe not found" }
 
+      - name: Ship engine-config.json next to Windows binaries (installer payload)
+        shell: pwsh
+        run: |
+          $cfg = "dashboard\assets\engine-config.json"
+          if (!(Test-Path $cfg)) { throw "Missing $cfg" }
+          $releaseDir = "dashboard\build\windows\x64\runner\Release"
+          Copy-Item $cfg (Join-Path $releaseDir "engine-config.json") -Force
+          Copy-Item $cfg "dist\engine-config.json" -Force
+          Write-Host "engine-config.json -> Release + dist"
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -332,6 +342,7 @@ jobs:
           codesign --force --sign - dist/SentraCoreEngine
           cp dist/SentraCoreEngine "$APP/Contents/MacOS/SentraCoreEngine"
           chmod +x "$APP/Contents/MacOS/SentraCoreEngine"
+          cp dashboard/assets/engine-config.json "$APP/Contents/MacOS/engine-config.json"
           codesign --force --deep --sign - "$APP"
 
       - name: Package (zip)
@@ -494,6 +505,7 @@ jobs:
           cp -R dashboard/build/linux/x64/release/bundle/* SentraCore.AppDir/usr/bin/
           cp dist/SentraCoreEngine SentraCore.AppDir/usr/bin/SentraCoreEngine
           chmod +x SentraCore.AppDir/usr/bin/SentraCoreEngine
+          cp dashboard/assets/engine-config.json SentraCore.AppDir/usr/bin/engine-config.json
 
           # AppRun launcher
           cat > SentraCore.AppDir/AppRun <<'EOF'

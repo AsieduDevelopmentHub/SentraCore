@@ -34,11 +34,14 @@ def engine_config_path() -> Path:
     Resolve engine-config.json path from executable location.
 
     This is the single source of truth shared by the desktop app + engine binary.
+    PyInstaller (--onefile/--onedir): config lives next to the packaged .exe, not in _MEIPASS.
     """
     override = os.environ.get("SENTRACORE_ENGINE_CONFIG")
     if override:
         return Path(override)
-    return Path(sys.executable).resolve().parent / "engine-config.json"
+    # Frozen builds: always the directory containing the engine executable on disk.
+    base = Path(sys.executable).resolve().parent
+    return base / "engine-config.json"
 
 
 @dataclass(frozen=True)
@@ -77,9 +80,13 @@ def bootstrap_engine_config_if_missing() -> None:
         except Exception:
             pass
     bind_host = "0.0.0.0" if system().lower() == "linux" else "127.0.0.1"
+    try:
+        port = int(os.environ.get("ENGINE_PORT", "8740"))
+    except ValueError:
+        port = 8740
     cfg = EngineConfig(
         host="127.0.0.1",
-        port=8740,
+        port=port,
         status="stopped",
         bind_host=bind_host,
         last_error="",
@@ -95,7 +102,10 @@ def read_engine_config() -> EngineConfig | None:
         if not isinstance(raw, dict):
             return None
         host = str(raw.get("host") or "")
-        port = int(raw.get("port"))
+        try:
+            port = int(raw.get("port"))
+        except (TypeError, ValueError):
+            return None
         status = str(raw.get("status") or "stopped")
         bind_raw = raw.get("bind_host")
         bind_s = str(bind_raw).strip() if bind_raw is not None else ""

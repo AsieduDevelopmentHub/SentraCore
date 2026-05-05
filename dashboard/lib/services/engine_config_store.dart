@@ -21,8 +21,7 @@ class EngineConfigStore {
     if (Platform.isWindows) {
       final base = Platform.environment['LOCALAPPDATA'];
       if (base != null && base.trim().isNotEmpty) {
-        return Directory(
-            '${base.trim()}${Platform.pathSeparator}SentraCore');
+        return Directory('${base.trim()}${Platform.pathSeparator}SentraCore');
       }
     }
     if (Platform.isMacOS) {
@@ -35,8 +34,7 @@ class EngineConfigStore {
     // Linux / fallback
     final xdg = Platform.environment['XDG_CONFIG_HOME'];
     if (xdg != null && xdg.trim().isNotEmpty) {
-      return Directory(
-          '${xdg.trim()}${Platform.pathSeparator}sentracore');
+      return Directory('${xdg.trim()}${Platform.pathSeparator}sentracore');
     }
     final home = Platform.environment['HOME'] ?? '';
     if (home.trim().isNotEmpty) {

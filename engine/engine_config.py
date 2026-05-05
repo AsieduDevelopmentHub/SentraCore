@@ -58,7 +58,13 @@ def engine_config_path() -> Path:
             return Path(local) / "SentraCore" / "engine-config.json"
     if system().lower() == "darwin":
         home = Path.home()
-        return home / "Library" / "Application Support" / "SentraCore" / "engine-config.json"
+        return (
+            home
+            / "Library"
+            / "Application Support"
+            / "SentraCore"
+            / "engine-config.json"
+        )
     xdg = os.environ.get("XDG_CONFIG_HOME")
     if xdg:
         return Path(xdg) / "sentracore" / "engine-config.json"

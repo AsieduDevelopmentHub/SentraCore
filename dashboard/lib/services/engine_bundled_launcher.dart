@@ -30,7 +30,7 @@ class EngineBundledLauncher {
   static bool _engineStartedByApp = false;
   static bool _busy = false;
 
-  static const Duration _healthWindow = Duration(seconds: 25);
+  static const Duration _healthWindow = Duration(seconds: 45);
   static const Duration _healthTick = Duration(milliseconds: 500);
   static const int _maxRestartCycles = 3;
 
@@ -223,6 +223,15 @@ class EngineBundledLauncher {
     _ownedProcess = null;
     _engineStartedByApp = false;
     if (p == null) return;
+    if (Platform.isWindows) {
+      try {
+        await Process.run(
+          'taskkill',
+          <String>['/PID', '${p.pid}', '/T', '/F'],
+          runInShell: true,
+        );
+      } catch (_) {}
+    }
     try {
       p.kill();
       await Future<void>.delayed(const Duration(milliseconds: 400));

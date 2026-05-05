@@ -31,7 +31,7 @@ class _StartupGateAppState extends State<StartupGateApp> {
     _boot = _bootstrap();
   }
 
-  Future<_BootResult> _bootstrap({bool userRetry = false}) async {
+  Future<_BootResult> _bootstrap() async {
     final notifications = DesktopNotificationService();
     await notifications.init(
       onDidReceiveNotificationResponse: (response) {
@@ -43,13 +43,9 @@ class _StartupGateAppState extends State<StartupGateApp> {
     );
     final settings = SettingsProvider();
     await settings.load();
-
-    // READY GATE (strict): do not enter the app until engine is healthy.
-    final out = userRetry
-        ? await EngineBundledLauncher.ensureReadyUserRetry()
-        : await EngineBundledLauncher.ensureReady();
-    return _BootResult(
-        settings: settings, notifications: notifications, gate: out);
+    // Engine startup is handled by EngineProvider (single owner) to avoid
+    // duplicate launches on app boot.
+    return _BootResult(settings: settings, notifications: notifications);
   }
 
   @override
@@ -69,21 +65,10 @@ class _StartupGateAppState extends State<StartupGateApp> {
         }
 
         final data = snap.data!;
-        if (!data.gate.success) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: theme,
-            darkTheme: dark,
-            home: _StartupError(
-              message: data.gate.message ?? 'Engine failed to start.',
-              onRetry: () =>
-                  setState(() => _boot = _bootstrap(userRetry: true)),
-            ),
-          );
-        }
-
         return SentraCoreApp(
-            settings: data.settings, notifications: data.notifications);
+          settings: data.settings,
+          notifications: data.notifications,
+        );
       },
     );
   }
@@ -92,11 +77,9 @@ class _StartupGateAppState extends State<StartupGateApp> {
 class _BootResult {
   final SettingsProvider settings;
   final DesktopNotificationService notifications;
-  final EngineBootstrapOutcome gate;
   const _BootResult({
     required this.settings,
     required this.notifications,
-    required this.gate,
   });
 }
 
@@ -140,51 +123,10 @@ class _StartupSplash extends StatelessWidget {
   }
 }
 
-class _StartupError extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _StartupError({required this.message, required this.onRetry});
+// Startup errors are handled inside the app (EngineProvider), so we no longer
+// gate app entry on engine health here.
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Engine failed to start',
-                  style: TextStyle(
-                    color: AppTheme.textPrimaryFor(context),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  message,
-                  style: TextStyle(color: AppTheme.textMutedFor(context)),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: onRetry,
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SentraCoreApp extends StatelessWidget {
+class SentraCoreApp extends StatefulWidget {
   const SentraCoreApp({
     super.key,
     required this.settings,
@@ -195,18 +137,31 @@ class SentraCoreApp extends StatelessWidget {
   final DesktopNotificationService notifications;
 
   @override
+  State<SentraCoreApp> createState() => _SentraCoreAppState();
+}
+
+class _SentraCoreAppState extends State<SentraCoreApp> {
+  @override
+  void dispose() {
+    // Allow the app to stop the engine on close (owned process only).
+    // Users can still kill the process externally; we auto-restart on next launch.
+    EngineBundledLauncher.stopOwnedEngine();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<DesktopNotificationService>.value(value: notifications),
-        ChangeNotifierProvider<SettingsProvider>.value(value: settings),
+        Provider<DesktopNotificationService>.value(value: widget.notifications),
+        ChangeNotifierProvider<SettingsProvider>.value(value: widget.settings),
         ChangeNotifierProvider<HistoryProvider>(
           create: (_) => HistoryProvider()..load(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => EngineProvider(
-            settings: settings,
-            notifications: notifications,
+            settings: widget.settings,
+            notifications: widget.notifications,
             history: Provider.of<HistoryProvider>(ctx, listen: false),
           )..connect(),
         ),

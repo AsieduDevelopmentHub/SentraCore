@@ -112,6 +112,7 @@ class EngineProvider extends ChangeNotifier {
   Timer? _reconnectTimer;
   Timer? _cooldownTicker;
   Timer? _liveDataWatchdog;
+  Timer? _engineHealthWatchdog;
 
   /// Last successful [/ws/live] payload, or null until the first frame after subscribe.
   DateTime? _lastLiveStateAt;
@@ -153,6 +154,7 @@ class EngineProvider extends ChangeNotifier {
     _eventFetchTimer?.cancel();
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
+    _engineHealthWatchdog?.cancel();
     _service.dispose();
     final cfg = await EngineConfigStore.readOrCreate();
     _service = EngineService(host: cfg.host, port: cfg.port);
@@ -238,6 +240,14 @@ class EngineProvider extends ChangeNotifier {
         (_) => _fetchEvents(),
       );
 
+      // Health watchdog: if the engine is killed externally (Task Manager) or
+      // stops responding, attempt a bounded restart/reconnect.
+      _engineHealthWatchdog?.cancel();
+      _engineHealthWatchdog = Timer.periodic(
+        const Duration(seconds: 6),
+        (_) => unawaited(_engineHealthTick()),
+      );
+
       // Stay "disconnected" in UI until first live frame arrives (avoids false
       // positive if the socket dies immediately after subscribe).
       _connected = false;
@@ -260,6 +270,26 @@ class EngineProvider extends ChangeNotifier {
       notifyListeners();
       _scheduleReconnect();
     }
+  }
+
+  Future<void> _engineHealthTick() async {
+    // Avoid piling reconnects; reuse the same bootstrap + connect path.
+    if (_recoveringLive) return;
+    if (_bootstrapErrorPending) return;
+    if (_reconnectTimer != null) return;
+
+    try {
+      final j = await _service.getHealth();
+      if (j != null && j['engine'] == true) return;
+    } catch (_) {
+      // treat as unhealthy
+    }
+
+    // Engine is down or unhealthy: restart/reconnect.
+    _connected = false;
+    _connectionError = 'Engine stopped; restarting…';
+    notifyListeners();
+    _scheduleReconnect();
   }
 
   void _checkLiveDataStale() {
@@ -459,6 +489,7 @@ class EngineProvider extends ChangeNotifier {
   @override
   void dispose() {
     _liveDataWatchdog?.cancel();
+    _engineHealthWatchdog?.cancel();
     _liveSub?.cancel();
     _alertSub?.cancel();
     _processFetchTimer?.cancel();
@@ -466,7 +497,8 @@ class EngineProvider extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
     _service.dispose();
-    unawaited(EngineBundledLauncher.stopOwnedEngine());
+    // Do NOT kill the engine on app close. The engine is designed to be a
+    // background component and should survive dashboard restarts.
     super.dispose();
   }
 }

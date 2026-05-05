@@ -296,7 +296,7 @@ jobs:
 
       - name: Bundle engine into .app + sign (ad-hoc)
         run: |
-          APP="$(ls dashboard/build/macos/Build/Products/Release/"*.app | head -n 1)"
+          APP="$(ls dashboard/build/macos/Build/Products/Release/*.app | head -n 1)"
           test -d "$APP"
           chmod +x dist/SentraCoreEngine
           cp dist/SentraCoreEngine "$APP/Contents/MacOS/SentraCoreEngine"
@@ -305,7 +305,7 @@ jobs:
 
       - name: Package (zip)
         run: |
-          APP="$(ls dashboard/build/macos/Build/Products/Release/"*.app | head -n 1)"
+          APP="$(ls dashboard/build/macos/Build/Products/Release/*.app | head -n 1)"
           zip -r "SentraCore_macOS_${RELEASE_VERSION}.zip" "$APP"
 
       - name: Upload macOS artifact

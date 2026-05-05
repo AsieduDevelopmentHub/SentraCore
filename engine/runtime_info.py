@@ -10,6 +10,7 @@ from platform import system
 
 from engine.engine_config import (
     EngineConfig,
+    bootstrap_engine_config_if_missing,
     read_engine_config,
     write_engine_config_atomic,
 )
@@ -47,10 +48,12 @@ def allocate_listen_port() -> tuple[str, int]:
     - If port is occupied, increments until a bind succeeds.
     - Updates config only when the bound port differs (status: restarting).
     """
+    bootstrap_engine_config_if_missing()
     cfg = read_engine_config()
     if cfg is None:
         raise RuntimeError(
-            "engine-config.json missing/invalid. The desktop app must create it before starting the engine."
+            "engine-config.json missing or unreadable next to the engine executable "
+            "and could not be created (check install folder permissions)."
         )
 
     bind_host = cfg.bind_host or _default_bind_host_for_os()

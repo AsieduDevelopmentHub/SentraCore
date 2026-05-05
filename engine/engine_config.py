@@ -6,6 +6,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from platform import system
 from typing import Literal, TypedDict
 
 
@@ -58,6 +59,33 @@ class EngineConfig:
             "last_error": self.last_error,
             "pid": int(self.pid),
         }
+
+
+def bootstrap_engine_config_if_missing() -> None:
+    """
+    Ensure engine-config.json exists next to the executable.
+
+    The Flutter app normally creates this from its bundled template on first run.
+    If the engine is started first (e.g. Windows installer post-install task), write
+    the same defaults so listen allocation can proceed.
+    """
+    p = engine_config_path()
+    if p.exists():
+        try:
+            if read_engine_config() is not None:
+                return
+        except Exception:
+            pass
+    bind_host = "0.0.0.0" if system().lower() == "linux" else "127.0.0.1"
+    cfg = EngineConfig(
+        host="127.0.0.1",
+        port=8740,
+        status="stopped",
+        bind_host=bind_host,
+        last_error="",
+        pid=0,
+    )
+    write_engine_config_atomic(cfg)
 
 
 def read_engine_config() -> EngineConfig | None:

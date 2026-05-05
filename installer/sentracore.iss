@@ -16,6 +16,9 @@ UninstallDisplayIcon={app}\sentracore_dashboard.exe
 ; The Python Engine (Headless executable)
 Source: "..\dist\SentraCoreEngine.exe"; DestDir: "{app}"; Flags: ignoreversion
 
+; Shared config (must exist before engine or dashboard runs — same folder as both .exe files)
+Source: "..\dashboard\assets\engine-config.json"; DestDir: "{app}"; Flags: ignoreversion
+
 ; The Flutter Dashboard and all its dependencies
 Source: "..\dashboard\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 

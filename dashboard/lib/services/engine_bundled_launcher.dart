@@ -233,15 +233,18 @@ class EngineBundledLauncher {
       );
       await EngineConfigStore.writeAtomic(cfg);
 
-      final runningCfg = await _waitRunningOnDiskWithin(
-        cfg.host,
-        _healthWindow,
-        expectedPid: childPid,
-      );
+      final runningCfg = await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
       if (runningCfg != null &&
           runningCfg.status == EngineStatus.running &&
-          await _strictHealth(runningCfg.host, runningCfg.port) &&
-          (runningCfg.pid == 0 || runningCfg.pid == childPid)) {
+          await _strictHealth(runningCfg.host, runningCfg.port)) {
+        // On Windows the engine may be a child of the started image; Python writes
+        // os.getpid() to disk while [Process.pid] from Dart is a wrapper PID. Treat
+        // HTTP health + disk "running" as success — do not require pid equality or we
+        // time out, call [stopOwnedEngine], and kill the real listener in a loop.
+        if (runningCfg.pid != 0 && runningCfg.pid != childPid) {
+          _ownedProcess = null;
+          _engineStartedByApp = false;
+        }
         return EngineBootstrapOutcome(
           success: true,
           activeHost: runningCfg.host,
@@ -305,13 +308,13 @@ class EngineBundledLauncher {
     } catch (_) {}
   }
 
-  /// When [expectedPid] is set and disk has a non-zero pid that differs, keep waiting
-  /// (stale row). [pid] 0 on disk + healthy HTTP counts as ready (external / reconciled).
+  /// Ready when disk says [EngineStatus.running] and HTTP health passes on [disk.port].
+  /// Do not require [EngineConfig.pid] to match [Process.start]'s pid: on Windows the
+  /// listening process may be a child; the engine rewrites JSON with [os.getpid].
   static Future<EngineConfig?> _waitRunningOnDiskWithin(
     String connectHost,
-    Duration window, {
-    int? expectedPid,
-  }) async {
+    Duration window,
+  ) async {
     final deadline = DateTime.now().add(window);
     while (DateTime.now().isBefore(deadline)) {
       final disk = await EngineConfigStore.read();
@@ -321,12 +324,6 @@ class EngineBundledLauncher {
       if (disk != null &&
           disk.status == EngineStatus.running &&
           await _strictHealth(connectHost, disk.port)) {
-        if (expectedPid != null &&
-            disk.pid != 0 &&
-            disk.pid != expectedPid) {
-          await Future<void>.delayed(_healthTick);
-          continue;
-        }
         return disk;
       }
       await Future<void>.delayed(_healthTick);

@@ -265,6 +265,12 @@ main {
   z-index: 1;
 }
 
+/* Inner pages: default content band over the matrix */
+main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-cta):not(.page-hero) {
+  background: rgba(248, 250, 252, 0.9);
+  backdrop-filter: blur(12px);
+}
+
 .container {
   max-width: var(--max);
   margin: 0 auto;
@@ -1383,7 +1389,13 @@ main {
 
 .home-cta {
   padding: 4.25rem 0;
-  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 42%, #0e7490 100%);
+  background: linear-gradient(
+    145deg,
+    rgba(15, 23, 42, 0.88) 0%,
+    rgba(30, 27, 75, 0.85) 42%,
+    rgba(14, 116, 144, 0.82) 100%
+  );
+  backdrop-filter: blur(10px);
   color: #cbd5e1;
 }
 

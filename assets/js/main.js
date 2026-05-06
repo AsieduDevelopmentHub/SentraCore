@@ -251,40 +251,61 @@
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    var pageBg = canvas.classList.contains("matrix-canvas--page-bg");
+    var cell = 16;
+    var dpr = Math.max(1, Math.min(2.25, window.devicePixelRatio || 1));
     var cols = 0;
     var drops = [];
     var raf = 0;
 
+    function viewportSize() {
+      return {
+        w: window.innerWidth || document.documentElement.clientWidth || 800,
+        h: window.innerHeight || document.documentElement.clientHeight || 600,
+      };
+    }
+
     function resize() {
-      var w = canvas.clientWidth || canvas.parentElement.clientWidth || window.innerWidth;
-      var h = canvas.clientHeight || canvas.parentElement.clientHeight || 420;
+      var w;
+      var h;
+      if (pageBg) {
+        var v = viewportSize();
+        w = v.w;
+        h = v.h;
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+      } else {
+        w = canvas.clientWidth || canvas.parentElement.clientWidth || window.innerWidth;
+        h = canvas.clientHeight || canvas.parentElement.clientHeight || 420;
+      }
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cols = Math.floor(w / 14);
+      cols = Math.max(8, Math.floor(w / cell));
       drops = new Array(cols).fill(0).map(function () {
         return Math.random() * h;
       });
     }
 
     function step() {
-      var w = canvas.clientWidth || window.innerWidth;
-      var h = canvas.clientHeight || 420;
-      ctx.fillStyle = "rgba(12, 18, 34, 0.18)";
+      var v = viewportSize();
+      var w = pageBg ? v.w : canvas.clientWidth || v.w;
+      var h = pageBg ? v.h : canvas.clientHeight || 420;
+      ctx.fillStyle = "rgba(3, 7, 18, 0.07)";
       ctx.fillRect(0, 0, w, h);
 
-      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+      ctx.font =
+        "bold 15px ui-monospace, SFMono-Regular, Menlo, Consolas, 'Cascadia Code', monospace";
       for (var i = 0; i < drops.length; i++) {
-        var x = i * 14 + 6;
+        var x = i * cell + Math.floor(cell * 0.35);
         var y = drops[i];
-        var hue = (190 + (i % 6) * 18) % 360;
-        ctx.fillStyle = "hsla(" + hue + ", 90%, 70%, 0.75)";
+        var hue = (118 + (i % 7) * 14) % 160;
+        ctx.fillStyle = "hsla(" + hue + ", 96%, 58%, 0.92)";
         var code = 0x30a0 + Math.floor(Math.random() * 96);
         ctx.fillText(String.fromCharCode(code), x, y);
-        drops[i] = y + 14 + Math.random() * 10;
-        if (drops[i] > h + 40 && Math.random() > 0.975) {
-          drops[i] = -Math.random() * 120;
+        drops[i] = y + cell * 0.85 + Math.random() * 12;
+        if (drops[i] > h + 48 && Math.random() > 0.965) {
+          drops[i] = -Math.random() * (h * 0.35);
         }
       }
       raf = window.requestAnimationFrame(step);
@@ -346,7 +367,9 @@
     });
   }
 
-  startMatrix(document.querySelector("[data-matrix]"));
+  document.querySelectorAll("[data-matrix]").forEach(function (el) {
+    startMatrix(el);
+  });
   document.querySelectorAll("[data-tilt]").forEach(wireTilt);
   wireDashboardPreview();
   initGsapAnimations();

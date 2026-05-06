@@ -50,11 +50,13 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--text);
-  background: linear-gradient(165deg, #eef2ff 0%, #f8fafc 38%, #e0f2fe 100%);
+  background: #030712;
   background-attachment: fixed;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  isolation: isolate;
 }
 
 a {
@@ -66,24 +68,34 @@ a:hover {
   text-decoration: underline;
 }
 
-.matrix-canvas {
-  position: absolute;
+/* Full-viewport matrix rain behind all pages (see [data-matrix] in main.js). */
+.matrix-canvas--page-bg {
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.28;
+  min-height: 100vh;
+  min-height: 100dvh;
+  z-index: 0;
+  opacity: 0.78;
   mix-blend-mode: screen;
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matrix-canvas--page-bg {
+    display: none !important;
+  }
 }
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .header-inner {
@@ -101,7 +113,7 @@ a:hover {
   font-size: 1.125rem;
   letter-spacing: -0.03em;
   text-decoration: none;
-  color: var(--text);
+  color: #f1f5f9;
 }
 
 .logo:not(.logo-with-mark) {
@@ -117,8 +129,12 @@ a:hover {
   gap: 0.55rem;
 }
 
+.logo-with-mark .logo-img {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
 .logo-with-mark span {
-  background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 100%);
+  background: linear-gradient(120deg, #c7d2fe 0%, #67e8f9 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -149,7 +165,7 @@ a:hover {
 }
 
 .nav-desktop a {
-  color: var(--muted);
+  color: rgba(203, 213, 225, 0.88);
   font-weight: 600;
   font-size: 0.9375rem;
   text-decoration: none;
@@ -157,7 +173,7 @@ a:hover {
 }
 
 .nav-desktop a:hover {
-  color: var(--text);
+  color: #f8fafc;
 }
 
 .nav-cta {
@@ -172,18 +188,18 @@ a:hover {
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--radius-sm);
-  background: var(--surface-solid);
+  background: rgba(30, 41, 59, 0.85);
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .nav-toggle span {
   display: block;
   width: 1.125rem;
   height: 2px;
-  background: var(--text);
+  background: #e2e8f0;
   position: relative;
 }
 
@@ -194,7 +210,7 @@ a:hover {
   left: 0;
   width: 100%;
   height: 2px;
-  background: var(--text);
+  background: #e2e8f0;
 }
 
 .nav-toggle span::before {
@@ -220,9 +236,9 @@ a:hover {
 
 .nav-panel a {
   padding: 0.65rem 0;
-  color: var(--text);
+  color: #e2e8f0;
   font-weight: 600;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .nav-panel a:last-child {
@@ -245,6 +261,8 @@ a:hover {
 
 main {
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .container {
@@ -258,7 +276,13 @@ main {
 .hero-wrap {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(145deg, #0c1222 0%, #1e1b4b 42%, #0e7490 100%);
+  z-index: 1;
+  background: linear-gradient(
+    145deg,
+    rgba(12, 18, 34, 0.55) 0%,
+    rgba(30, 27, 75, 0.5) 42%,
+    rgba(14, 116, 144, 0.45) 100%
+  );
   background-size: 200% 200%;
   animation: hero-gradient 14s ease infinite;
 }
@@ -278,9 +302,9 @@ main {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(79, 70, 229, 0.45), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.35), transparent 50%),
-    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.08), transparent 40%);
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(79, 70, 229, 0.38), transparent 58%),
+    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.28), transparent 52%),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.06), transparent 42%);
   pointer-events: none;
 }
 
@@ -919,9 +943,10 @@ main {
 }
 
 .section-alt {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(238, 242, 255, 0.9) 100%);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(238, 242, 255, 0.88) 100%);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .section-head {
@@ -1052,7 +1077,13 @@ main {
 }
 
 .page-hero--mesh {
-  background: linear-gradient(155deg, #1e1b4b 0%, #312e81 50%, #0e7490 100%);
+  background: linear-gradient(
+    155deg,
+    rgba(30, 27, 75, 0.78) 0%,
+    rgba(49, 46, 129, 0.72) 50%,
+    rgba(14, 116, 144, 0.68) 100%
+  );
+  backdrop-filter: blur(8px);
   padding-bottom: 3rem;
   margin-bottom: 0;
 }
@@ -1144,9 +1175,10 @@ main {
 
 .home-intro {
   padding: 5rem 0;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(238, 242, 255, 0.9) 100%);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .home-intro-grid {
@@ -1260,7 +1292,8 @@ main {
 }
 
 .section-tint {
-  background: linear-gradient(180deg, rgba(238, 242, 255, 0.65) 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, rgba(238, 242, 255, 0.88) 0%, rgba(248, 250, 252, 0.9) 100%);
+  backdrop-filter: blur(10px);
 }
 
 .section-head--left {
@@ -1612,10 +1645,13 @@ main {
 }
 
 .site-footer {
+  position: relative;
+  z-index: 1;
   margin-top: auto;
   padding: 2.5rem 1.5rem;
-  border-top: 1px solid var(--border);
-  background: linear-gradient(180deg, #0f172a 0%, #0c1222 100%);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(12, 18, 34, 0.94) 100%);
+  backdrop-filter: blur(12px);
   color: #94a3b8;
 }
 

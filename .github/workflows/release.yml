@@ -598,8 +598,9 @@ jobs:
           name: SentraCore ${{ github.ref_name }}
           body: |
             ## Highlights
-            - Engine config is now **writable by default** on installed systems (prevents “stuck connecting” when the install directory is protected).
-            - Release artifacts include `engine-config.json` for Windows/macOS/Linux builds.
+            - Updated dashboard UI with new home page and settings page.
+            - Added new settings page to configure engine settings.
+            - Added new home page to display engine status and settings.            
             - Website: modern GitHub Pages landing site with direct-download buttons (via GitHub Releases API).
 
             ## Downloads

@@ -65,7 +65,8 @@ class ConnectionManager:
         for ws in self._live_connections:
             try:
                 await ws.send_text(message)
-            except Exception:
+            except Exception as e:
+                logger.debug("Live broadcast failed; dropping client: %r", e)
                 disconnected.append(ws)
         for ws in disconnected:
             self.disconnect_live(ws)
@@ -79,7 +80,8 @@ class ConnectionManager:
         for ws in self._alert_connections:
             try:
                 await ws.send_text(message)
-            except Exception:
+            except Exception as e:
+                logger.debug("Alert broadcast failed; dropping client: %r", e)
                 disconnected.append(ws)
         for ws in disconnected:
             self.disconnect_alert(ws)
@@ -227,6 +229,10 @@ def create_app() -> FastAPI:
                 # Keep connection alive; data is pushed by the engine
                 await websocket.receive_text()
         except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.debug("Live WebSocket error: %r", e)
+        finally:
             ws_manager.disconnect_live(websocket)
 
     @app.websocket("/ws/alerts")
@@ -237,6 +243,10 @@ def create_app() -> FastAPI:
             while True:
                 await websocket.receive_text()
         except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.debug("Alert WebSocket error: %r", e)
+        finally:
             ws_manager.disconnect_alert(websocket)
 
     return app

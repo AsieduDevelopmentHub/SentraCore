@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="What SentraCore is: architecture, stack, and design goals." />
+    <meta
+      name="description"
+      content="What SentraCore is: local system intelligence, desktop dashboard, engine, and API working together."
+    />
     <title>About — SentraCore</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,26 +21,20 @@
       <div class="header-inner">
         <a class="logo" href="../index.html">SentraCore</a>
         <nav class="nav-desktop" aria-label="Primary">
+          <a href="../index.html">Home</a>
           <a href="download.html">Download</a>
           <a href="about.html">About</a>
           <a href="docs.html">Docs</a>
         </nav>
         <div class="nav-cta">
-          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header"
-            >Download</a
-          >
+          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header">Download</a>
         </div>
-        <button
-          class="nav-toggle"
-          type="button"
-          data-nav-toggle
-          aria-expanded="false"
-          aria-label="Open menu"
-        >
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label="Open menu">
           <span></span>
         </button>
       </div>
       <div class="nav-panel" data-nav-panel>
+        <a href="../index.html">Home</a>
         <a href="download.html">Download</a>
         <a href="about.html">About</a>
         <a href="docs.html">Docs</a>
@@ -45,44 +42,68 @@
     </header>
 
     <main>
-      <section class="page-hero page-hero--mesh">
+      <section class="page-hero page-hero--mesh page-reveal">
         <div class="container">
           <h1>About SentraCore</h1>
           <p class="lead">
-            SentraCore is a system intelligence stack: a desktop-first experience backed by a small, fast API
-            and a deployable engine—aimed at monitoring, clarity, and automation.
+            SentraCore brings together a desktop experience you can trust day to day with an engine and API you can
+            rely on for steady telemetry, alerts, and automation—designed to stay on the machine and stay local by
+            default.
           </p>
         </div>
       </section>
 
-      <section class="section">
-        <div class="container prose">
-          <h2>What it is</h2>
+      <section class="section section-alt page-reveal">
+        <div class="container prose prose-wide">
+          <h2>What it does</h2>
           <p>
-            SentraCore brings together real-time system visibility and a headless control plane. The Flutter
-            dashboard focuses on operator UX; the Python engine handles workloads and exposes a consistent HTTP
-            surface for scripts and integrations.
+            The product watches how your system behaves under real workloads: resource use, stress and stability
+            signals, and the processes that drive the biggest impact. That information flows into a dashboard shaped
+            for quick scans and deeper diagnostics when something looks off.
+          </p>
+          <p>
+            Alerts and thresholds help you react before a slowdown turns into lost time. The design assumes you care
+            about clarity and control—not about running another heavy SaaS agent or shipping telemetry off device
+            unless you choose to integrate that way yourself.
           </p>
 
-          <h2>Architecture</h2>
+          <h2>How the pieces fit</h2>
           <p>
-            Three layers work together but stay separable: a <strong>frontend</strong> (Flutter desktop),
-            a <strong>runtime engine</strong> (Python, packaged for distribution), and an <strong>API</strong>
-            layer (FastAPI / Starlette) for health, status, and extension points.
+            <strong>Dashboard</strong> — Built with Flutter for Windows, macOS, and Linux. It is the place you open to
+            see health, drill into performance and processes, review events, and adjust preferences.
+          </p>
+          <p>
+            <strong>Engine</strong> — A Python runtime packaged for distribution. It performs sampling, scoring, and
+            correlation work and keeps long-running operations out of the UI thread so the interface stays responsive.
+          </p>
+          <p>
+            <strong>API</strong> — HTTP routes expose health, snapshots, preferences, and supported actions so
+            scripts, schedulers, or other tools on the same machine can query or drive behavior consistently with the
+            UI.
           </p>
 
-          <h2>Tech stack</h2>
+          <div class="page-block">
+            <h3>Privacy and locality</h3>
+            <p>
+              The stack is built around localhost communication. Your machine’s story stays on your machine unless you
+              explicitly point integrations elsewhere. That makes SentraCore suitable for workstations, lab machines,
+              and environments where outbound analytics are a non-starter.
+            </p>
+          </div>
+
+          <h2>Who it is for</h2>
+          <p>
+            Power users, developers, and small teams who want continuous visibility without standing up a full
+            observability platform. If you already script against APIs or prefer a native desktop over another browser
+            tab, SentraCore is meant to feel familiar.
+          </p>
+
+          <h2>Technology</h2>
           <ul>
-            <li><strong>FastAPI</strong> — modern async API, OpenAPI-friendly.</li>
-            <li><strong>Flutter</strong> — cross-platform UI for Windows, macOS, and Linux.</li>
-            <li><strong>PyInstaller</strong> — one-file style engine builds for CI and releases.</li>
+            <li>FastAPI for the local HTTP surface.</li>
+            <li>Flutter for cross-platform desktop UI.</li>
+            <li>Packaged engine builds for CI and releases.</li>
           </ul>
-
-          <h2>Design goal</h2>
-          <p>
-            Ship a monitoring and automation engine that feels intentional: low ceremony to install, predictable
-            to operate, and straightforward to embed in your own workflows.
-          </p>
         </div>
       </section>
     </main>
@@ -93,6 +114,7 @@
         <div class="footer-links">
           <a data-github-repo-link href="#">GitHub</a>
           <a href="../index.html">Home</a>
+          <a href="docs.html">Docs</a>
         </div>
       </div>
     </footer>
@@ -101,6 +123,8 @@
       document.getElementById("y").textContent = new Date().getFullYear();
     </script>
     <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="../assets/js/main.js"></script>
   </body>
 </html>

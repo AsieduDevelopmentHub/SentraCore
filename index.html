@@ -21,6 +21,7 @@
       <div class="header-inner">
         <a class="logo" href="index.html">SentraCore</a>
         <nav class="nav-desktop" aria-label="Primary">
+          <a href="index.html">Home</a>
           <a href="pages/download.html">Download</a>
           <a href="pages/about.html">About</a>
           <a href="pages/docs.html">Docs</a>
@@ -41,6 +42,7 @@
         </button>
       </div>
       <div class="nav-panel" data-nav-panel>
+        <a href="index.html">Home</a>
         <a href="pages/download.html">Download</a>
         <a href="pages/about.html">About</a>
         <a href="pages/docs.html">Docs</a>
@@ -56,65 +58,54 @@
         </div>
         <section class="hero">
           <div class="container">
-            <span class="hero-badge">Engine · API · Desktop</span>
-            <h1><span>System intelligence</span> that stays out of your way</h1>
-            <p class="hero-lead">
-              SentraCore combines a lightweight Python engine, a fast HTTP API, and a Flutter
-              dashboard—built for real-time health visibility and automation across Windows,
-              macOS, and Linux.
-            </p>
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="hero-primary"
-                >Download for Windows</a
-              >
-              <a class="btn btn-secondary" href="pages/download.html">Other platforms</a>
-              <a class="btn btn-secondary" href="pages/docs.html">View Docs</a>
-            </div>
-
-            <div class="hero-showcase" data-tilt>
-              <div class="showcase-frame">
-                <div class="showcase-topbar" aria-hidden="true">
-                  <span class="dot dot--red"></span>
-                  <span class="dot dot--yellow"></span>
-                  <span class="dot dot--green"></span>
-                  <span class="showcase-title">SentraCore Dashboard</span>
-                  <span class="showcase-pill">LIVE</span>
-                </div>
-                <div class="showcase-grid">
-                  <div class="metric-tile metric-tile--a">
-                    <div class="metric-kicker">Stability</div>
-                    <div class="metric-value">92</div>
-                    <div class="metric-sub">Healthy · steady</div>
-                    <div class="spark spark--a" aria-hidden="true"></div>
-                  </div>
-                  <div class="metric-tile metric-tile--b">
-                    <div class="metric-kicker">System stress</div>
-                    <div class="metric-value">0.31</div>
-                    <div class="metric-sub">Normal range</div>
-                    <div class="spark spark--b" aria-hidden="true"></div>
-                  </div>
-                  <div class="metric-tile metric-tile--c">
-                    <div class="metric-kicker">Top impact</div>
-                    <div class="metric-value">Browser</div>
-                    <div class="metric-sub">CPU + Memory spike</div>
-                    <div class="spark spark--c" aria-hidden="true"></div>
-                  </div>
-                  <div class="timeline">
-                    <div class="timeline-head">
-                      <span>Root cause hints</span>
-                      <span class="chip">API</span>
-                      <span class="chip">Engine</span>
-                      <span class="chip">Desktop</span>
-                    </div>
-                    <ul class="timeline-list">
-                      <li><span class="t-dot"></span>CPU sustained &gt; threshold</li>
-                      <li><span class="t-dot"></span>Top processes sampled</li>
-                      <li><span class="t-dot"></span>Alert pushed to desktop</li>
-                    </ul>
-                  </div>
+            <div class="hero-split">
+              <div class="hero-copy" id="hero-copy">
+                <span class="hero-badge">Engine · API · Desktop</span>
+                <h1><span>System intelligence</span> that stays out of your way</h1>
+                <p class="hero-lead">
+                  A lightweight engine, a fast local API, and a desktop dashboard give you continuous
+                  health signals, stress context, and alerts—without a heavy monitoring stack.
+                </p>
+                <div class="hero-actions">
+                  <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="hero-primary"
+                    >Download for Windows</a
+                  >
+                  <a class="btn btn-secondary" href="pages/download.html">Other platforms</a>
+                  <a class="btn btn-secondary" href="pages/docs.html">Documentation</a>
                 </div>
               </div>
-              <div class="showcase-shadow" aria-hidden="true"></div>
+              <div class="hero-visual" id="hero-visual" data-tilt>
+                <div class="hero-visual-frame">
+                  <div class="hero-visual-top" aria-hidden="true">
+                    <span class="dot dot--red"></span>
+                    <span class="dot dot--yellow"></span>
+                    <span class="dot dot--green"></span>
+                    <span class="hero-visual-title">Dashboard</span>
+                    <span class="showcase-pill">Live</span>
+                  </div>
+                  <div class="hero-visual-body">
+                    <div class="hero-visual-chart" aria-hidden="true">
+                      <span class="hero-visual-line"></span>
+                      <span class="hero-visual-line hero-visual-line--b"></span>
+                      <span class="hero-visual-dot"></span>
+                    </div>
+                    <div class="hero-visual-stats">
+                      <div class="hero-stat">
+                        <span class="hero-stat-label">Stability</span>
+                        <span class="hero-stat-num">92</span>
+                      </div>
+                      <div class="hero-stat">
+                        <span class="hero-stat-label">Stress</span>
+                        <span class="hero-stat-num">0.31</span>
+                      </div>
+                    </div>
+                    <p class="hero-visual-caption">
+                      Health, stress, and process impact—streamed locally and kept under your control.
+                    </p>
+                  </div>
+                </div>
+                <div class="showcase-shadow" aria-hidden="true"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -122,58 +113,60 @@
 
       <section class="section section-alt" id="features">
         <div class="container">
-          <div class="section-head">
-            <h2>Built for operators and developers</h2>
+          <div class="section-head" id="section-features-head">
+            <h2>Everything you need to stay ahead</h2>
             <p>
-              A small footprint with clear boundaries: monitor, react, and integrate without a heavy stack.
+              Monitor continuously, understand stress and stability, and act when thresholds matter. Built to run
+              quietly beside your work on Windows, macOS, and Linux.
             </p>
           </div>
-          <div class="feature-grid">
-            <article class="card">
+          <div class="feature-grid" id="feature-grid">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">⚡</div>
-              <h3>Lightweight engine</h3>
+              <h3>Lean engine</h3>
               <p>
-                Headless service packaged for production—easy to ship beside your dashboard or run as a
-                background process.
+                Runs as a background service with a small footprint. Ships next to the dashboard so install and
+                updates stay straightforward.
               </p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">◎</div>
-              <h3>Real-time monitoring</h3>
+              <h3>Live telemetry</h3>
               <p>
-                Live views for system stress and health signals—designed to spot issues before they become
-                outages.
+                Websockets and HTTP endpoints keep the UI in sync with CPU, memory, disk activity, and derived
+                stress scores as the machine changes.
               </p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">⬚</div>
-              <h3>Cross-platform desktop</h3>
+              <h3>Native desktop</h3>
               <p>
-                Native-feeling Flutter builds for Windows, macOS, and Linux with installers and bundles in
-                GitHub Releases.
+                Flutter delivers a responsive dashboard on Windows, macOS, and Linux. Installers and bundles are
+                published with each release.
               </p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">◇</div>
-              <h3>Fast API backend</h3>
+              <h3>Local API</h3>
               <p>
-                FastAPI-powered endpoints for health and control—simple to extend and automate against.
+                FastAPI surfaces health, status, preferences, and actions on localhost. Script against it or extend
+                the engine without changing the UI.
               </p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">◎</div>
-              <h3>Clear architecture</h3>
+              <h3>Clear layers</h3>
               <p>
-                Dashboard UI, engine runtime, and HTTP API stay decoupled so you can deploy or scale each
-                piece on its own terms.
+                UI, runtime, and API stay decoupled. Run the dashboard alone, point at another engine instance, or
+                embed the engine in automation workflows.
               </p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal-card>
               <div class="card-icon" aria-hidden="true">✓</div>
-              <h3>Automation-ready</h3>
+              <h3>Alerting &amp; context</h3>
               <p>
-                Script installs, wire CI artifacts, or embed the engine—designed as a platform, not a black
-                box.
+                Threshold-based alerts, desktop notifications where supported, and diagnostics help you see what
+                changed before performance becomes a problem.
               </p>
             </article>
           </div>
@@ -196,6 +189,8 @@
       document.getElementById("y").textContent = new Date().getFullYear();
     </script>
     <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="assets/js/main.js"></script>
   </body>
 </html>

@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Download SentraCore for Windows, macOS, and Linux from GitHub Releases." />
+    <meta
+      name="description"
+      content="Download SentraCore for Windows, macOS, and Linux. Latest versions are published on GitHub Releases."
+    />
     <title>Download — SentraCore</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,26 +21,20 @@
       <div class="header-inner">
         <a class="logo" href="../index.html">SentraCore</a>
         <nav class="nav-desktop" aria-label="Primary">
+          <a href="../index.html">Home</a>
           <a href="download.html">Download</a>
           <a href="about.html">About</a>
           <a href="docs.html">Docs</a>
         </nav>
         <div class="nav-cta">
-          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header"
-            >Download</a
-          >
+          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header">Download</a>
         </div>
-        <button
-          class="nav-toggle"
-          type="button"
-          data-nav-toggle
-          aria-expanded="false"
-          aria-label="Open menu"
-        >
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label="Open menu">
           <span></span>
         </button>
       </div>
       <div class="nav-panel" data-nav-panel>
+        <a href="../index.html">Home</a>
         <a href="download.html">Download</a>
         <a href="about.html">About</a>
         <a href="docs.html">Docs</a>
@@ -45,77 +42,79 @@
     </header>
 
     <main>
-      <section class="page-hero page-hero--mesh">
+      <section class="page-hero page-hero--mesh page-reveal">
         <div class="container">
-          <h1>Download for your PC</h1>
+          <h1>Download</h1>
           <p class="lead">
-            Pick your platform—buttons resolve to the <strong>actual release file</strong> on GitHub (Windows
-            <code>.exe</code>, macOS <code>.zip</code>, Linux <code>.AppImage</code>) so your browser can
-            download directly. All files are served from GitHub; this page only points to the latest assets.
+            Choose your platform below. Buttons link straight to the latest files on GitHub when the release catalog
+            is reachable. If a download does not start, open the release page and pick the asset that matches your
+            operating system.
           </p>
           <div class="meta-row">
             <span class="badge">Latest tag</span>
             <span class="tag-display" data-latest-tag>…</span>
-            <span class="badge badge--muted">from GitHub Releases</span>
+            <span class="badge badge--muted">GitHub Releases</span>
           </div>
         </div>
       </section>
 
-      <section class="section">
+      <section class="section page-reveal">
         <div class="container">
           <div class="download-grid">
             <article class="download-card">
               <h2>Windows</h2>
               <p>
-                Installer (<code>.exe</code>) built with Inno Setup. Includes the dashboard and packaged engine.
+                Graphical installer that places the dashboard and engine under the folder you select. Shortcuts are
+                added for quick access. Run the installer once; after that, launch SentraCore from the Start menu or
+                desktop if you opted in.
               </p>
-              <a
-                class="btn btn-primary"
-                href="#"
-                data-auto-download="windows"
-                data-download-track="windows"
+              <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="windows"
                 >Download for Windows</a
               >
             </article>
             <article class="download-card">
               <h2>macOS</h2>
               <p>
-                Signed ad-hoc app bundle in a <code>.zip</code>. Copy the engine into the app in CI; unzip and
-                run locally.
+                Archive containing the application bundle. Unzip, move the app where you keep tools, and open it. On
+                first launch, macOS may ask for confirmation for software from an unidentified developer—this is normal
+                for ad-hoc signed builds until you notarize or adjust Gatekeeper policy.
               </p>
-              <a
-                class="btn btn-primary"
-                href="#"
-                data-auto-download="macos"
-                data-download-track="macos"
+              <a class="btn btn-primary" href="#" data-auto-download="macos" data-download-track="macos"
                 >Download for macOS</a
               >
             </article>
             <article class="download-card">
               <h2>Linux</h2>
               <p>
-                AppImage for x86_64. Make executable and run, or integrate with your desktop launcher.
+                Self-contained AppImage for x86_64. Mark the file executable, then run it from a terminal or file
+                manager. Pin it to your dock or application menu using your desktop environment’s tools if you like.
               </p>
-              <a
-                class="btn btn-primary"
-                href="#"
-                data-auto-download="linux"
-                data-download-track="linux"
+              <a class="btn btn-primary" href="#" data-auto-download="linux" data-download-track="linux"
                 >Download for Linux</a
               >
             </article>
           </div>
 
-          <div class="note-box">
-            <h3>Quick start</h3>
+          <div class="note-box page-reveal">
+            <h3>First run</h3>
             <ol>
-              <li>Click the button for your OS—your browser should download the file from GitHub’s CDN.</li>
-              <li>If a button opens the release page instead, your browser blocked the API call—use the assets list there.</li>
-              <li>Run the installer or unpack the archive, then launch the dashboard.</li>
+              <li>Download the build for your system and complete any platform prompts.</li>
+              <li>Open the SentraCore dashboard. The engine starts or connects in the background as described in the docs.</li>
+              <li>Allow local network access for localhost if a firewall prompts you—that is how the UI talks to the engine.</li>
             </ol>
             <p class="tip">
-              Filenames follow CI output (e.g. <code>SentraCore_Setup_v…</code>, <code>SentraCore_macOS_…</code>,
-              <code>SentraCore_linux_…</code>).
+              File names follow the naming used in automated builds. If something looks unfamiliar, compare sizes and
+              dates on the release page before opening executables.
+            </p>
+          </div>
+
+          <div class="prose prose-wide download-followup page-reveal">
+            <h2>Updating</h2>
+            <p>
+              New versions appear on the same Releases page. Download the new installer or archive for your platform,
+              install over or replace the previous copy, and launch again. Your user-level configuration paths are
+              designed to survive upgrades; if you customized install locations, keep notes so you know where to look
+              after an update.
             </p>
           </div>
         </div>
@@ -127,6 +126,7 @@
         <span>© <span id="y"></span> SentraCore</span>
         <div class="footer-links">
           <a data-github-repo-link href="#">GitHub</a>
+          <a data-releases-link href="#">Releases</a>
           <a href="../index.html">Home</a>
         </div>
       </div>
@@ -136,6 +136,8 @@
       document.getElementById("y").textContent = new Date().getFullYear();
     </script>
     <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="../assets/js/main.js"></script>
   </body>
 </html>

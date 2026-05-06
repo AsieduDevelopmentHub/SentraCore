@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="SentraCore installation, requirements, and API overview." />
+    <meta
+      name="description"
+      content="SentraCore documentation: install, requirements, using the dashboard and engine, and API overview."
+    />
     <title>Documentation — SentraCore</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,26 +21,20 @@
       <div class="header-inner">
         <a class="logo" href="../index.html">SentraCore</a>
         <nav class="nav-desktop" aria-label="Primary">
+          <a href="../index.html">Home</a>
           <a href="download.html">Download</a>
           <a href="about.html">About</a>
           <a href="docs.html">Docs</a>
         </nav>
         <div class="nav-cta">
-          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header"
-            >Download</a
-          >
+          <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="header">Download</a>
         </div>
-        <button
-          class="nav-toggle"
-          type="button"
-          data-nav-toggle
-          aria-expanded="false"
-          aria-label="Open menu"
-        >
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label="Open menu">
           <span></span>
         </button>
       </div>
       <div class="nav-panel" data-nav-panel>
+        <a href="../index.html">Home</a>
         <a href="download.html">Download</a>
         <a href="about.html">About</a>
         <a href="docs.html">Docs</a>
@@ -45,55 +42,62 @@
     </header>
 
     <main>
-      <section class="page-hero page-hero--mesh">
+      <section class="page-hero page-hero--mesh page-reveal">
         <div class="container">
           <h1>Documentation</h1>
           <p class="lead">
-            Practical notes for installing SentraCore from releases, running locally, and hitting core API
-            endpoints. For deeper detail, see the repository README and source.
+            Install from a release, run the dashboard, and use the local API on the same machine. Everything below
+            reflects how the published builds are meant to be operated end to end.
           </p>
         </div>
       </section>
 
-      <section class="section section-alt">
-        <div class="container prose">
-          <h2>Installation (from releases)</h2>
+      <section class="section section-alt page-reveal">
+        <div class="container prose prose-wide">
+          <h2>Installation</h2>
           <ol>
-            <li>Visit GitHub Releases and open the <strong>latest</strong> tag.</li>
-            <li>Download the artifact for your OS (Windows installer, macOS zip, Linux AppImage).</li>
-            <li>
-              <strong>Windows:</strong> run the installer; shortcuts place the dashboard and engine under the
-              chosen install path.
-            </li>
-            <li>
-              <strong>macOS:</strong> unzip, move the <code>.app</code> to Applications if you like, and open
-              it—Gatekeeper may prompt on first launch for unsigned/ad-hoc builds.
-            </li>
-            <li>
-              <strong>Linux:</strong> <code>chmod +x</code> the AppImage, then execute it from a terminal or
-              file manager.
-            </li>
+            <li>Open the project’s Releases and find the latest version tag.</li>
+            <li>Download the Windows installer, macOS zip, or Linux AppImage for your system.</li>
+            <li>Windows: run the installer and follow the steps. Choose an install path you can find again.</li>
+            <li>macOS: expand the zip and move the application to Applications or another folder you prefer.</li>
+            <li>Linux: set the execute bit on the AppImage, then run it. Install <code>libfuse</code> if your distro requires it for AppImages.</li>
           </ol>
 
-          <h2>System requirements (typical)</h2>
+          <h2>After you install</h2>
+          <p>
+            Launch the SentraCore dashboard from the shortcut or application menu. The first session may take a moment
+            while components initialize. Keep the machine awake until the status area shows a healthy connection when
+            that appears in your build.
+          </p>
+          <p>
+            If security software blocks localhost traffic, create an exception for the dashboard and engine
+            executables so they can bind and exchange data on the loopback interface.
+          </p>
+
+          <h2>System requirements</h2>
           <ul>
-            <li><strong>Windows:</strong> 64-bit Windows 10 or newer recommended.</li>
-            <li><strong>macOS:</strong> recent macOS on Apple Silicon or Intel (CI builds target arm64).</li>
-            <li><strong>Linux:</strong> x86_64 glibc-based distro with FUSE/libfuse as needed for AppImage.</li>
-            <li>Network: localhost HTTP between dashboard and engine unless you configure otherwise.</li>
+            <li><strong>Windows:</strong> 64-bit Windows 10 or newer with enough free disk for the install and logs.</li>
+            <li><strong>macOS:</strong> A supported macOS release on Apple Silicon or Intel, matching what your CI build targets.</li>
+            <li><strong>Linux:</strong> 64-bit glibc-based distribution; FUSE support for AppImage where required.</li>
+            <li><strong>Resources:</strong> A few hundred megabytes of disk plus normal RAM for desktop use; heavier workloads on the machine will show up in telemetry naturally.</li>
           </ul>
 
-          <h2>Running from source (developers)</h2>
+          <h2>Dashboard overview</h2>
           <p>
-            Clone the repository, create a Python virtual environment, install <code>requirements.txt</code>,
-            and run the engine entrypoint; use Flutter tooling inside <code>dashboard/</code> for UI
-            development. See the repo README for exact commands.
+            The home experience summarizes stability and stress. Performance views dive into trends over time. Process views highlight what is consuming CPU and memory. Diagnostics and log-oriented screens help when you are tracking down a spike or recurring alert.
+          </p>
+          <p>
+            Settings let you tune alert thresholds and related options where your build exposes them. Changes may sync to the engine so behavior stays consistent after restarts.
+          </p>
+
+          <h2>Engine and connectivity</h2>
+          <p>
+            The engine listens on a port described in your configuration. The dashboard connects over HTTP and WebSockets on <code>127.0.0.1</code> unless you have changed deployment. If the UI cannot connect, confirm nothing else is blocking the port, that a previous engine instance shut down cleanly, and that you are not mixing stale configuration from an older install path.
           </p>
 
           <h2>API overview</h2>
           <p>
-            The engine exposes HTTP endpoints for health and API versioning. Example base URL when running
-            locally: <code>http://127.0.0.1:&lt;port&gt;</code> (port comes from your engine config).
+            Base URL shape: <code>http://127.0.0.1:&lt;port&gt;</code> where <code>&lt;port&gt;</code> comes from your engine configuration. Typical routes include health checks, aggregated status, preferences, and streams for live data and alerts. Your installed version is the source of truth for the full route list.
           </p>
           <div class="table-wrap">
             <table>
@@ -108,20 +112,37 @@
                 <tr>
                   <td>GET</td>
                   <td><code>/api/v1/health</code></td>
-                  <td>Liveness / readiness check for the engine.</td>
+                  <td>Reports whether the engine process is up and responding.</td>
+                </tr>
+                <tr>
+                  <td>GET</td>
+                  <td><code>/api/v1/status</code></td>
+                  <td>Returns the current system snapshot used by the dashboard.</td>
+                </tr>
+                <tr>
+                  <td>GET</td>
+                  <td><code>/api/v1/preferences</code></td>
+                  <td>Reads alert and tuning preferences shared with the UI.</td>
+                </tr>
+                <tr>
+                  <td>PUT</td>
+                  <td><code>/api/v1/preferences</code></td>
+                  <td>Updates preferences so the engine and UI stay aligned.</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p>
-            Additional routes live under <code>/api/v1/</code> as implemented in the codebase—consult the
-            FastAPI app for the full list.
-          </p>
 
-          <h2>Need more?</h2>
+          <h2>Troubleshooting</h2>
+          <ul>
+            <li><strong>Blank or disconnected UI:</strong> confirm the engine process is running, then verify port and host in your config file.</li>
+            <li><strong>Repeated prompts:</strong> check whether multiple copies of the dashboard or engine were started manually.</li>
+            <li><strong>Downloads fail from this site:</strong> open Releases in the browser and download the asset directly.</li>
+          </ul>
+
           <p>
-            Open an issue or discussion on <a data-github-repo-link href="#">GitHub</a>—this site stays minimal
-            on purpose.
+            More detail lives in the repository README and source tree. For issues or questions, use the project’s GitHub
+            <a data-github-repo-link href="#">home page</a>.
           </p>
         </div>
       </section>
@@ -132,6 +153,7 @@
         <span>© <span id="y"></span> SentraCore</span>
         <div class="footer-links">
           <a data-github-repo-link href="#">GitHub</a>
+          <a data-releases-link href="#">Releases</a>
           <a href="../index.html">Home</a>
         </div>
       </div>
@@ -141,6 +163,8 @@
       document.getElementById("y").textContent = new Date().getFullYear();
     </script>
     <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="../assets/js/main.js"></script>
   </body>
 </html>

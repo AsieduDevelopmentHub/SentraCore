@@ -21,7 +21,6 @@
     el.setAttribute("href", githubRepoUrl());
   });
 
-  /** Pick CI artifact from GitHub release assets (matches workflow output names). */
   function pickAsset(assets, platform) {
     var list = assets || [];
     var a;
@@ -84,12 +83,7 @@
   });
 
   document.querySelectorAll("[data-download-track]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var platform = btn.getAttribute("data-download-track") || "unknown";
-      if (window.console && console.log) {
-        console.log("[SentraCore] download click:", platform);
-      }
-    });
+    btn.addEventListener("click", function () {});
   });
 
   async function wireDirectDownloads() {
@@ -127,9 +121,6 @@
         node.textContent = tag || "—";
       });
     } catch (err) {
-      if (window.console && console.warn) {
-        console.warn("[SentraCore] Direct download fallback:", err.message || err);
-      }
       holders.forEach(function (el) {
         el.classList.remove("btn--pending");
         el.setAttribute("href", releasesLatestUrl());
@@ -139,12 +130,76 @@
 
   wireDirectDownloads();
 
-  // --- Matrix-style background (hero only) ---
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function initGsapAnimations() {
+    var gsap = window.gsap;
+    var ST = window.ScrollTrigger;
+    if (!gsap || !ST) return;
+    gsap.registerPlugin(ST);
+    if (prefersReducedMotion()) return;
+
+    var heroCopy = document.getElementById("hero-copy");
+    var heroVisual = document.getElementById("hero-visual");
+    if (heroCopy && heroVisual) {
+      gsap.set(heroVisual, { opacity: 0, x: 36, scale: 0.96 });
+      var badge = heroCopy.querySelector(".hero-badge");
+      var title = heroCopy.querySelector("h1");
+      var lead = heroCopy.querySelector(".hero-lead");
+      var actions = heroCopy.querySelector(".hero-actions");
+      if (badge) gsap.set(badge, { opacity: 0, y: 20 });
+      if (title) gsap.set(title, { opacity: 0, y: 24 });
+      if (lead) gsap.set(lead, { opacity: 0, y: 20 });
+      if (actions) gsap.set(actions, { opacity: 0, y: 16 });
+
+      var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (badge) tl.to(badge, { opacity: 1, y: 0, duration: 0.5 }, 0);
+      if (title) tl.to(title, { opacity: 1, y: 0, duration: 0.65 }, 0.08);
+      if (lead) tl.to(lead, { opacity: 1, y: 0, duration: 0.55 }, 0.18);
+      if (actions) tl.to(actions, { opacity: 1, y: 0, duration: 0.5 }, 0.28);
+      tl.to(heroVisual, { opacity: 1, x: 0, scale: 1, duration: 0.85 }, 0.12);
+    }
+
+    var sectionHead = document.getElementById("section-features-head");
+    if (sectionHead) {
+      gsap.from(sectionHead.children, {
+        scrollTrigger: { trigger: sectionHead, start: "top 82%" },
+        y: 28,
+        opacity: 0,
+        duration: 0.55,
+        stagger: 0.1,
+        ease: "power2.out",
+      });
+    }
+
+    var cards = document.querySelectorAll("[data-reveal-card]");
+    if (cards.length) {
+      gsap.from(cards, {
+        scrollTrigger: { trigger: "#feature-grid", start: "top 85%" },
+        y: 32,
+        opacity: 0,
+        duration: 0.55,
+        stagger: 0.08,
+        ease: "power2.out",
+      });
+    }
+
+    gsap.utils.toArray(".page-reveal").forEach(function (el) {
+      gsap.from(el, {
+        scrollTrigger: { trigger: el, start: "top 88%" },
+        y: 24,
+        opacity: 0,
+        duration: 0.5,
+        ease: "power2.out",
+      });
+    });
+  }
+
   function startMatrix(canvas) {
     if (!canvas) return;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
+    if (prefersReducedMotion()) return;
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -175,10 +230,9 @@
       for (var i = 0; i < drops.length; i++) {
         var x = i * 14 + 6;
         var y = drops[i];
-        // Soft aqua/purple palette to match the hero gradients (not pure green).
         var hue = (190 + (i % 6) * 18) % 360;
         ctx.fillStyle = "hsla(" + hue + ", 90%, 70%, 0.75)";
-        var code = 0x30A0 + Math.floor(Math.random() * 96);
+        var code = 0x30a0 + Math.floor(Math.random() * 96);
         ctx.fillText(String.fromCharCode(code), x, y);
         drops[i] = y + 14 + Math.random() * 10;
         if (drops[i] > h + 40 && Math.random() > 0.975) {
@@ -197,14 +251,14 @@
     };
   }
 
-  // --- Subtle 3D tilt (hero mock + cards) ---
   function wireTilt(el) {
     if (!el) return;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    var inner = el.querySelector(".showcase-frame") || el;
-    var max = 8; // degrees
+    if (prefersReducedMotion()) return;
+    var inner =
+      el.querySelector(".hero-visual-frame") ||
+      el.querySelector(".showcase-frame") ||
+      el;
+    var max = 8;
 
     function onMove(e) {
       var rect = el.getBoundingClientRect();
@@ -212,7 +266,8 @@
       var y = (e.clientY - rect.top) / rect.height;
       var rx = (0.5 - y) * max;
       var ry = (x - 0.5) * max;
-      inner.style.transform = "rotateX(" + rx.toFixed(2) + "deg) rotateY(" + ry.toFixed(2) + "deg)";
+      inner.style.transform =
+        "rotateX(" + rx.toFixed(2) + "deg) rotateY(" + ry.toFixed(2) + "deg)";
     }
 
     function reset() {
@@ -226,4 +281,5 @@
 
   startMatrix(document.querySelector("[data-matrix]"));
   document.querySelectorAll("[data-tilt]").forEach(wireTilt);
+  initGsapAnimations();
 })();

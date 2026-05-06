@@ -50,7 +50,8 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--text);
-  background: #030712;
+  /* Light base so matrix (multiply + dark glyphs) reads as black rain in open areas */
+  background: #f1f5f9;
   background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
@@ -68,7 +69,7 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Full-viewport matrix rain behind all pages (see [data-matrix] in main.js). */
+/* Full-viewport matrix: dark glyphs + multiply = black-ish rain on light page gaps */
 .matrix-canvas--page-bg {
   position: fixed;
   inset: 0;
@@ -77,8 +78,8 @@ a:hover {
   min-height: 100vh;
   min-height: 100dvh;
   z-index: 0;
-  opacity: 0.78;
-  mix-blend-mode: screen;
+  opacity: 0.58;
+  mix-blend-mode: multiply;
   pointer-events: none;
 }
 
@@ -285,9 +286,9 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
   z-index: 1;
   background: linear-gradient(
     145deg,
-    rgba(12, 18, 34, 0.55) 0%,
-    rgba(30, 27, 75, 0.5) 42%,
-    rgba(14, 116, 144, 0.45) 100%
+    rgba(12, 18, 34, 0.78) 0%,
+    rgba(30, 27, 75, 0.74) 42%,
+    rgba(14, 116, 144, 0.68) 100%
   );
   background-size: 200% 200%;
   animation: hero-gradient 14s ease infinite;

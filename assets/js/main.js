@@ -291,7 +291,8 @@
       var v = viewportSize();
       var w = pageBg ? v.w : canvas.clientWidth || v.w;
       var h = pageBg ? v.h : canvas.clientHeight || 420;
-      ctx.fillStyle = "rgba(3, 7, 18, 0.07)";
+      /* Fade trails toward “paper” so multiply blend keeps gutters feeling light */
+      ctx.fillStyle = pageBg ? "rgba(255, 255, 255, 0.14)" : "rgba(3, 7, 18, 0.07)";
       ctx.fillRect(0, 0, w, h);
 
       ctx.font =
@@ -299,8 +300,10 @@
       for (var i = 0; i < drops.length; i++) {
         var x = i * cell + Math.floor(cell * 0.35);
         var y = drops[i];
-        var hue = (118 + (i % 7) * 14) % 160;
-        ctx.fillStyle = "hsla(" + hue + ", 96%, 58%, 0.92)";
+        /* Near-black with a hint of matrix green; reads black on white after multiply */
+        var l = 0.08 + (i % 5) * 0.018;
+        var a = pageBg ? 0.82 : 0.92;
+        ctx.fillStyle = "hsla(135, 35%, " + Math.round(l * 100) + "%, " + a + ")";
         var code = 0x30a0 + Math.floor(Math.random() * 96);
         ctx.fillText(String.fromCharCode(code), x, y);
         drops[i] = y + cell * 0.85 + Math.random() * 12;

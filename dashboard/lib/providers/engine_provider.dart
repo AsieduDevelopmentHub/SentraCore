@@ -308,7 +308,24 @@ class EngineProvider extends ChangeNotifier {
         DateTime.now().difference(lastKill) < _bundledEngineKillCooldown) {
       return;
     }
-    unawaited(_recoverStalledLiveChannel());
+    unawaited(_maybeRecoverStalledLiveChannel());
+  }
+
+  /// Only treat missing live frames as a hung engine if HTTP health still says the
+  /// engine is up. If the process was killed externally, health is down — let the
+  /// normal reconnect path run instead of [recoverOwnedAfterStall], which uses
+  /// [forceRestart] and can burn through the launcher's restart budget.
+  Future<void> _maybeRecoverStalledLiveChannel() async {
+    if (_recoveringLive) return;
+    try {
+      final j = await _service.getHealth();
+      if (j == null || j['engine'] != true) {
+        return;
+      }
+    } catch (_) {
+      return;
+    }
+    await _recoverStalledLiveChannel();
   }
 
   /// HTTP/WS up but no live telemetry (hung orchestrator): restart bundled engine

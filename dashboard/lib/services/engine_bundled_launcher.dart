@@ -93,7 +93,9 @@ class EngineBundledLauncher {
     // installer, or a different launch path). If HTTP health succeeds, align disk and
     // connect — do not spawn a second engine. Stall recovery uses [forceRestart] and
     // skips this path.
-    if (!forceRestart && await _strictHealth(cfg.host, cfg.port)) {
+    final httpHealthy =
+        !forceRestart && await _strictHealth(cfg.host, cfg.port);
+    if (httpHealthy) {
       final dirty = cfg.status != EngineStatus.running ||
           cfg.lastError.isNotEmpty;
       if (dirty) {
@@ -112,6 +114,18 @@ class EngineBundledLauncher {
         activeHost: cfg.host,
         activePort: cfg.port,
       );
+    }
+
+    // Disk still says "running" (e.g. Task Manager kill — Python never rewrote the
+    // file). HTTP is down; clear stale state so we skip the long "wait for existing"
+    // window on a dead PID.
+    if (!forceRestart && !httpHealthy && cfg.status == EngineStatus.running) {
+      cfg = cfg.copyWith(
+        status: EngineStatus.stopped,
+        lastError: '',
+        pid: 0,
+      );
+      await EngineConfigStore.writeAtomic(cfg);
     }
 
     if (cfg.status == EngineStatus.failed && !userRetry) {

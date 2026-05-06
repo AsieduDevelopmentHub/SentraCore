@@ -229,7 +229,13 @@ class EngineProvider extends ChangeNotifier {
         },
       );
 
-      _alertSub = _service.connectAlerts().listen(_onAlertPayload);
+      // Keep alert channel failures from bubbling as uncaught async errors.
+      // Live telemetry drives overall connectivity/reconnects.
+      _alertSub = _service.connectAlerts().listen(
+        _onAlertPayload,
+        onError: (_) {},
+        onDone: () {},
+      );
 
       _processFetchTimer = Timer.periodic(
         const Duration(seconds: 5),
@@ -474,6 +480,7 @@ class EngineProvider extends ChangeNotifier {
   Future<void> _fetchEvents() async {
     try {
       _events = await _service.getEvents();
+      notifyListeners();
     } catch (_) {}
   }
 

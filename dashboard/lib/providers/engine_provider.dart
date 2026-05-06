@@ -141,10 +141,6 @@ class EngineProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
-    final pre = await EngineConfigStore.read();
-    if (pre != null && pre.status == EngineStatus.failed) {
-      return;
-    }
     _alertFeedFromWs.clear();
     _liveDataWatchdog?.cancel();
     _liveDataWatchdog = null;
@@ -175,7 +171,9 @@ class EngineProvider extends ChangeNotifier {
       notifyListeners();
     }
 
-    final out = await EngineBundledLauncher.ensureReady();
+    final diskPre = await EngineConfigStore.read();
+    final userRetry = diskPre?.status == EngineStatus.failed;
+    final out = await EngineBundledLauncher.ensureReady(userRetry: userRetry);
 
     if (!out.success && (out.message?.isNotEmpty ?? false)) {
       _bootstrapErrorPending = true;
@@ -348,10 +346,6 @@ class EngineProvider extends ChangeNotifier {
   }
 
   Future<void> _reconnectTick() async {
-    final cfg = await EngineConfigStore.read();
-    if (cfg != null && cfg.status == EngineStatus.failed) {
-      return;
-    }
     _liveDataWatchdog?.cancel();
     _liveDataWatchdog = null;
     _liveSub?.cancel();

@@ -22,7 +22,9 @@ class EngineBootstrapOutcome {
 }
 
 /// Deterministic engine lifecycle: single serial gate, config-only contract,
-/// bounded health wait (25s / 500ms), max 3 restart cycles, no auto-retry after [failed].
+/// bounded health wait, max 3 restart cycles per attempt. Disk [failed] is cleared
+/// only when [ensureReady] is called with [userRetry] true (dashboard does this on
+/// cold start / reconnect when the config file still says failed).
 class EngineBundledLauncher {
   EngineBundledLauncher._();
 
@@ -86,6 +88,31 @@ class EngineBundledLauncher {
     required bool forceRestart,
   }) async {
     var cfg = await EngineConfigStore.readOrCreate();
+
+    // Disk can say failed/starting while the engine is already up (external start,
+    // installer, or a different launch path). If HTTP health succeeds, align disk and
+    // connect — do not spawn a second engine. Stall recovery uses [forceRestart] and
+    // skips this path.
+    if (!forceRestart && await _strictHealth(cfg.host, cfg.port)) {
+      final dirty = cfg.status != EngineStatus.running ||
+          cfg.lastError.isNotEmpty;
+      if (dirty) {
+        cfg = cfg.copyWith(
+          status: EngineStatus.running,
+          lastError: '',
+          pid: cfg.pid != 0 ? cfg.pid : 0,
+        );
+        await EngineConfigStore.writeAtomic(cfg);
+      }
+      if (!_engineStartedByApp) {
+        _ownedProcess = null;
+      }
+      return EngineBootstrapOutcome(
+        success: true,
+        activeHost: cfg.host,
+        activePort: cfg.port,
+      );
+    }
 
     if (cfg.status == EngineStatus.failed && !userRetry) {
       return EngineBootstrapOutcome(

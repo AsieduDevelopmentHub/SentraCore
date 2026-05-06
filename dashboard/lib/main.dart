@@ -7,7 +7,6 @@ import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/screens/dashboard_screen.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
-import 'package:sentracore_dashboard/services/engine_bundled_launcher.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -143,9 +142,8 @@ class SentraCoreApp extends StatefulWidget {
 class _SentraCoreAppState extends State<SentraCoreApp> {
   @override
   void dispose() {
-    // Allow the app to stop the engine on close (owned process only).
-    // Users can still kill the process externally; we auto-restart on next launch.
-    EngineBundledLauncher.stopOwnedEngine();
+    // Do not stop the engine when the dashboard closes.
+    // The engine is designed to run in the background and should survive UI restarts.
     super.dispose();
   }
 

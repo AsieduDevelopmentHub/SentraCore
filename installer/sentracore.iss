@@ -34,12 +34,13 @@ Name: "{group}\Uninstall SentraCore"; Filename: "{uninstallexe}"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
 
 [Registry]
-; Always run engine on user login (background)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SentraCoreEngine"; ValueData: """{app}\SentraCoreEngine.exe"""
+; Always run engine on user login (hidden).
+; Running the engine exe directly from HKCU\Run can flash a console window; use PowerShell to start it hidden.
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SentraCoreEngine"; ValueData: """{sys}\WindowsPowerShell\v1.0\powershell.exe"" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command ""Start-Process -FilePath '{app}\SentraCoreEngine.exe' -WindowStyle Hidden"""
 
 [Run]
 ; Always start engine after install (background)
-Filename: "{app}\SentraCoreEngine.exe"; Flags: nowait postinstall runhidden
+Filename: "{app}\SentraCoreEngine.exe"; Flags: nowait runhidden
 ; Optionally launch the dashboard
 Filename: "{app}\sentracore_dashboard.exe"; Description: "Launch SentraCore Dashboard"; Flags: nowait postinstall
 

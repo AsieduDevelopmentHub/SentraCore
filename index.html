@@ -18,6 +18,13 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link rel="stylesheet" href="assets/css/style.css" />
   </head>
   <body>
@@ -67,16 +74,6 @@
           <div class="container">
             <div class="hero-split">
               <div class="hero-copy" id="hero-copy">
-                <div class="hero-brand-row" aria-hidden="true">
-                  <img
-                    class="hero-brand-img"
-                    src="assets/img/brandmark.jpeg"
-                    width="48"
-                    height="48"
-                    alt=""
-                    decoding="async"
-                  />
-                </div>
                 <span class="hero-badge">Engine · API · Desktop</span>
                 <h1><span>System intelligence</span> that stays out of your way</h1>
                 <p class="hero-lead">
@@ -97,7 +94,7 @@
                     <span class="dot dot--red"></span>
                     <span class="dot dot--yellow"></span>
                     <span class="dot dot--green"></span>
-                    <img class="hero-visual-app-icon" src="assets/img/brandmark.jpeg" width="22" height="22" alt="" decoding="async" />
+                    <span class="hero-visual-app-icon" aria-hidden="true"><i class="fa-solid fa-chart-line"></i></span>
                     <span class="hero-visual-title">SentraCore</span>
                     <span class="showcase-pill">Live</span>
                   </div>
@@ -139,25 +136,31 @@
                 feels, which processes matter, and when to pay attention. You stay local-first—your data stays with you.
               </p>
               <ul class="home-intro-list">
-                <li>Live streaming and snapshots over a fast loopback API</li>
-                <li>Desktop alerts where the platform supports them</li>
-                <li>A single installer story on Windows, macOS, and Linux</li>
+                <li><i class="fa-solid fa-check home-intro-list-icon" aria-hidden="true"></i> Live streaming and snapshots over a fast loopback API</li>
+                <li><i class="fa-solid fa-check home-intro-list-icon" aria-hidden="true"></i> Desktop alerts where the platform supports them</li>
+                <li><i class="fa-solid fa-check home-intro-list-icon" aria-hidden="true"></i> A single installer story on Windows, macOS, and Linux</li>
               </ul>
             </div>
             <div class="home-intro-visual">
-              <div class="home-intro-frame">
-                <img
-                  src="assets/img/brandmark.jpeg"
-                  class="home-intro-mark"
-                  width="200"
-                  height="200"
-                  alt=""
-                  decoding="async"
-                />
-                <p class="home-intro-caption">
-                  The same mark you see in the dashboard—your visual anchor for system intelligence on the desktop.
-                </p>
-              </div>
+              <figure class="dashboard-preview dashboard-preview--no-image" data-dashboard-preview>
+                <picture>
+                  <source srcset="assets/img/dashboard-overview.webp" type="image/webp" />
+                  <img
+                    class="dashboard-preview__img"
+                    src="assets/img/dashboard-overview.png"
+                    alt="SentraCore dashboard"
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                    data-dashboard-preview-img
+                  />
+                </picture>
+                <figcaption class="dashboard-preview__fallback">
+                  <i class="fa-solid fa-desktop dashboard-preview__fallback-icon" aria-hidden="true"></i>
+                  <span class="dashboard-preview__fallback-label">Dashboard preview</span>
+                </figcaption>
+              </figure>
             </div>
           </div>
         </div>
@@ -171,7 +174,9 @@
           </div>
           <div class="pillar-grid" id="pillar-grid">
             <article class="pillar-card" data-reveal-pillar>
-              <div class="pillar-card-media pillar-card-media--a" aria-hidden="true"></div>
+              <div class="pillar-card-media pillar-card-media--a" aria-hidden="true">
+                <i class="fa-solid fa-eye pillar-card-media__icon"></i>
+              </div>
               <h3>Observe</h3>
               <p>
                 CPU, memory, disk activity, and process impact in one place. Streams keep the view current so you
@@ -179,14 +184,18 @@
               </p>
             </article>
             <article class="pillar-card" data-reveal-pillar>
-              <div class="pillar-card-media pillar-card-media--b" aria-hidden="true"></div>
+              <div class="pillar-card-media pillar-card-media--b" aria-hidden="true">
+                <i class="fa-solid fa-chart-pie pillar-card-media__icon"></i>
+              </div>
               <h3>Understand</h3>
               <p>
                 Stress and stability framing helps you interpret what “busy” really means on this machine, right now.
               </p>
             </article>
             <article class="pillar-card" data-reveal-pillar>
-              <div class="pillar-card-media pillar-card-media--c" aria-hidden="true"></div>
+              <div class="pillar-card-media pillar-card-media--c" aria-hidden="true">
+                <i class="fa-solid fa-sliders pillar-card-media__icon"></i>
+              </div>
               <h3>Act</h3>
               <p>
                 Thresholds, safeguards where configured, and a local API give you more than a passive chart—when you
@@ -208,7 +217,7 @@
           </div>
           <div class="feature-grid" id="feature-grid">
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">⚡</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-bolt"></i></div>
               <h3>Lean engine</h3>
               <p>
                 Runs as a background service with a small footprint. Ships next to the dashboard so install and
@@ -216,7 +225,7 @@
               </p>
             </article>
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">◎</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-satellite-dish"></i></div>
               <h3>Live telemetry</h3>
               <p>
                 Websockets and HTTP endpoints keep the UI in sync with CPU, memory, disk activity, and derived
@@ -224,7 +233,7 @@
               </p>
             </article>
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">⬚</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-desktop"></i></div>
               <h3>Native desktop</h3>
               <p>
                 Flutter delivers a responsive dashboard on Windows, macOS, and Linux. Installers and bundles are
@@ -232,7 +241,7 @@
               </p>
             </article>
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">◇</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-code"></i></div>
               <h3>Local API</h3>
               <p>
                 FastAPI surfaces health, status, preferences, and actions on localhost. Script against it or extend
@@ -240,7 +249,7 @@
               </p>
             </article>
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">◎</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></div>
               <h3>Clear layers</h3>
               <p>
                 UI, runtime, and API stay decoupled. Run the dashboard alone, point at another engine instance, or
@@ -248,7 +257,7 @@
               </p>
             </article>
             <article class="card" data-reveal-card>
-              <div class="card-icon" aria-hidden="true">✓</div>
+              <div class="card-icon" aria-hidden="true"><i class="fa-solid fa-bell"></i></div>
               <h3>Alerting &amp; context</h3>
               <p>
                 Threshold-based alerts, desktop notifications where supported, and diagnostics help you see what
@@ -262,7 +271,7 @@
       <section class="section home-cta" id="get-started">
         <div class="container">
           <div class="home-cta-inner">
-            <img src="assets/img/brandmark.jpeg" width="56" height="56" class="home-cta-mark" alt="" decoding="async" />
+            <span class="home-cta-icon" aria-hidden="true"><i class="fa-solid fa-rocket"></i></span>
             <div class="home-cta-text">
               <h2>Ready when you are</h2>
               <p>
@@ -282,7 +291,7 @@
     <footer class="site-footer">
       <div class="footer-inner">
         <span class="footer-brand">
-          <img src="assets/img/brandmark.jpeg" width="24" height="24" alt="" class="footer-mark" decoding="async" />
+          <i class="fa-solid fa-shield-halved footer-mark" aria-hidden="true"></i>
           <span>© <span id="y"></span> SentraCore</span>
         </span>
         <div class="footer-links">

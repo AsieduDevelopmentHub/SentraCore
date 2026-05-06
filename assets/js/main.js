@@ -145,23 +145,20 @@
     var heroVisual = document.getElementById("hero-visual");
     if (heroCopy && heroVisual) {
       gsap.set(heroVisual, { opacity: 0, x: 36, scale: 0.96 });
-      var brandRow = heroCopy.querySelector(".hero-brand-row");
       var badge = heroCopy.querySelector(".hero-badge");
       var title = heroCopy.querySelector("h1");
       var lead = heroCopy.querySelector(".hero-lead");
       var actions = heroCopy.querySelector(".hero-actions");
-      if (brandRow) gsap.set(brandRow, { opacity: 0, scale: 0.92 });
       if (badge) gsap.set(badge, { opacity: 0, y: 20 });
       if (title) gsap.set(title, { opacity: 0, y: 24 });
       if (lead) gsap.set(lead, { opacity: 0, y: 20 });
       if (actions) gsap.set(actions, { opacity: 0, y: 16 });
 
       var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      if (brandRow) tl.to(brandRow, { opacity: 1, scale: 1, duration: 0.55 }, 0);
-      if (badge) tl.to(badge, { opacity: 1, y: 0, duration: 0.5 }, 0.06);
-      if (title) tl.to(title, { opacity: 1, y: 0, duration: 0.65 }, 0.12);
-      if (lead) tl.to(lead, { opacity: 1, y: 0, duration: 0.55 }, 0.22);
-      if (actions) tl.to(actions, { opacity: 1, y: 0, duration: 0.5 }, 0.32);
+      if (badge) tl.to(badge, { opacity: 1, y: 0, duration: 0.5 }, 0);
+      if (title) tl.to(title, { opacity: 1, y: 0, duration: 0.65 }, 0.08);
+      if (lead) tl.to(lead, { opacity: 1, y: 0, duration: 0.55 }, 0.18);
+      if (actions) tl.to(actions, { opacity: 1, y: 0, duration: 0.5 }, 0.28);
       tl.to(heroVisual, { opacity: 1, x: 0, scale: 1, duration: 0.85 }, 0.12);
     }
 
@@ -330,7 +327,27 @@
     el.addEventListener("pointerdown", reset, { passive: true });
   }
 
+  function wireDashboardPreview() {
+    document.querySelectorAll("[data-dashboard-preview]").forEach(function (fig) {
+      var img = fig.querySelector("[data-dashboard-preview-img]");
+      if (!img) return;
+      function showImage() {
+        if (img.naturalWidth > 0) fig.classList.remove("dashboard-preview--no-image");
+      }
+      function showFallback() {
+        fig.classList.add("dashboard-preview--no-image");
+      }
+      img.addEventListener("load", showImage);
+      img.addEventListener("error", showFallback);
+      if (img.complete) {
+        if (img.naturalWidth > 0) fig.classList.remove("dashboard-preview--no-image");
+        else showFallback();
+      }
+    });
+  }
+
   startMatrix(document.querySelector("[data-matrix]"));
   document.querySelectorAll("[data-tilt]").forEach(wireTilt);
+  wireDashboardPreview();
   initGsapAnimations();
 })();

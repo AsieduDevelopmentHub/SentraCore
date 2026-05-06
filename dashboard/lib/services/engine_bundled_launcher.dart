@@ -133,11 +133,16 @@ class EngineBundledLauncher {
     }
 
     if (!forceRestart) {
-      // If the dashboard previously wrote "starting" but no PID was ever recorded
-      // (e.g. first install, app closed quickly, or reboot), waiting a full health
-      // window just delays startup and can look like a hang.
-      final shouldWaitForExisting =
-          cfg.pid != 0 && cfg.status != EngineStatus.stopped;
+      // Wait for an in-flight or already-up engine on disk. Do not require pid != 0:
+      // reconciled / external engines may show running with pid 0 until the next
+      // writer refreshes; HTTP health is the real signal.
+      final shouldWaitForExisting = cfg.status != EngineStatus.stopped &&
+          cfg.status != EngineStatus.failed &&
+          (cfg.pid != 0 ||
+              cfg.status == EngineStatus.starting ||
+              cfg.status == EngineStatus.healthChecking ||
+              cfg.status == EngineStatus.running ||
+              cfg.status == EngineStatus.restarting);
       final diskRunning = shouldWaitForExisting
           ? await _waitRunningOnDiskWithin(cfg.host, _healthWindow)
           : null;
@@ -214,12 +219,15 @@ class EngineBundledLauncher {
       );
       await EngineConfigStore.writeAtomic(cfg);
 
-      final runningCfg =
-          await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
+      final runningCfg = await _waitRunningOnDiskWithin(
+        cfg.host,
+        _healthWindow,
+        expectedPid: childPid,
+      );
       if (runningCfg != null &&
           runningCfg.status == EngineStatus.running &&
-          runningCfg.pid == childPid &&
-          await _strictHealth(runningCfg.host, runningCfg.port)) {
+          await _strictHealth(runningCfg.host, runningCfg.port) &&
+          (runningCfg.pid == 0 || runningCfg.pid == childPid)) {
         return EngineBootstrapOutcome(
           success: true,
           activeHost: runningCfg.host,
@@ -283,10 +291,13 @@ class EngineBundledLauncher {
     } catch (_) {}
   }
 
+  /// When [expectedPid] is set and disk has a non-zero pid that differs, keep waiting
+  /// (stale row). [pid] 0 on disk + healthy HTTP counts as ready (external / reconciled).
   static Future<EngineConfig?> _waitRunningOnDiskWithin(
     String connectHost,
-    Duration window,
-  ) async {
+    Duration window, {
+    int? expectedPid,
+  }) async {
     final deadline = DateTime.now().add(window);
     while (DateTime.now().isBefore(deadline)) {
       final disk = await EngineConfigStore.read();
@@ -295,8 +306,13 @@ class EngineBundledLauncher {
       }
       if (disk != null &&
           disk.status == EngineStatus.running &&
-          disk.pid != 0 &&
           await _strictHealth(connectHost, disk.port)) {
+        if (expectedPid != null &&
+            disk.pid != 0 &&
+            disk.pid != expectedPid) {
+          await Future<void>.delayed(_healthTick);
+          continue;
+        }
         return disk;
       }
       await Future<void>.delayed(_healthTick);

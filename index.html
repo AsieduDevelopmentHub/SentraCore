@@ -49,6 +49,7 @@
 
     <main>
       <div class="hero-wrap">
+        <canvas class="matrix-canvas" data-matrix aria-hidden="true"></canvas>
         <div class="hero-orbs" aria-hidden="true">
           <div class="hero-orb hero-orb--a"></div>
           <div class="hero-orb hero-orb--b"></div>
@@ -68,6 +69,52 @@
               >
               <a class="btn btn-secondary" href="pages/download.html">Other platforms</a>
               <a class="btn btn-secondary" href="pages/docs.html">View Docs</a>
+            </div>
+
+            <div class="hero-showcase" data-tilt>
+              <div class="showcase-frame">
+                <div class="showcase-topbar" aria-hidden="true">
+                  <span class="dot dot--red"></span>
+                  <span class="dot dot--yellow"></span>
+                  <span class="dot dot--green"></span>
+                  <span class="showcase-title">SentraCore Dashboard</span>
+                  <span class="showcase-pill">LIVE</span>
+                </div>
+                <div class="showcase-grid">
+                  <div class="metric-tile metric-tile--a">
+                    <div class="metric-kicker">Stability</div>
+                    <div class="metric-value">92</div>
+                    <div class="metric-sub">Healthy · steady</div>
+                    <div class="spark spark--a" aria-hidden="true"></div>
+                  </div>
+                  <div class="metric-tile metric-tile--b">
+                    <div class="metric-kicker">System stress</div>
+                    <div class="metric-value">0.31</div>
+                    <div class="metric-sub">Normal range</div>
+                    <div class="spark spark--b" aria-hidden="true"></div>
+                  </div>
+                  <div class="metric-tile metric-tile--c">
+                    <div class="metric-kicker">Top impact</div>
+                    <div class="metric-value">Browser</div>
+                    <div class="metric-sub">CPU + Memory spike</div>
+                    <div class="spark spark--c" aria-hidden="true"></div>
+                  </div>
+                  <div class="timeline">
+                    <div class="timeline-head">
+                      <span>Root cause hints</span>
+                      <span class="chip">API</span>
+                      <span class="chip">Engine</span>
+                      <span class="chip">Desktop</span>
+                    </div>
+                    <ul class="timeline-list">
+                      <li><span class="t-dot"></span>CPU sustained &gt; threshold</li>
+                      <li><span class="t-dot"></span>Top processes sampled</li>
+                      <li><span class="t-dot"></span>Alert pushed to desktop</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="showcase-shadow" aria-hidden="true"></div>
             </div>
           </div>
         </section>

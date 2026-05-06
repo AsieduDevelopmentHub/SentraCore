@@ -138,4 +138,92 @@
   }
 
   wireDirectDownloads();
+
+  // --- Matrix-style background (hero only) ---
+  function startMatrix(canvas) {
+    if (!canvas) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    var cols = 0;
+    var drops = [];
+    var raf = 0;
+
+    function resize() {
+      var w = canvas.clientWidth || canvas.parentElement.clientWidth || window.innerWidth;
+      var h = canvas.clientHeight || canvas.parentElement.clientHeight || 420;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.floor(w / 14);
+      drops = new Array(cols).fill(0).map(function () {
+        return Math.random() * h;
+      });
+    }
+
+    function step() {
+      var w = canvas.clientWidth || window.innerWidth;
+      var h = canvas.clientHeight || 420;
+      ctx.fillStyle = "rgba(12, 18, 34, 0.18)";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+      for (var i = 0; i < drops.length; i++) {
+        var x = i * 14 + 6;
+        var y = drops[i];
+        // Soft aqua/purple palette to match the hero gradients (not pure green).
+        var hue = (190 + (i % 6) * 18) % 360;
+        ctx.fillStyle = "hsla(" + hue + ", 90%, 70%, 0.75)";
+        var code = 0x30A0 + Math.floor(Math.random() * 96);
+        ctx.fillText(String.fromCharCode(code), x, y);
+        drops[i] = y + 14 + Math.random() * 10;
+        if (drops[i] > h + 40 && Math.random() > 0.975) {
+          drops[i] = -Math.random() * 120;
+        }
+      }
+      raf = window.requestAnimationFrame(step);
+    }
+
+    resize();
+    step();
+
+    window.addEventListener("resize", resize, { passive: true });
+    return function stop() {
+      window.cancelAnimationFrame(raf);
+    };
+  }
+
+  // --- Subtle 3D tilt (hero mock + cards) ---
+  function wireTilt(el) {
+    if (!el) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    var inner = el.querySelector(".showcase-frame") || el;
+    var max = 8; // degrees
+
+    function onMove(e) {
+      var rect = el.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width;
+      var y = (e.clientY - rect.top) / rect.height;
+      var rx = (0.5 - y) * max;
+      var ry = (x - 0.5) * max;
+      inner.style.transform = "rotateX(" + rx.toFixed(2) + "deg) rotateY(" + ry.toFixed(2) + "deg)";
+    }
+
+    function reset() {
+      inner.style.transform = "rotateX(0deg) rotateY(0deg)";
+    }
+
+    el.addEventListener("pointermove", onMove, { passive: true });
+    el.addEventListener("pointerleave", reset, { passive: true });
+    el.addEventListener("pointerdown", reset, { passive: true });
+  }
+
+  startMatrix(document.querySelector("[data-matrix]"));
+  document.querySelectorAll("[data-tilt]").forEach(wireTilt);
 })();

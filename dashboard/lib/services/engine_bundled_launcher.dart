@@ -106,8 +106,14 @@ class EngineBundledLauncher {
     }
 
     if (!forceRestart) {
-      final diskRunning =
-          await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
+      // If the dashboard previously wrote "starting" but no PID was ever recorded
+      // (e.g. first install, app closed quickly, or reboot), waiting a full health
+      // window just delays startup and can look like a hang.
+      final shouldWaitForExisting =
+          cfg.pid != 0 && cfg.status != EngineStatus.stopped;
+      final diskRunning = shouldWaitForExisting
+          ? await _waitRunningOnDiskWithin(cfg.host, _healthWindow)
+          : null;
       if (diskRunning != null) {
         _engineStartedByApp =
             _ownedProcess != null && diskRunning.pid == _ownedProcess!.pid;

@@ -8,6 +8,10 @@
       content="SentraCore — system intelligence, real-time monitoring, and a fast engine with a cross-platform desktop dashboard."
     />
     <title>SentraCore — System intelligence for your machine</title>
+    <link rel="icon" href="assets/img/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="assets/img/brandmark.jpeg" />
+    <link rel="manifest" href="assets/site.webmanifest" />
+    <meta name="theme-color" content="#1e1b4b" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,7 +23,10 @@
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <a class="logo" href="index.html">SentraCore</a>
+        <a class="logo logo-with-mark" href="index.html">
+          <img class="logo-img" src="assets/img/brandmark.jpeg" width="32" height="32" alt="" decoding="async" />
+          <span>SentraCore</span>
+        </a>
         <nav class="nav-desktop" aria-label="Primary">
           <a href="index.html">Home</a>
           <a href="pages/download.html">Download</a>
@@ -60,6 +67,16 @@
           <div class="container">
             <div class="hero-split">
               <div class="hero-copy" id="hero-copy">
+                <div class="hero-brand-row" aria-hidden="true">
+                  <img
+                    class="hero-brand-img"
+                    src="assets/img/brandmark.jpeg"
+                    width="48"
+                    height="48"
+                    alt=""
+                    decoding="async"
+                  />
+                </div>
                 <span class="hero-badge">Engine · API · Desktop</span>
                 <h1><span>System intelligence</span> that stays out of your way</h1>
                 <p class="hero-lead">
@@ -80,7 +97,8 @@
                     <span class="dot dot--red"></span>
                     <span class="dot dot--yellow"></span>
                     <span class="dot dot--green"></span>
-                    <span class="hero-visual-title">Dashboard</span>
+                    <img class="hero-visual-app-icon" src="assets/img/brandmark.jpeg" width="22" height="22" alt="" decoding="async" />
+                    <span class="hero-visual-title">SentraCore</span>
                     <span class="showcase-pill">Live</span>
                   </div>
                   <div class="hero-visual-body">
@@ -110,6 +128,74 @@
           </div>
         </section>
       </div>
+
+      <section class="section home-intro" id="overview">
+        <div class="container">
+          <div class="home-intro-grid">
+            <div class="home-intro-copy">
+              <h2 class="home-intro-title">Clarity for the machine you work on</h2>
+              <p class="home-intro-lead">
+                SentraCore turns noisy system behavior into steady signals: how stressed the box is, how stable it
+                feels, which processes matter, and when to pay attention. You stay local-first—your data stays with you.
+              </p>
+              <ul class="home-intro-list">
+                <li>Live streaming and snapshots over a fast loopback API</li>
+                <li>Desktop alerts where the platform supports them</li>
+                <li>A single installer story on Windows, macOS, and Linux</li>
+              </ul>
+            </div>
+            <div class="home-intro-visual">
+              <div class="home-intro-frame">
+                <img
+                  src="assets/img/brandmark.jpeg"
+                  class="home-intro-mark"
+                  width="200"
+                  height="200"
+                  alt=""
+                  decoding="async"
+                />
+                <p class="home-intro-caption">
+                  The same mark you see in the dashboard—your visual anchor for system intelligence on the desktop.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-tint" id="pillars">
+        <div class="container">
+          <div class="section-head section-head--left" id="section-pillars-head">
+            <h2>Three pillars</h2>
+            <p>Observe, understand, and act—without standing up a datacenter-grade stack.</p>
+          </div>
+          <div class="pillar-grid" id="pillar-grid">
+            <article class="pillar-card" data-reveal-pillar>
+              <div class="pillar-card-media pillar-card-media--a" aria-hidden="true"></div>
+              <h3>Observe</h3>
+              <p>
+                CPU, memory, disk activity, and process impact in one place. Streams keep the view current so you
+                notice drift early.
+              </p>
+            </article>
+            <article class="pillar-card" data-reveal-pillar>
+              <div class="pillar-card-media pillar-card-media--b" aria-hidden="true"></div>
+              <h3>Understand</h3>
+              <p>
+                Stress and stability framing helps you interpret what “busy” really means on this machine, right now.
+              </p>
+            </article>
+            <article class="pillar-card" data-reveal-pillar>
+              <div class="pillar-card-media pillar-card-media--c" aria-hidden="true"></div>
+              <h3>Act</h3>
+              <p>
+                Thresholds, safeguards where configured, and a local API give you more than a passive chart—when you
+                are ready to automate.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
 
       <section class="section section-alt" id="features">
         <div class="container">
@@ -172,11 +258,33 @@
           </div>
         </div>
       </section>
+
+      <section class="section home-cta" id="get-started">
+        <div class="container">
+          <div class="home-cta-inner">
+            <img src="assets/img/brandmark.jpeg" width="56" height="56" class="home-cta-mark" alt="" decoding="async" />
+            <div class="home-cta-text">
+              <h2>Ready when you are</h2>
+              <p>
+                Grab the latest build for your operating system, run the installer or bundle, and open the dashboard.
+                The engine comes along for the ride—tuned for quiet background operation on your workstation.
+              </p>
+            </div>
+            <div class="home-cta-actions">
+              <a class="btn btn-primary" href="#" data-auto-download="windows" data-download-track="home-cta">Download</a>
+              <a class="btn btn-cta-secondary" href="pages/docs.html">Read the docs</a>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>© <span id="y"></span> SentraCore</span>
+        <span class="footer-brand">
+          <img src="assets/img/brandmark.jpeg" width="24" height="24" alt="" class="footer-mark" decoding="async" />
+          <span>© <span id="y"></span> SentraCore</span>
+        </span>
         <div class="footer-links">
           <a data-github-repo-link href="#">GitHub</a>
           <a data-releases-link href="#">Releases</a>

@@ -1,0 +1,20 @@
+{
+  "name": "SentraCore",
+  "short_name": "SentraCore",
+  "icons": [
+    {
+      "src": "img/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "img/brandmark.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e1b4b"
+}

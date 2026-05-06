@@ -145,21 +145,72 @@
     var heroVisual = document.getElementById("hero-visual");
     if (heroCopy && heroVisual) {
       gsap.set(heroVisual, { opacity: 0, x: 36, scale: 0.96 });
+      var brandRow = heroCopy.querySelector(".hero-brand-row");
       var badge = heroCopy.querySelector(".hero-badge");
       var title = heroCopy.querySelector("h1");
       var lead = heroCopy.querySelector(".hero-lead");
       var actions = heroCopy.querySelector(".hero-actions");
+      if (brandRow) gsap.set(brandRow, { opacity: 0, scale: 0.92 });
       if (badge) gsap.set(badge, { opacity: 0, y: 20 });
       if (title) gsap.set(title, { opacity: 0, y: 24 });
       if (lead) gsap.set(lead, { opacity: 0, y: 20 });
       if (actions) gsap.set(actions, { opacity: 0, y: 16 });
 
       var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      if (badge) tl.to(badge, { opacity: 1, y: 0, duration: 0.5 }, 0);
-      if (title) tl.to(title, { opacity: 1, y: 0, duration: 0.65 }, 0.08);
-      if (lead) tl.to(lead, { opacity: 1, y: 0, duration: 0.55 }, 0.18);
-      if (actions) tl.to(actions, { opacity: 1, y: 0, duration: 0.5 }, 0.28);
+      if (brandRow) tl.to(brandRow, { opacity: 1, scale: 1, duration: 0.55 }, 0);
+      if (badge) tl.to(badge, { opacity: 1, y: 0, duration: 0.5 }, 0.06);
+      if (title) tl.to(title, { opacity: 1, y: 0, duration: 0.65 }, 0.12);
+      if (lead) tl.to(lead, { opacity: 1, y: 0, duration: 0.55 }, 0.22);
+      if (actions) tl.to(actions, { opacity: 1, y: 0, duration: 0.5 }, 0.32);
       tl.to(heroVisual, { opacity: 1, x: 0, scale: 1, duration: 0.85 }, 0.12);
+    }
+
+    var homeIntro = document.querySelector(".home-intro-grid");
+    if (homeIntro) {
+      gsap.from(homeIntro.children, {
+        scrollTrigger: { trigger: homeIntro, start: "top 82%" },
+        y: 36,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.12,
+        ease: "power2.out",
+      });
+    }
+
+    var pillarsHead = document.getElementById("section-pillars-head");
+    if (pillarsHead) {
+      gsap.from(pillarsHead.children, {
+        scrollTrigger: { trigger: pillarsHead, start: "top 85%" },
+        y: 24,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power2.out",
+      });
+    }
+
+    var pillarCards = document.querySelectorAll("[data-reveal-pillar]");
+    if (pillarCards.length) {
+      gsap.from(pillarCards, {
+        scrollTrigger: { trigger: "#pillar-grid", start: "top 86%" },
+        y: 28,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power2.out",
+      });
+    }
+
+    var homeCtaInner = document.querySelector(".home-cta-inner");
+    if (homeCtaInner) {
+      gsap.from(homeCtaInner.children, {
+        scrollTrigger: { trigger: homeCtaInner, start: "top 88%" },
+        y: 22,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power2.out",
+      });
     }
 
     var sectionHead = document.getElementById("section-features-head");

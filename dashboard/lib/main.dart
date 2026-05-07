@@ -42,8 +42,6 @@ class _StartupGateAppState extends State<StartupGateApp> {
     );
     final settings = SettingsProvider();
     await settings.load();
-    // Engine startup is handled by EngineProvider (single owner) to avoid
-    // duplicate launches on app boot.
     return _BootResult(settings: settings, notifications: notifications);
   }
 
@@ -122,8 +120,6 @@ class _StartupSplash extends StatelessWidget {
   }
 }
 
-// Startup errors are handled inside the app (EngineProvider), so we no longer
-// gate app entry on engine health here.
 
 class SentraCoreApp extends StatefulWidget {
   const SentraCoreApp({
@@ -142,8 +138,6 @@ class SentraCoreApp extends StatefulWidget {
 class _SentraCoreAppState extends State<SentraCoreApp> {
   @override
   void dispose() {
-    // Do not stop the engine when the dashboard closes.
-    // The engine is designed to run in the background and should survive UI restarts.
     super.dispose();
   }
 

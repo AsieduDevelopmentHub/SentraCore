@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 
 import psutil
 
-from engine.config import MAX_PROCESSES_PER_SNAPSHOT
+from engine.config import MAX_PROCESSES_PER_SNAPSHOT, PROCESS_SNAPSHOT_EVERY_N
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +126,8 @@ class SystemCollector:
         self._max_processes = max_processes
         self._cpu_count = psutil.cpu_count(logical=True) or 1
         self._primed = False
+        self._collect_count = 0
+        self._last_processes: tuple[ProcessInfo, ...] = tuple()
 
     def _normalize_process_cpu(self, raw: float) -> float:
         """
@@ -165,6 +167,7 @@ class SystemCollector:
             )
 
         timestamp = time.time()
+        self._collect_count += 1
 
         # ----- CPU -----
         cpu_per_core = psutil.cpu_percent(interval=None, percpu=True)
@@ -194,7 +197,17 @@ class SystemCollector:
             logger.warning("Disk I/O counters unavailable on this system.")
 
         # ----- Processes -----
-        processes = self._collect_processes()
+        # Enumerating processes is expensive. Refresh the top-N list every N cycles
+        # (defaults to 5). In between, reuse the last computed list.
+        processes: tuple[ProcessInfo, ...]
+        if (
+            not self._last_processes
+            or (self._collect_count % PROCESS_SNAPSHOT_EVERY_N) == 0
+        ):
+            processes = tuple(self._collect_processes())
+            self._last_processes = processes
+        else:
+            processes = self._last_processes
 
         return SystemSnapshot(
             timestamp=timestamp,
@@ -212,7 +225,7 @@ class SystemCollector:
             disk_write_bytes=disk_write_bytes,
             disk_read_count=disk_read_count,
             disk_write_count=disk_write_count,
-            processes=tuple(processes),
+            processes=processes,
         )
 
     def _collect_processes(self) -> list[ProcessInfo]:

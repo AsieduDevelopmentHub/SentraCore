@@ -62,11 +62,33 @@ BASELINE_FILE = DATASTORE_DIR / "baseline.json"
 # Collection Engine
 # ---------------------------------------------------------------------------
 
-# How often the collector samples system telemetry (seconds)
-COLLECTION_INTERVAL_SEC: float = 2.0
+# How often the collector samples system telemetry (seconds).
+# You can override in installed builds via SENTRACORE_COLLECTION_INTERVAL_SEC.
+try:
+    COLLECTION_INTERVAL_SEC: float = float(
+        os.environ.get("SENTRACORE_COLLECTION_INTERVAL_SEC", "2.0")
+    )
+except ValueError:
+    COLLECTION_INTERVAL_SEC = 2.0
 
-# Maximum number of processes to capture per snapshot
-MAX_PROCESSES_PER_SNAPSHOT: int = 30
+# Maximum number of processes to capture per snapshot (top-N by CPU+memory impact).
+# Process enumeration is one of the most expensive operations; keep this small.
+try:
+    MAX_PROCESSES_PER_SNAPSHOT: int = int(
+        os.environ.get("SENTRACORE_MAX_PROCESSES_PER_SNAPSHOT", "15")
+    )
+except ValueError:
+    MAX_PROCESSES_PER_SNAPSHOT = 15
+
+# Only refresh the per-process list every N collection cycles. Between refreshes,
+# the engine reuses the last computed top-N list. This cuts CPU drastically while
+# keeping system totals (CPU/mem/disk) at full frequency.
+try:
+    PROCESS_SNAPSHOT_EVERY_N: int = max(
+        1, int(os.environ.get("SENTRACORE_PROCESS_SNAPSHOT_EVERY_N", "5"))
+    )
+except ValueError:
+    PROCESS_SNAPSHOT_EVERY_N = 5
 
 # ---------------------------------------------------------------------------
 # Time-Series Buffers

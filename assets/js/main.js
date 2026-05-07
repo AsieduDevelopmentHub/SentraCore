@@ -251,32 +251,25 @@
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    var pageBg = canvas.classList.contains("matrix-canvas--page-bg");
+    var inHero = canvas.classList.contains("matrix-canvas--hero");
     var cell = 16;
     var dpr = Math.max(1, Math.min(2.25, window.devicePixelRatio || 1));
     var cols = 0;
     var drops = [];
     var raf = 0;
 
-    function viewportSize() {
-      return {
-        w: window.innerWidth || document.documentElement.clientWidth || 800,
-        h: window.innerHeight || document.documentElement.clientHeight || 600,
-      };
-    }
-
     function resize() {
+      var par = canvas.parentElement;
       var w;
       var h;
-      if (pageBg) {
-        var v = viewportSize();
-        w = v.w;
-        h = v.h;
+      if (inHero && par) {
+        w = par.clientWidth || 800;
+        h = par.clientHeight || 400;
         canvas.style.width = w + "px";
         canvas.style.height = h + "px";
       } else {
-        w = canvas.clientWidth || canvas.parentElement.clientWidth || window.innerWidth;
-        h = canvas.clientHeight || canvas.parentElement.clientHeight || 420;
+        w = canvas.clientWidth || (par && par.clientWidth) || window.innerWidth;
+        h = canvas.clientHeight || (par && par.clientHeight) || 420;
       }
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
@@ -292,11 +285,10 @@
     }
 
     function step() {
-      var v = viewportSize();
-      var w = pageBg ? v.w : canvas.clientWidth || v.w;
-      var h = pageBg ? v.h : canvas.clientHeight || 420;
-      /* Dark trail so white glyphs stay readable with screen blend on dark body */
-      ctx.fillStyle = pageBg ? "rgba(2, 6, 14, 0.17)" : "rgba(3, 7, 18, 0.07)";
+      var w = canvas.clientWidth || 800;
+      var h = canvas.clientHeight || 400;
+      /* Dark trail so white glyphs stay readable with screen blend on hero gradient */
+      ctx.fillStyle = inHero ? "rgba(2, 6, 14, 0.17)" : "rgba(3, 7, 18, 0.07)";
       ctx.fillRect(0, 0, w, h);
 
       ctx.font =
@@ -319,6 +311,12 @@
     step();
 
     window.addEventListener("resize", resize, { passive: true });
+    if (inHero && canvas.parentElement && typeof ResizeObserver !== "undefined") {
+      var ro = new ResizeObserver(function () {
+        resize();
+      });
+      ro.observe(canvas.parentElement);
+    }
     return function stop() {
       window.cancelAnimationFrame(raf);
     };

@@ -1169,6 +1169,26 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
   text-shadow: 0 1px 18px rgba(0, 0, 0, 0.5);
 }
 
+.page-hero--mesh .meta-row {
+  position: relative;
+  z-index: 1;
+}
+
+.page-hero--mesh .tag-display {
+  color: #e9d5ff;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+}
+
+.page-hero--mesh .badge {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.page-hero--mesh .badge--muted {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.35);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .page-hero h1 {
   margin: 0 0 0.85rem;
   font-size: clamp(1.85rem, 4vw, 2.45rem);

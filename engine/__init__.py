@@ -6,5 +6,5 @@ behavior, estimate degradation risk, and provide explainable root-cause
 insights with safe optimization recommendations.
 """
 
-__version__ = "1.0.3"
+__version__ = "0.0.1"
 __app_name__ = "SentraCore"

@@ -53,8 +53,7 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--text);
-  /* Dark base so white matrix rain reads clearly in gutters */
-  background: #030712;
+  background: #f1f5f9;
   background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
@@ -72,22 +71,20 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Full-viewport matrix: white 0/1, screen blend on dark body */
-.matrix-canvas--page-bg {
-  position: fixed;
+/* Matrix rain only inside hero bands (home .hero-wrap, inner .page-hero--mesh) */
+.matrix-canvas--hero {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
   z-index: 0;
-  opacity: 0.62;
+  opacity: 0.58;
   mix-blend-mode: screen;
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .matrix-canvas--page-bg {
+  .matrix-canvas--hero {
     display: none !important;
   }
 }
@@ -354,6 +351,7 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     radial-gradient(ellipse 80% 50% at 20% 40%, rgba(79, 70, 229, 0.38), transparent 58%),
     radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.28), transparent 52%),
@@ -365,6 +363,7 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
   opacity: 0.5;
   pointer-events: none;
@@ -374,6 +373,7 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
 .hero-orbs {
   position: absolute;
   inset: 0;
+  z-index: 2;
   pointer-events: none;
   overflow: hidden;
 }
@@ -416,6 +416,7 @@ main > .section:not(.section-alt):not(.section-tint):not(.home-intro):not(.home-
 
 .hero {
   position: relative;
+  z-index: 3;
   padding: 4.5rem 0 5rem;
   text-align: left;
 }

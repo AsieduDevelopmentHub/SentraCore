@@ -287,12 +287,24 @@
       });
     }
 
+    function headerBandBottom() {
+      var el = document.querySelector(".site-header");
+      if (!el) return 0;
+      var r = el.getBoundingClientRect();
+      return Math.ceil(r.bottom);
+    }
+
+    function randomBit() {
+      return Math.random() < 0.5 ? "1" : "0";
+    }
+
     function step() {
       var v = viewportSize();
       var w = pageBg ? v.w : canvas.clientWidth || v.w;
       var h = pageBg ? v.h : canvas.clientHeight || 420;
-      /* Fade trails toward “paper” so multiply blend keeps gutters feeling light */
-      ctx.fillStyle = pageBg ? "rgba(255, 255, 255, 0.14)" : "rgba(3, 7, 18, 0.07)";
+      var headerBottom = pageBg ? headerBandBottom() : 0;
+      /* Fade trails toward page base (light) so black digits read on white gutters */
+      ctx.fillStyle = pageBg ? "rgba(241, 245, 249, 0.16)" : "rgba(3, 7, 18, 0.07)";
       ctx.fillRect(0, 0, w, h);
 
       ctx.font =
@@ -300,12 +312,14 @@
       for (var i = 0; i < drops.length; i++) {
         var x = i * cell + Math.floor(cell * 0.35);
         var y = drops[i];
-        /* Near-black with a hint of matrix green; reads black on white after multiply */
-        var l = 0.08 + (i % 5) * 0.018;
-        var a = pageBg ? 0.82 : 0.92;
-        ctx.fillStyle = "hsla(135, 35%, " + Math.round(l * 100) + "%, " + a + ")";
-        var code = 0x30a0 + Math.floor(Math.random() * 96);
-        ctx.fillText(String.fromCharCode(code), x, y);
+        var inHeader = pageBg && headerBottom > 0 && y >= 0 && y <= headerBottom;
+        /* Header band: bright 0/1 for the strip under .site-header. Elsewhere: black on light areas. */
+        if (inHeader) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+        } else {
+          ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+        }
+        ctx.fillText(randomBit(), x, y);
         drops[i] = y + cell * 0.85 + Math.random() * 12;
         if (drops[i] > h + 48 && Math.random() > 0.965) {
           drops[i] = -Math.random() * (h * 0.35);

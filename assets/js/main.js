@@ -287,13 +287,6 @@
       });
     }
 
-    function headerBandBottom() {
-      var el = document.querySelector(".site-header");
-      if (!el) return 0;
-      var r = el.getBoundingClientRect();
-      return Math.ceil(r.bottom);
-    }
-
     function randomBit() {
       return Math.random() < 0.5 ? "1" : "0";
     }
@@ -302,9 +295,8 @@
       var v = viewportSize();
       var w = pageBg ? v.w : canvas.clientWidth || v.w;
       var h = pageBg ? v.h : canvas.clientHeight || 420;
-      var headerBottom = pageBg ? headerBandBottom() : 0;
-      /* Fade trails toward page base (light) so black digits read on white gutters */
-      ctx.fillStyle = pageBg ? "rgba(241, 245, 249, 0.16)" : "rgba(3, 7, 18, 0.07)";
+      /* Dark trail so white glyphs stay readable with screen blend on dark body */
+      ctx.fillStyle = pageBg ? "rgba(2, 6, 14, 0.17)" : "rgba(3, 7, 18, 0.07)";
       ctx.fillRect(0, 0, w, h);
 
       ctx.font =
@@ -312,13 +304,8 @@
       for (var i = 0; i < drops.length; i++) {
         var x = i * cell + Math.floor(cell * 0.35);
         var y = drops[i];
-        var inHeader = pageBg && headerBottom > 0 && y >= 0 && y <= headerBottom;
-        /* Header band: bright 0/1 for the strip under .site-header. Elsewhere: black on light areas. */
-        if (inHeader) {
-          ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
-        } else {
-          ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
-        }
+        var g = 248 - (i % 5) * 8;
+        ctx.fillStyle = "rgba(" + g + ", 255, " + (245 - (i % 3) * 6) + ", 0.9)";
         ctx.fillText(randomBit(), x, y);
         drops[i] = y + cell * 0.85 + Math.random() * 12;
         if (drops[i] > h + 48 && Math.random() > 0.965) {
@@ -384,10 +371,26 @@
     });
   }
 
+  function markActiveNav() {
+    var p = (location.pathname || "").replace(/\\/g, "/").toLowerCase();
+    var slug = "home";
+    if (p.indexOf("download.html") !== -1) slug = "download";
+    else if (p.indexOf("about.html") !== -1) slug = "about";
+    else if (p.indexOf("docs.html") !== -1) slug = "docs";
+
+    document.querySelectorAll("a[data-nav]").forEach(function (a) {
+      if (a.getAttribute("data-nav") === slug) {
+        a.classList.add("is-active");
+        a.setAttribute("aria-current", "page");
+      }
+    });
+  }
+
   document.querySelectorAll("[data-matrix]").forEach(function (el) {
     startMatrix(el);
   });
   document.querySelectorAll("[data-tilt]").forEach(wireTilt);
   wireDashboardPreview();
+  markActiveNav();
   initGsapAnimations();
 })();

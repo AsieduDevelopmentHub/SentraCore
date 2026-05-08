@@ -1,62 +1,193 @@
 # SentraCore
 
-SentraCore is a **Local System Behavior Intelligence Platform** for Windows. It continuously analyzes system telemetry to understand performance behavior, detect statistical anomalies, explain the root cause of slowdowns, and forecast resource exhaustion before it occurs.
+SentraCore is a local system behavior intelligence platform for Windows that continuously analyzes system telemetry to understand performance behavior, detect statistical anomalies, explain performance degradation, and estimate future resource exhaustion before it impacts usability.
 
-Unlike traditional monitoring tools that display raw snapshots, SentraCore interprets system behavior over time — answering not just *what* is happening, but *why* it is happening and *when* it will become critical.
+Unlike traditional monitoring tools that focus on raw real-time snapshots, SentraCore interprets system behavior over time — helping users understand not only what is happening, but also why it is happening, how severe it is, and how it may affect system responsiveness.
+
+---
+
+## Overview
+
+SentraCore combines:
+
+- Real-time telemetry collection
+- Adaptive baseline learning
+- Statistical anomaly detection
+- Correlation-based root cause analysis
+- Predictive resource forecasting
+- Historical system behavior tracking
+- User-impact focused diagnostics
+
+The platform is designed as a lightweight local intelligence layer running continuously in the background with minimal overhead.
 
 ---
 
 ## Current Status
 
-**All six phases are complete and production-ready.**
+SentraCore is actively developed and currently includes a production-ready monitoring engine, behavioral intelligence system, predictive analysis pipeline, and Windows desktop dashboard.
 
-| Phase | Name | Status |
-|---|---|---|
-| Phase 1 | Core Telemetry Engine | Complete |
-| Phase 2 | Behavioral Intelligence Layer | Complete |
-| Phase 3 | Correlation & Root Cause Engine | Complete |
-| Phase 4 | Prediction & Risk Engine | Complete |
-| Phase 5 | Flutter Dashboard System | Complete |
-| Phase 6 | Productization Layer | Complete |
+| Layer | Status |
+|---|---|
+| Core Telemetry Engine | Stable |
+| Behavioral Intelligence Layer | Stable |
+| Correlation & Root Cause Analysis | Stable |
+| Predictive Risk Engine | Stable |
+| Flutter Desktop Dashboard | Stable |
+| Windows Packaging & Installer | Stable |
 
 ---
 
-## What SentraCore Does
+## Core Capabilities
 
 ### System Stability Index
-The primary dashboard metric is the **System Stability Index (1–100)**. Unlike a raw CPU percentage, this score synthesises instantaneous resource pressure, statistical anomaly deviation, and forward-looking predictive risk into a single, actionable number. A score of 100 is perfect health.
 
-### Root Cause Analysis
-When the system enters a high-stress state and an alert fires, SentraCore's Correlation Engine automatically generates a **Root Cause Analysis** — identifying the primary bottleneck (CPU, Memory, or Disk), the most likely offending process, and the system event that triggered the degradation.
+SentraCore generates a unified **System Stability Index (1–100)** representing overall system health.
 
-### Predictive Forecasting
-The Prediction Engine uses Exponential Moving Averages on trend slopes to generate **Time-to-Exhaustion (ETA)** countdowns. If memory is growing at a sustained rate, SentraCore will warn you that saturation is expected in X seconds, not just that usage is high.
+The score combines:
+- Resource pressure
+- Behavioral deviation
+- Sustained stress trends
+- Predictive degradation risk
 
-### Adaptive Baseline Learning
-SentraCore does not use static thresholds. It learns what is *normal* for the specific machine it runs on, segmented by time-of-day. A CPU spike at 2 AM during a known backup job is treated differently from the same spike at 2 PM.
+Rather than exposing isolated metrics, the Stability Index provides a high-level understanding of system condition and responsiveness.
 
 ---
 
-## Architecture
+### Behavioral Intelligence
 
-SentraCore is structured as two decoupled layers communicating over a local WebSocket and REST API:
+The platform continuously models normal system behavior using adaptive baselines.
 
-```
+SentraCore learns:
+- Typical CPU activity
+- Memory consumption patterns
+- Disk activity behavior
+- Time-of-day workload trends
+
+This allows the system to distinguish between expected workload spikes and abnormal behavior.
+
+---
+
+### Statistical Anomaly Detection
+
+SentraCore uses statistical deviation analysis to identify abnormal system states.
+
+Detection includes:
+- Sustained deviation from baseline
+- Resource volatility spikes
+- Abnormal trend acceleration
+- Multi-resource pressure correlation
+
+Anomaly sensitivity can be configured by the user.
+
+---
+
+### Root Cause Analysis
+
+When degradation events occur, the Correlation Engine analyzes:
+
+- Process activity
+- Resource contention
+- System event timing
+- Trend alignment
+
+The engine then generates a ranked explanation of likely contributing factors.
+
+Example:
+
+- Elevated memory pressure from browser processes
+- Increased disk activity from indexing services
+- Sustained CPU saturation from background workloads
+
+---
+
+### Predictive Forecasting
+
+SentraCore estimates future resource exhaustion using trend-based forecasting models.
+
+Capabilities include:
+- Memory saturation estimation
+- CPU trend projection
+- Disk pressure forecasting
+- Time-to-exhaustion estimation (ETA)
+
+This enables proactive alerts before severe degradation occurs.
+
+---
+
+### Historical Monitoring (Logbook)
+
+The dashboard automatically records and visualizes historical system behavior over time.
+
+Supported views include:
+- CPU pressure history
+- Memory pressure history
+- Disk pressure history
+- Interactive time filtering
+- Date-range analysis
+
+History is stored locally on the machine.
+
+---
+
+### Process Intelligence
+
+Processes are evaluated using sustained impact analysis rather than instantaneous usage alone.
+
+Features include:
+- Process grouping by executable
+- Sustained resource contribution tracking
+- Ranked impact analysis
+- Process lifecycle cleanup for stale PIDs
+- Expandable per-process details
+
+---
+
+### Alerting & Diagnostics
+
+SentraCore includes a real-time alerting and diagnostics system.
+
+Features:
+- Alert history tracking
+- Root cause summaries
+- WebSocket-powered live alerts
+- Windows desktop notifications
+- Diagnostics timeline integration
+
+---
+
+### Safeguard System (Optional)
+
+An optional safeguard layer can automatically terminate selected user-approved processes during severe degradation scenarios.
+
+Features:
+- Live process selection
+- Flexible executable matching
+- User-controlled targeting
+- Logged termination outcomes
+- Safety-focused restrictions
+
+---
+
+## System Architecture
+
+SentraCore is structured as two decoupled layers communicating over local APIs and WebSockets.
+
+```text
 Flutter Dashboard (Windows Desktop)
-         ↕  WebSocket (ws://localhost:8740/ws/live)
-         ↕  REST API  (http://localhost:8740/api/v1/)
-Python Engine (Headless Background Process)
-    ├── SystemCollector      (psutil telemetry)
-    ├── Normalizer           (EMA smoothing)
-    ├── TimeSeriesBuffer     (ring buffers)
-    ├── BaselineModel        (adaptive learning)
-    ├── TrendAnalyzer        (linear regression)
-    ├── AnomalyDetector      (Z-score analysis)
-    ├── StressEngine         (multi-state composite)
-    ├── PredictionEngine     (ETA forecasting)
-    ├── StabilityCalculator  (global health index)
-    ├── CorrelationEngine    (root cause analysis)
-    └── AlertManager         (threshold evaluation)
+        ↕ WebSocket / REST API
+Python Monitoring & Intelligence Engine
+    ├── SystemCollector
+    ├── SignalNormalizer
+    ├── TimeSeriesBuffer
+    ├── BaselineModel
+    ├── TrendAnalyzer
+    ├── AnomalyDetector
+    ├── StressEngine
+    ├── PredictionEngine
+    ├── StabilityCalculator
+    ├── CorrelationEngine
+    ├── AlertManager
+    └── SafeguardController
 ```
 
 ---
@@ -65,37 +196,48 @@ Python Engine (Headless Background Process)
 
 | Layer | Technology |
 |---|---|
-| Monitoring Engine | Python 3.11, psutil |
-| API Server | FastAPI, uvicorn |
-| Real-time Communication | WebSockets |
-| Dashboard UI | Flutter (Dart), Windows Desktop |
-| Build & Packaging | PyInstaller, Inno Setup |
-| CI/CD | GitHub Actions (ruff, pytest, flutter analyze) |
+| Monitoring Engine | Python 3.11 |
+| Telemetry Collection | psutil |
+| API Server | FastAPI |
+| Real-Time Communication | WebSockets |
+| Dashboard UI | Flutter Desktop (Windows) |
+| Packaging | PyInstaller |
+| Installer | Inno Setup |
+| CI/CD | GitHub Actions |
 | Testing | pytest, flutter test |
 
 ---
 
-## Getting Started
+## Installation
 
-### Run in Development
+### Windows Installer
 
-See [docs/setup/development_setup.md](docs/setup/development_setup.md) for the full guide.
+Download the latest installer from the [Releases](../../releases) page.
+
+The installer:
+- Installs SentraCore into `C:\Program Files\SentraCore\`
+- Creates Desktop and Start Menu shortcuts
+- Optionally enables startup launch behavior
+- Configures the monitoring engine automatically
+
+---
+
+## Development Setup
+
+See the setup documentation for complete local development instructions.
+
+### Run the Engine
 
 ```powershell
-# 1. Start the Python Engine
 .venv\Scripts\python -m engine.main
+```
 
-# 2. In a second terminal, run the Flutter Dashboard
+### Run the Dashboard
+
+```powershell
 cd dashboard
 flutter run -d windows
 ```
-
-### Install from Installer
-
-Download the latest `SentraCore_Setup.exe` from the [Releases](../../releases) page and run it. The installer will:
-- Place both executables in `C:\Program Files\SentraCore\`.
-- Optionally configure the engine to start automatically on Windows login.
-- Create Desktop and Start Menu shortcuts for the dashboard.
 
 ---
 
@@ -103,26 +245,49 @@ Download the latest `SentraCore_Setup.exe` from the [Releases](../../releases) p
 
 | Document | Description |
 |---|---|
-| [Development Setup](docs/setup/development_setup.md) | Full local development environment guide |
-| [Engine Setup](docs/setup/engine_setup.md) | Engine-specific installation reference |
-| [Dashboard Setup](docs/setup/dashboard_setup.md) | Flutter-specific setup reference |
-| [Intelligence Pipeline](docs/architecture/intelligence_layer.md) | Deep dive into all 10 processing stages |
-| [Building SentraCore](docs/architecture/building.md) | How to produce production executables and the installer |
+| Development Setup | Local development environment setup |
+| Engine Setup | Python engine configuration |
+| Dashboard Setup | Flutter dashboard setup |
+| Architecture Overview | Internal processing pipeline |
+| Build & Packaging | Production build and installer process |
 
 ---
 
-## Project Philosophy
+## Design Philosophy
 
 SentraCore is built around five principles:
 
-1. **Observation** — Collect accurate, smoothed system telemetry.
-2. **Behavioral Modeling** — Understand what is normal for this machine.
-3. **Anomaly Detection** — Detect statistically significant deviations.
-4. **Correlation Analysis** — Explain *why* the system is degrading.
-5. **Prediction** — Forecast *when* critical thresholds will be breached.
+1. Observation  
+   Collect reliable and structured telemetry.
+
+2. Behavioral Modeling  
+   Learn what is normal for the machine.
+
+3. Anomaly Detection  
+   Detect statistically significant deviations.
+
+4. Correlation Analysis  
+   Explain likely causes of degradation.
+
+5. Predictive Awareness  
+   Estimate future instability before impact occurs.
+
+---
+
+## Product Positioning
+
+SentraCore is not a traditional monitoring dashboard.
+
+It is a local system behavior intelligence platform focused on:
+
+- behavioral understanding
+- anomaly detection
+- predictive system analysis
+- explainable diagnostics
+- user-impact interpretation
 
 ---
 
 ## License
 
-Apache License.
+Apache License 2.0

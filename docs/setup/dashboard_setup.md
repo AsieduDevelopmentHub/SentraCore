@@ -1,94 +1,319 @@
 # SentraCore Dashboard Setup
 
-The SentraCore dashboard is a Flutter Windows desktop application that connects to the Python engine via WebSocket and REST API to display real-time system intelligence.
+The SentraCore dashboard is a Flutter desktop application that connects to the local Python engine through REST APIs and WebSockets to display real-time system intelligence, alerts, historical monitoring data, and diagnostic insights.
+
+The dashboard supports:
+- Windows
+- Linux
+- macOS
+
+Windows currently provides the most complete production packaging support.
 
 ---
 
-## Prerequisites
+# Prerequisites
 
-- Flutter SDK (stable channel, 3.x or higher)
-- Visual Studio 2022 Community or higher
-  - **Required Workload:** Desktop development with C++
-  - **Required Components:** MSVC v142 build tools, C++ CMake tools for Windows, Windows 10/11 SDK
+## Flutter SDK
+
+- Flutter SDK (stable channel, version 3.x or higher)
+
+Verify installation:
+
+```bash
+flutter doctor
+```
+
+All desktop-related checks should pass before development begins.
+
+---
+
+# Platform Requirements
+
+## Windows
+
+### Required Software
+- Visual Studio 2022 Community Edition or higher
+
+### Required Workload
+- Desktop development with C++
+
+### Required Components
+- MSVC build tools
+- C++ CMake tools for Windows
+- Windows 10/11 SDK
+
+### Additional Requirement
 - Windows Developer Mode enabled
 
-Run `flutter doctor` to verify your environment is fully configured. All items relevant to Windows desktop development should show a green checkmark.
+---
+
+## Linux
+
+Install required Flutter desktop dependencies.
+
+Example (Ubuntu/Debian):
+
+```bash
+sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev
+```
 
 ---
 
-## Enable Windows Developer Mode
+## macOS
 
-Flutter requires Windows Developer Mode to create symlinks during the build process.
+### Required Software
+- Xcode Command Line Tools
+- CocoaPods
 
-1. Open **Windows Settings**.
-2. Search for **Developer Mode**.
-3. Toggle **Developer Mode** to **On**.
+Install Xcode tools:
+
+```bash
+xcode-select --install
+```
+
+Install CocoaPods:
+
+```bash
+sudo gem install cocoapods
+```
 
 ---
 
-## Installation and Running
+# Enable Desktop Support
 
-### 1. Install Flutter Dependencies
+If desktop support is not enabled in Flutter:
 
-```powershell
+```bash
+flutter config --enable-windows-desktop
+flutter config --enable-linux-desktop
+flutter config --enable-macos-desktop
+```
+
+Verify again:
+
+```bash
+flutter doctor
+```
+
+---
+
+# Installation
+
+Navigate to the dashboard directory:
+
+```bash
 cd dashboard
+```
+
+Install Flutter dependencies:
+
+```bash
 flutter pub get
 ```
 
-### 2. Start the Python Engine First
+---
 
-The dashboard requires the engine to be running before it can display data. In a separate terminal from the repository root:
+# Starting the Engine
+
+The dashboard requires the SentraCore engine to be running before live data can be displayed.
+
+From the repository root:
+
+### Windows
 
 ```powershell
 .venv\Scripts\python -m engine.main
 ```
 
-### 3. Run the Dashboard in Debug Mode
+### Linux / macOS
+
+```bash
+python -m engine.main
+```
+
+---
+
+# Running the Dashboard
+
+## Windows
 
 ```powershell
 flutter run -d windows
 ```
 
-The dashboard will automatically connect to `ws://localhost:8740/ws/live` and begin displaying live system data.
+---
+
+## Linux
+
+```bash
+flutter run -d linux
+```
 
 ---
 
-## Dashboard Panels
+## macOS
 
-| Panel | Description |
+```bash
+flutter run -d macos
+```
+
+---
+
+# Connection Behavior
+
+The dashboard automatically:
+
+- discovers the active engine runtime port
+- connects to the local WebSocket stream
+- retrieves REST API data
+- reconnects automatically if the engine restarts
+
+Default engine endpoints:
+
+```text
+REST API:
+http://localhost:8740/api/v1/
+
+WebSocket:
+ws://localhost:8740/ws/live
+```
+
+If port `8740` is unavailable, the engine dynamically selects another free port and exposes it through runtime discovery.
+
+---
+
+# Dashboard Features
+
+| Feature | Description |
 |---|---|
-| Stability Indicator | System Stability Index (1–100) with penalty breakdown |
-| Resource Gauges | Smoothed CPU, Memory, and Disk I/O values with spike indicators |
-| Prediction Panel | Degradation Risk Score and Time-to-Exhaustion countdowns |
-| Root Cause Analysis Panel | Primary bottleneck, suspect process, and trigger event from last alert |
-| Metric Charts | 60-second rolling history for CPU, Memory, and Stability Index |
-| Process Table | Top processes ranked by sustained system impact |
-| Event Timeline | Chronological list of recent system events |
+| System Stability Index | Unified system health scoring |
+| Resource Monitoring | CPU, memory, and disk pressure tracking |
+| Historical Logbook | Long-term system history visualization |
+| Predictive Analysis | Degradation risk and forecasting |
+| Root Cause Analysis | Correlated slowdown explanations |
+| Process Intelligence | Sustained process impact ranking |
+| Alerts & Diagnostics | Real-time alerts and RCA history |
+| Theme System | Light and dark mode support |
+| Responsive Layout | Adaptive desktop layout behavior |
 
 ---
 
-## Verifying the Build
+# Development Validation
 
-```powershell
+Run Flutter analysis and tests before submitting changes.
+
+```bash
 flutter analyze
 flutter test
 ```
 
-Both should complete with no errors before any pull request is submitted.
-
 ---
 
-## Building for Production
+# Building for Production
 
-To compile a release build:
+Generate a release build:
+
+## Windows
 
 ```powershell
 flutter build windows --release
 ```
 
-The executable and all required DLL files will be located in:
-```
-dashboard\build\windows\x64\runner\Release\
+---
+
+## Linux
+
+```bash
+flutter build linux --release
 ```
 
-This entire folder must be provided to Inno Setup when compiling the installer. See [Building SentraCore](../architecture/building.md) for the full packaging guide.
+---
+
+## macOS
+
+```bash
+flutter build macos --release
+```
+
+---
+
+# Build Output Locations
+
+## Windows
+
+```text
+build/windows/x64/runner/Release/
+```
+
+---
+
+## Linux
+
+```text
+build/linux/x64/release/bundle/
+```
+
+---
+
+## macOS
+
+```text
+build/macos/Build/Products/Release/
+```
+
+---
+
+# Packaging Notes
+
+For Windows installer packaging, the full release output directory must be included during Inno Setup compilation.
+
+See:
+
+```text
+docs/architecture/building.md
+```
+
+for complete packaging and distribution instructions.
+
+---
+
+# Troubleshooting
+
+## Dashboard Cannot Connect
+
+Verify:
+- the engine is running
+- firewall rules are not blocking local connections
+- engine and dashboard versions are compatible
+
+---
+
+## Flutter Build Fails
+
+Run:
+
+```bash
+flutter doctor
+```
+
+and resolve any missing dependencies or SDK issues.
+
+---
+
+## Missing Desktop Targets
+
+Enable desktop support using:
+
+```bash
+flutter config --enable-windows-desktop
+flutter config --enable-linux-desktop
+flutter config --enable-macos-desktop
+```
+
+---
+
+# Notes
+
+- The dashboard is designed to operate independently from the engine process lifecycle.
+- Automatic reconnection and runtime discovery are built into the connection layer.
+- Some telemetry behavior may vary slightly across operating systems depending on available system APIs.

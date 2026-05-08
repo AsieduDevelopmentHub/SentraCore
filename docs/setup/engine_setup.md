@@ -1,92 +1,325 @@
 # SentraCore Engine Setup
 
-The SentraCore engine is a headless Python application that collects system telemetry, processes it through the intelligence pipeline, and serves the results via a local REST API and WebSocket.
+The SentraCore engine is a headless Python-based monitoring and intelligence service responsible for:
+
+- collecting system telemetry
+- analyzing behavioral trends
+- detecting anomalies
+- generating predictive insights
+- serving live data through local REST and WebSocket interfaces
+
+The engine operates independently from the dashboard and can run in the background as a standalone local service.
 
 ---
 
-## Prerequisites
+# Supported Platforms
+
+| Platform | Support Status |
+|---|---|
+| Windows | Primary Support |
+| Linux | Supported |
+| macOS | Supported |
+
+Some telemetry metrics may vary slightly across operating systems depending on the system APIs exposed through `psutil`.
+
+---
+
+# Prerequisites
+
+## General Requirements
 
 - Python 3.11 or higher
-- Windows OS (some `psutil` telemetry counters are Windows-specific)
 - Git
+
+Verify Python installation:
+
+```bash
+python --version
+```
+
+or on Linux/macOS:
+
+```bash
+python3 --version
+```
 
 ---
 
-## Installation
+# Repository Structure
 
-From the repository root:
+```text
+engine/
+├── alerts/            # Alerting and RCA integration
+├── api/               # REST API and WebSocket server
+├── baseline/          # Adaptive baseline learning
+├── buffer/            # Time-series buffers
+├── collector/         # Telemetry collection
+├── events/            # Event tracking and logging
+├── intelligence/      # Trend, anomaly, prediction engines
+├── normalization/     # Signal normalization
+├── process/           # Process intelligence tracking
+├── safeguard/         # Optional safeguard controls
+├── stress/            # Stress and stability calculation
+└── main.py            # Engine entry point
+```
 
-### 1. Create a Virtual Environment
+---
+
+# Installation
+
+All commands should be executed from the repository root.
+
+---
+
+## 1. Create a Virtual Environment
+
+### Windows
 
 ```powershell
 python -m venv .venv
 ```
 
-### 2. Activate the Virtual Environment
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+```
+
+---
+
+## 2. Activate the Virtual Environment
+
+### Windows
 
 ```powershell
 .venv\Scripts\Activate
 ```
 
-### 3. Install Dependencies
+### Linux / macOS
 
-```powershell
+```bash
+source .venv/bin/activate
+```
+
+---
+
+## 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## Running the Engine
+# Running the Engine
 
-The engine must be run as a module from the root directory so that internal package imports resolve correctly:
+The engine must be started as a module from the repository root so internal package imports resolve correctly.
+
+### Windows
 
 ```powershell
 .venv\Scripts\python -m engine.main
 ```
 
-On startup, the engine will:
-- Start the `uvicorn` API server in a background thread.
-- Begin the telemetry collection loop.
-- Log periodic status updates to the console.
+### Linux / macOS
 
-**Available endpoints once running:**
+```bash
+python -m engine.main
+```
+
+---
+
+# Engine Startup Behavior
+
+When launched, the engine will:
+
+- initialize telemetry collectors
+- load user preferences and baseline data
+- start the FastAPI server
+- initialize the WebSocket broadcaster
+- begin the monitoring and intelligence pipeline
+- start event and alert tracking
+
+The engine runs continuously until stopped manually.
+
+---
+
+# Available Interfaces
+
+Once running, the engine exposes the following local interfaces.
+
+## REST API
 
 | Endpoint | Description |
 |---|---|
-| `GET http://localhost:8740/api/v1/status` | Full current system state snapshot |
-| `GET http://localhost:8740/api/v1/processes` | Top processes by sustained impact |
-| `GET http://localhost:8740/api/v1/events` | Recent system events |
-| `GET http://localhost:8740/api/v1/alerts` | Alert history with Root Cause Analysis |
-| `GET http://localhost:8740/api/v1/preferences` | User alert thresholds and safeguard process list |
-| `PUT http://localhost:8740/api/v1/preferences` | Update preferences (JSON body; persisted under datastore) |
+| `GET /api/v1/status` | Current system state snapshot |
+| `GET /api/v1/processes` | Top ranked processes by impact |
+| `GET /api/v1/events` | Recent system events |
+| `GET /api/v1/alerts` | Alert history and RCA summaries |
+| `GET /api/v1/preferences` | Current user preferences |
+| `PUT /api/v1/preferences` | Update persisted preferences |
 
-**Dynamic HTTP port:** if `8740` is already in use, the engine binds the next free port up to `65535` and writes `engine_runtime.json` in the datastore (`http_host`, `http_port`). The Flutter dashboard discovers the active port via that file, a cached last-known port, and a short local scan starting at `8740`.
-| `WS ws://localhost:8740/ws/live` | Real-time state broadcast (WebSocket) |
+Default local address:
+
+```text
+http://localhost:8740/api/v1/
+```
 
 ---
 
-## Configuration
+## WebSocket
 
-Key constants are configurable in `engine/config.py`:
+| Endpoint | Description |
+|---|---|
+| `WS /ws/live` | Real-time system state stream |
 
-| Constant | Default | Description |
-|---|---|---|
-| `COLLECTION_INTERVAL_SEC` | `2` | How frequently telemetry is sampled |
-| User preferences (`user_preferences.json`) | defaults in `engine/user_preferences.py` | Per-resource CPU / memory / disk pressure thresholds (0–100) and optional safeguard process list |
-| `ALERT_CONSECUTIVE_COUNT` | `3` | Consecutive high readings before alerting |
-| `ALERT_COOLDOWN_SEC` | `60.0` | Minimum time between consecutive alerts |
-| `BASELINE_MIN_SAMPLES` | `30` | Samples required before baseline is considered ready |
+Default endpoint:
+
+```text
+ws://localhost:8740/ws/live
+```
 
 ---
 
-## Running Tests
+# Dynamic Port Allocation
 
-```powershell
-.venv\Scripts\python -m pytest tests/ -v
+If port `8740` is already in use, the engine automatically searches for the next available port.
+
+The active runtime port is written to:
+
+```text
+engine_runtime.json
 ```
 
-## Running the Linter
+This allows the dashboard to discover the currently active engine instance automatically.
 
-```powershell
-.venv\Scripts\ruff check engine/ tests/ --select=E9,F63,F7,F82
+---
+
+# Configuration
+
+Core engine configuration is located in:
+
+```text
+engine/config.py
 ```
+
+---
+
+## Important Configuration Values
+
+| Setting | Description |
+|---|---|
+| `COLLECTION_INTERVAL_SEC` | Telemetry collection interval |
+| `ALERT_CONSECUTIVE_COUNT` | Required sustained readings before alerting |
+| `ALERT_COOLDOWN_SEC` | Minimum time between alerts |
+| `BASELINE_MIN_SAMPLES` | Samples required before baseline activation |
+
+---
+
+## User Preferences
+
+User-adjustable preferences are stored separately and persisted locally.
+
+Examples include:
+- CPU pressure thresholds
+- memory thresholds
+- disk pressure thresholds
+- anomaly sensitivity
+- safeguard process configuration
+
+---
+
+# Testing
+
+Run the Python test suite:
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+# Static Analysis
+
+SentraCore uses `ruff` for linting and static analysis.
+
+Run:
+
+```bash
+ruff check engine/ tests/ --select=E9,F63,F7,F82
+```
+
+---
+
+# Logging
+
+The engine supports both console and packaged execution modes.
+
+In packaged (`--noconsole`) environments:
+- logging automatically falls back to file-based output
+- runtime issues are recorded for diagnostics
+
+---
+
+# Development Notes
+
+- The engine is designed to operate independently from the Flutter dashboard.
+- Dashboard communication occurs entirely through local APIs and WebSockets.
+- Most engine components are modular and can be extended independently.
+
+---
+
+# Platform Notes
+
+## Windows
+Windows currently provides the most complete telemetry support and packaging integration.
+
+---
+
+## Linux
+Linux supports core monitoring and dashboard communication features. Some advanced process metrics may vary by distribution and permissions.
+
+---
+
+## macOS
+macOS supports the core monitoring pipeline, though certain low-level telemetry values may differ from Windows behavior due to operating system limitations.
+
+---
+
+# Troubleshooting
+
+## Port Already in Use
+
+If the engine cannot bind to port `8740`:
+- it will automatically search for another free port
+- verify firewall settings if dashboard discovery fails
+
+---
+
+## Missing Dependencies
+
+If startup fails due to missing packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+Ensure the active virtual environment is enabled before installation.
+
+---
+
+## API Not Reachable
+
+Verify:
+- the engine process is running
+- no firewall is blocking local connections
+- the runtime port matches the dashboard connection target
+
+---
+
+# Stopping the Engine
+
+To stop the engine:
+
+- Press `Ctrl + C` in terminal mode
+- or terminate the packaged process from the operating system

@@ -1,125 +1,292 @@
 # Development Setup
 
-This guide covers how to get the SentraCore development environment running on your local machine.
+This guide explains how to configure a local SentraCore development environment across Windows, Linux, and macOS.
 
-## Prerequisites
+---
 
-### Python Engine
+# Supported Platforms
+
+| Platform | Status |
+|---|---|
+| Windows | Primary Development Target |
+| Linux | Supported for Development |
+| macOS | Supported for Development |
+
+Some telemetry capabilities may vary slightly between operating systems due to platform-specific system APIs exposed through `psutil`.
+
+---
+
+# Prerequisites
+
+## General Requirements
+
 - Python 3.11 or higher
 - Git
-- Windows OS (some `psutil` telemetry counters are Windows-specific)
 
-### Flutter Dashboard
-- Flutter SDK (stable channel, 3.x or higher)
-- Visual Studio 2022 Community or higher
-  - **Required Workload:** Desktop development with C++
-  - **Required Components:** MSVC v142 build tools, C++ CMake tools for Windows, Windows 10/11 SDK
+---
+
+# Flutter Dashboard Requirements
+
+## Flutter SDK
+- Flutter SDK (stable channel, version 3.x or higher)
+
+Verify installation:
+
+```bash
+flutter doctor
+```
+
+---
+
+## Windows Requirements
+
+- Visual Studio 2022 Community Edition or higher
+
+### Required Workload
+- Desktop development with C++
+
+### Required Components
+- MSVC build tools
+- C++ CMake tools for Windows
+- Windows 10/11 SDK
+
+### Additional Requirement
 - Windows Developer Mode enabled
 
 ---
 
-## Repository Structure
+## Linux Requirements
 
-```
-SentraCore/
-├── engine/             # Python monitoring engine
-│   ├── alerts/         # Alert Manager and RCA integration
-│   ├── api/            # FastAPI REST and WebSocket server
-│   ├── baseline/       # Adaptive baseline model
-│   ├── buffer/         # Time-series ring buffers
-│   ├── collector/      # psutil system telemetry collector
-│   ├── events/         # System event logger
-│   ├── intelligence/   # Trend, Anomaly, Prediction, Stability engines
-│   ├── normalization/  # EMA-based metric normalizer
-│   ├── process/        # Process impact tracker
-│   └── stress/         # Multi-state stress engine
-├── dashboard/          # Flutter Windows desktop UI
-├── tests/              # Python unit tests
-├── docs/               # Project documentation
-├── scripts/            # Build automation scripts
-└── installer/          # Inno Setup installer configuration
+Install required development packages for Flutter desktop support.
+
+Example (Ubuntu/Debian):
+
+```bash
+sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev
 ```
 
 ---
 
-## Engine Setup
+## macOS Requirements
 
-### 1. Create and Activate a Virtual Environment
+- Xcode Command Line Tools
+- CocoaPods
+
+Install Xcode tools:
+
+```bash
+xcode-select --install
+```
+
+Install CocoaPods:
+
+```bash
+sudo gem install cocoapods
+```
+
+---
+
+# Repository Structure
+
+```text
+SentraCore/
+├── engine/             # Python monitoring and intelligence engine
+├── dashboard/          # Flutter desktop dashboard
+├── tests/              # Python test suite
+├── docs/               # Project documentation
+├── scripts/            # Build and automation scripts
+└── installer/          # Installer configuration
+```
+
+---
+
+# Engine Setup
+
+## 1. Create a Virtual Environment
+
+### Windows
 
 ```powershell
 python -m venv .venv
+```
+
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+```
+
+---
+
+## 2. Activate the Environment
+
+### Windows
+
+```powershell
 .venv\Scripts\Activate
 ```
 
-### 2. Install Dependencies
+### Linux / macOS
 
-```powershell
+```bash
+source .venv/bin/activate
+```
+
+---
+
+## 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the Engine
+---
 
-The engine must be started as a module from the repository root so that all internal imports resolve correctly:
+## 4. Start the Engine
+
+Run the engine from the repository root:
+
+### Windows
 
 ```powershell
 .venv\Scripts\python -m engine.main
 ```
 
-The engine will start and expose:
-- **REST API:** `http://localhost:8740/api/v1/`
-- **WebSocket (live state):** `ws://localhost:8740/ws/live`
+### Linux / macOS
 
-### 4. Run the Test Suite
-
-```powershell
-.venv\Scripts\python -m pytest tests/ -v
+```bash
+python -m engine.main
 ```
 
-### 5. Run the Linter
+The engine exposes:
 
-SentraCore uses `ruff` for static analysis. Run it before submitting any pull request:
+- REST API  
+  `http://localhost:8740/api/v1/`
 
-```powershell
-.venv\Scripts\ruff check engine/ tests/ --select=E9,F63,F7,F82
+- WebSocket Endpoint  
+  `ws://localhost:8740/ws/live`
+
+---
+
+## 5. Run Tests
+
+```bash
+pytest tests/ -v
 ```
 
 ---
 
-## Dashboard Setup
+## 6. Run Static Analysis
 
-### 1. Enable Windows Developer Mode
+SentraCore uses `ruff` for Python linting and static analysis.
 
-Flutter requires Windows Developer Mode to create necessary symlinks during the build.
-1. Open **Windows Settings**.
-2. Search for **Developer Mode**.
-3. Toggle it to **On**.
+```bash
+ruff check engine/ tests/ --select=E9,F63,F7,F82
+```
 
-### 2. Install Flutter Dependencies
+---
 
-```powershell
+# Dashboard Setup
+
+## 1. Install Flutter Dependencies
+
+```bash
 cd dashboard
 flutter pub get
 ```
 
-### 3. Run the Dashboard in Debug Mode
+---
 
-Ensure the Python Engine is running first, then:
+## 2. Run the Dashboard
+
+Ensure the Python engine is already running.
+
+### Windows
 
 ```powershell
 flutter run -d windows
 ```
 
-### 4. Verify with Flutter Analyze
+### Linux
 
-```powershell
+```bash
+flutter run -d linux
+```
+
+### macOS
+
+```bash
+flutter run -d macos
+```
+
+---
+
+## 3. Run Flutter Validation
+
+```bash
 flutter analyze
 flutter test
 ```
 
 ---
 
-## Development Tips
+# Development Notes
 
-- Always start the Python Engine before launching the Flutter Dashboard.
-- The engine's collection interval is configurable in `engine/config.py` via `COLLECTION_INTERVAL_SEC`.
-- Alert thresholds (`ALERT_STRESS_THRESHOLD`, `ALERT_CONSECUTIVE_COUNT`, `ALERT_COOLDOWN_SEC`) are also in `engine/config.py`.
+- Start the Python engine before launching the Flutter dashboard.
+- Engine configuration values are located in:
+
+```text
+engine/config.py
+```
+
+Configurable settings include:
+- collection interval
+- alert thresholds
+- cooldown durations
+- anomaly sensitivity
+- safeguard behavior
+
+---
+
+# Troubleshooting
+
+## Flutter Desktop Support Not Enabled
+
+Verify Flutter desktop support:
+
+```bash
+flutter config --enable-windows-desktop
+flutter config --enable-linux-desktop
+flutter config --enable-macos-desktop
+```
+
+Then verify using:
+
+```bash
+flutter doctor
+```
+
+---
+
+## Dashboard Cannot Connect
+
+Ensure:
+- the engine is running
+- local firewall rules are not blocking connections
+- the dashboard and engine versions are compatible
+
+---
+
+## Port Already in Use
+
+If port `8740` is occupied:
+- stop the conflicting process
+- or update the configured engine port before restarting
+
+---
+
+# Platform Notes
+
+- Windows currently provides the most complete telemetry support.
+- Linux and macOS support core monitoring and dashboard functionality.
+- Some advanced process or system metrics may behave differently across operating systems due to underlying OS APIs.

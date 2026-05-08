@@ -1,81 +1,369 @@
 # Building SentraCore
 
-This guide covers how to produce standalone, production-ready executables and compile the final Windows installer.
+This guide explains how to build the SentraCore engine, compile the Flutter dashboard, and package the application for desktop distribution.
+
+The project is designed to support standalone deployment with a bundled local monitoring engine and desktop dashboard.
 
 ---
 
-## Prerequisites
+# Overview
 
-| Requirement | Verification Command |
+SentraCore consists of two primary components:
+
+| Component | Description |
 |---|---|
-| Python 3.11+ with virtual environment | `.venv\Scripts\python --version` |
-| PyInstaller (installed in venv) | `.venv\Scripts\pyinstaller --version` |
-| Flutter SDK (stable) | `flutter --version` |
-| Visual Studio with "Desktop development with C++" | `flutter doctor` |
-| Inno Setup 6 | Installed from [jrsoftware.org](https://jrsoftware.org/isinfo.php) |
+| Engine | Python-based monitoring and intelligence service |
+| Dashboard | Flutter desktop application |
+
+These components are packaged together into a desktop installer for distribution.
 
 ---
 
-## Step 1: Build the Python Engine
+# Prerequisites
 
-```powershell
-scripts\build_engine.bat
+## General Requirements
+
+| Requirement | Verification |
+|---|---|
+| Python 3.11 or higher | `python --version` |
+| Flutter SDK | `flutter --version` |
+| Git | `git --version` |
+
+---
+
+# Windows Build Requirements
+
+## Visual Studio
+
+Install:
+- Visual Studio 2022 Community Edition or higher
+
+### Required Workload
+- Desktop development with C++
+
+### Required Components
+- MSVC build tools
+- C++ CMake tools
+- Windows SDK
+
+Verify setup:
+
+```bash
+flutter doctor
 ```
 
-This script activates the virtual environment, cleans previous artifacts, runs PyInstaller with the correct hidden imports for `uvicorn` and `fastapi`, and outputs `SentraCoreEngine.exe` to the `dist/` directory.
-
-The engine is compiled with `--noconsole` so it runs as a fully invisible background process.
-
-**Output:** `dist\SentraCoreEngine.exe`
-
 ---
 
-## Step 2: Build the Flutter Dashboard
+# Linux Build Requirements
 
-```powershell
-scripts\build_dashboard.bat
+Example dependencies for Ubuntu/Debian:
+
+```bash
+sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev
 ```
 
-This script navigates to the `dashboard/` directory and runs `flutter build windows --release`.
+---
 
-> Note: Flutter bundles the executable alongside several required DLL files and data directories. The entire `Release\` folder contents must be included in the installer.
+# macOS Build Requirements
 
-**Output:** `dashboard\build\windows\x64\runner\Release\`
+Install:
+- Xcode Command Line Tools
+- CocoaPods
+
+```bash
+xcode-select --install
+sudo gem install cocoapods
+```
 
 ---
 
-## Step 3: Compile the Installer
+# Python Packaging Requirements
 
-1. Open **Inno Setup Compiler**.
-2. Go to **File → Open** and select `installer\sentracore.iss`.
-3. Press **Ctrl+F9** to compile.
+Install PyInstaller inside the active virtual environment:
 
-**Output:** `dist\SentraCore_Setup_v1.0.exe`
+```bash
+pip install pyinstaller
+```
 
----
+Verify installation:
 
-## What the Installer Does
-
-| Action | Detail |
-|---|---|
-| Install location | `C:\Program Files\SentraCore\` |
-| Desktop shortcut | Optional, user-selectable during install |
-| Start Menu group | `SentraCore\` with shortcuts to Dashboard and Uninstaller |
-| Auto-start on login | Adds `SentraCoreEngine.exe` to `HKCU\...\Run` (optional) |
-| Post-install launch | Starts the engine in background, optionally opens the dashboard |
-| Uninstall | Kills the engine process and removes all files and registry keys |
+```bash
+pyinstaller --version
+```
 
 ---
 
-## Releasing a New Version
+# Build Process
 
-1. Update `__version__` in `engine/__init__.py`.
-2. Update `AppVersion` and `OutputBaseFilename` in `installer/sentracore.iss`.
-3. Commit all changes.
-4. Create and push an annotated Git tag:
-   ```powershell
-   git tag -a v1.1.0 -m "Release v1.1.0"
-   git push origin main --tags
-   ```
-5. Run the three build steps above to produce the new installer.
-6. Create a GitHub Release from the tag and attach the new `SentraCore_Setup_v*.exe` as a release asset.
+---
+
+# Step 1 — Build the Python Engine
+
+The engine is packaged as a standalone executable using PyInstaller.
+
+Example build command:
+
+```bash
+pyinstaller engine.spec
+```
+
+Typical packaged output:
+
+```text
+dist/SentraCoreEngine/
+```
+
+or:
+
+```text
+dist/SentraCoreEngine.exe
+```
+
+depending on build configuration.
+
+---
+
+## Engine Packaging Notes
+
+The packaged engine:
+- runs as a background service
+- exposes REST and WebSocket interfaces locally
+- supports file-based logging in non-console environments
+- includes required hidden imports for FastAPI and Uvicorn
+
+Production builds commonly use:
+- `--noconsole`
+- optimized bundling
+- application icons
+- version metadata
+
+---
+
+# Step 2 — Build the Flutter Dashboard
+
+Navigate to the dashboard directory:
+
+```bash
+cd dashboard
+```
+
+---
+
+## Windows
+
+```powershell
+flutter build windows --release
+```
+
+---
+
+## Linux
+
+```bash
+flutter build linux --release
+```
+
+---
+
+## macOS
+
+```bash
+flutter build macos --release
+```
+
+---
+
+# Dashboard Build Output
+
+## Windows
+
+```text
+build/windows/x64/runner/Release/
+```
+
+---
+
+## Linux
+
+```text
+build/linux/x64/release/bundle/
+```
+
+---
+
+## macOS
+
+```text
+build/macos/Build/Products/Release/
+```
+
+---
+
+# Packaging Considerations
+
+Flutter desktop builds include:
+- executable files
+- runtime DLLs/frameworks
+- asset bundles
+- platform-specific dependencies
+
+The complete release output directory should always be distributed together.
+
+---
+
+# Windows Installer Packaging
+
+SentraCore uses Inno Setup for Windows installer generation.
+
+---
+
+## Inno Setup
+
+Install:
+- Inno Setup 6 or higher
+
+Official website:
+
+[Inno Setup](https://jrsoftware.org/isinfo.php?utm_source=chatgpt.com)
+
+---
+
+## Typical Installer Responsibilities
+
+The installer may:
+- copy engine and dashboard binaries
+- create desktop and Start Menu shortcuts
+- configure startup behavior
+- register uninstall information
+- launch the engine after installation
+- clean up runtime files during uninstall
+
+---
+
+# Recommended Packaging Workflow
+
+```text
+1. Build Engine
+2. Build Dashboard
+3. Validate Release Builds
+4. Package Installer
+5. Test Clean Installation
+6. Publish Release Assets
+```
+
+---
+
+# Versioning
+
+Version information should remain synchronized across:
+- engine metadata
+- dashboard application version
+- installer version
+- release artifacts
+
+---
+
+# Release Workflow
+
+A typical release process includes:
+
+1. Update version metadata
+2. Build production artifacts
+3. Validate installation behavior
+4. Test dashboard-engine communication
+5. Generate installer packages
+6. Create tagged release builds
+7. Publish release assets
+
+---
+
+# Production Validation Checklist
+
+Before publishing a release, verify:
+
+- engine starts successfully
+- dashboard connects automatically
+- live telemetry updates function correctly
+- alerts and history load properly
+- notifications operate correctly
+- installer shortcuts work
+- uninstall removes runtime artifacts cleanly
+
+---
+
+# Continuous Integration
+
+SentraCore can be integrated into CI/CD pipelines for:
+
+- linting
+- automated testing
+- desktop builds
+- packaging validation
+- release automation
+
+Typical tooling:
+- GitHub Actions
+- pytest
+- flutter test
+- ruff
+- PyInstaller
+- Flutter build pipeline
+
+---
+
+# Build Notes
+
+- Windows currently provides the most mature packaging workflow.
+- Linux and macOS builds support desktop execution and development workflows.
+- Some platform-specific packaging behaviors may vary depending on operating system requirements and distribution targets.
+
+---
+
+# Troubleshooting
+
+## Flutter Build Issues
+
+Run:
+
+```bash
+flutter doctor
+```
+
+Resolve any reported SDK or dependency issues.
+
+---
+
+## Missing Runtime Files
+
+Ensure the entire Flutter release directory is distributed, not only the executable.
+
+---
+
+## Engine Startup Issues
+
+Verify:
+- required Python dependencies are included
+- hidden imports are configured correctly
+- firewall settings are not blocking local communication
+
+---
+
+## Installer Launch Problems
+
+Check:
+- installation paths
+- bundled runtime files
+- startup permissions
+- application icons and resource paths
+
+---
+
+# Summary
+
+SentraCore is structured for modular desktop deployment:
+
+- Python handles telemetry collection and intelligence processing
+- Flutter provides the real-time desktop experience
+- platform-specific packaging systems distribute the application as a standalone product
+
+This architecture allows the engine and dashboard to evolve independently while remaining tightly integrated during runtime.

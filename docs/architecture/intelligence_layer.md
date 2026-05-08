@@ -1,124 +1,277 @@
 # Intelligence Pipeline
 
-This document explains how SentraCore transforms raw system telemetry into actionable, explainable intelligence across its ten processing stages.
+This document explains how SentraCore transforms raw system telemetry into structured, explainable system intelligence through a multi-stage processing pipeline.
+
+Rather than relying on isolated system snapshots, SentraCore continuously analyzes behavior over time to detect anomalies, estimate degradation risk, and identify likely causes of system slowdowns.
 
 ---
 
-## Overview
+# Overview
 
-Raw telemetry alone is insufficient for meaningful system monitoring. A CPU reading of 95% could be normal during a scheduled batch job, or it could indicate a runaway process. SentraCore resolves this ambiguity through a sequential intelligence pipeline that layers context, statistics, and forecasting on top of raw data.
+Raw telemetry alone rarely provides meaningful context.
 
-```
+For example:
+- High CPU usage may be expected during compilation or rendering workloads
+- Elevated memory usage may indicate either normal caching behavior or sustained resource pressure
+- Temporary disk spikes may be harmless, while prolonged saturation may degrade responsiveness
+
+SentraCore addresses this by processing telemetry through multiple intelligence layers that progressively add context, statistical interpretation, behavioral analysis, and forecasting.
+
+---
+
+# Pipeline Flow
+
+```text
 SystemCollector
-    → Normalizer              (EMA smoothing, spike detection)
-    → TimeSeriesBuffer        (ring buffers for historical context)
-    → BaselineModel           (per-segment adaptive learning)
-    → TrendAnalyzer           (linear regression, slope, volatility)
-    → AnomalyDetector         (Z-score deviation from baseline)
-    → StressEngine            (multi-state composite score)
-    → PredictionEngine        (ETA forecasting, risk scoring)
-    → StabilityCalculator     (global health index)
-    → CorrelationEngine       (root cause analysis, triggered on alert)
-    → AlertManager            (threshold evaluation, RCA attachment)
+    → SignalNormalizer
+    → TimeSeriesBuffer
+    → BaselineModel
+    → TrendAnalyzer
+    → AnomalyDetector
+    → StressEngine
+    → PredictionEngine
+    → StabilityCalculator
+    → CorrelationEngine
+    → AlertManager
 ```
 
 ---
 
-## Stage 1: System Collection
+# Stage 1 — System Collection
 
 **Module:** `engine/collector/system_collector.py`
 
-The `SystemCollector` samples system telemetry at a configurable interval (default: 2 seconds) using `psutil`. Each sample is a `SystemSnapshot` containing CPU percent, memory usage, disk I/O rates, and a UNIX timestamp.
+The `SystemCollector` gathers real-time system telemetry at a configurable interval using `psutil`.
+
+Collected metrics include:
+- CPU utilization
+- memory usage
+- disk activity
+- process statistics
+- system timestamps
+
+Each cycle produces a structured `SystemSnapshot` used throughout the pipeline.
 
 ---
 
-## Stage 2: Normalization
+# Stage 2 — Signal Normalization
 
 **Module:** `engine/normalization/normalizer.py`
 
-The `Normalizer` applies an **Exponential Moving Average (EMA)** to each metric, reducing the impact of instantaneous spikes on downstream analysis. It also independently detects spikes by comparing raw values against the rolling average.
+Raw system telemetry often contains short-lived spikes and noisy fluctuations.
+
+The `SignalNormalizer` applies smoothing techniques such as:
+- Exponential Moving Average (EMA)
+- rolling averages
+- spike filtering
+
+This improves downstream stability while still preserving meaningful trend changes.
+
+The normalization layer also detects sudden metric spikes separately from sustained behavior changes.
 
 ---
 
-## Stage 3: Time-Series Buffering
+# Stage 3 — Time-Series Buffering
 
 **Module:** `engine/buffer/time_series_buffer.py`
 
-Normalized snapshots are pushed into two ring buffers:
-- **Short-window buffer:** Last ~60 seconds, used for trend analysis.
-- **Long-window buffer:** Last ~30 minutes, used for baseline learning.
+Normalized snapshots are stored in rolling time-series buffers.
+
+SentraCore maintains:
+- short-term buffers for real-time analysis
+- long-term buffers for behavioral modeling
+
+These buffers provide historical context for:
+- trend analysis
+- baseline learning
+- anomaly detection
+- forecasting
 
 ---
 
-## Stage 4: Baseline Learning
+# Stage 4 — Baseline Learning
 
 **Module:** `engine/baseline/baseline_model.py`
 
-The `BaselineModel` learns what is *normal* for the specific machine. It segments the day into four time-of-day windows (Night, Morning, Afternoon, Evening) and maintains a running mean and standard deviation per metric per segment. Static thresholds are never used.
+The `BaselineModel` learns what is considered normal for the current machine.
+
+Instead of relying on static thresholds, SentraCore continuously adapts to:
+- workload patterns
+- hardware capabilities
+- time-of-day behavior
+- sustained usage characteristics
+
+The baseline model tracks:
+- average resource behavior
+- deviation ranges
+- historical variability
+
+This reduces false positives and improves anomaly accuracy.
 
 ---
 
-## Stage 5: Trend Analysis
+# Stage 5 — Trend Analysis
 
 **Module:** `engine/intelligence/trend_analyzer.py`
 
-The `TrendAnalyzer` performs **linear regression** over the short-window buffer to compute CPU and Memory slope (% change per second) and volatility (short-term standard deviation). A positive, sustained memory slope can indicate a memory leak.
+The `TrendAnalyzer` evaluates how system behavior changes over time.
+
+Analysis includes:
+- slope calculation
+- growth rate estimation
+- short-term volatility
+- sustained trend direction
+
+Examples:
+- continuously rising memory usage
+- sustained CPU growth
+- increasing disk saturation
+
+Trend analysis provides early indicators of degradation before hard limits are reached.
 
 ---
 
-## Stage 6: Anomaly Detection
+# Stage 6 — Anomaly Detection
 
 **Module:** `engine/intelligence/anomaly_detector.py`
 
-The `AnomalyDetector` calculates a Z-Score for each metric against the active time-of-day baseline:
+The `AnomalyDetector` compares current behavior against the learned baseline.
 
-```
-Z = (Current Value - Baseline Mean) / Baseline Standard Deviation
-```
+Detection methods include:
+- Z-score deviation analysis
+- sustained abnormality detection
+- volatility analysis
+- multi-metric deviation scoring
 
-Anomalies must be sustained over multiple consecutive cycles before being classified as elevated or severe, preventing transient micro-spikes from generating false alerts.
+SentraCore avoids reacting to isolated spikes by requiring anomalies to persist across multiple cycles before escalation.
+
+Anomalies are categorized into severity bands such as:
+- normal
+- elevated
+- high
+- severe
 
 ---
 
-## Stage 7: Multi-State Stress Engine
+# Stage 7 — Stress Engine
 
 **Module:** `engine/stress/stress_engine.py`
 
-The `StressEngine` consolidates upstream analysis into a single **Stress Score (0–100)** weighted across three dimensions:
-1. Instantaneous resource pressure (CPU, Memory, Disk).
-2. Trend modifiers (growing slopes add a forward-looking penalty).
-3. Anomaly modifiers (sustained z-score deviations multiply the base pressure).
+The `StressEngine` consolidates multiple system signals into a unified stress representation.
+
+Inputs include:
+- instantaneous resource pressure
+- anomaly severity
+- trend acceleration
+- sustained instability
+
+The resulting stress score reflects both current pressure and ongoing degradation patterns.
 
 ---
 
-## Stage 8: Prediction & Risk Engine
+# Stage 8 — Prediction & Risk Analysis
 
 **Module:** `engine/intelligence/prediction_engine.py`
 
-The `PredictionEngine` uses EMA-smoothed trend slopes to forecast:
-- **Time-to-Exhaustion (ETA):** Seconds until Memory hits 98% or CPU hits 95%.
-- **Risk Score (0–100%):** Probabilistic assessment of severe degradation within the next 5 minutes.
+The `PredictionEngine` estimates future degradation risk using trend-based forecasting.
+
+Forecasting includes:
+- memory saturation estimation
+- CPU trend projection
+- disk pressure forecasting
+- time-to-exhaustion (ETA)
+
+The engine also produces a probabilistic degradation risk score representing the likelihood of severe instability within a future time window.
+
+Predictions are probabilistic rather than deterministic.
 
 ---
 
-## Stage 9: System Stability Index
+# Stage 9 — System Stability Calculation
 
 **Module:** `engine/intelligence/stability_index.py`
 
-The `StabilityCalculator` synthesises all upstream signals into a **System Stability Index (1–100)**. The index is a weighted composite of:
-- **50%** Instantaneous Stress Score
-- **30%** Predictive Risk Score
-- **20%** Anomaly Score
+The `StabilityCalculator` generates the final System Stability Index.
+
+The index combines:
+- current stress state
+- predictive risk
+- anomaly severity
+- sustained trend behavior
+
+The resulting score provides a high-level representation of overall system responsiveness and health.
 
 ---
 
-## Stage 10: Correlation & Root Cause Analysis
+# Stage 10 — Correlation & Root Cause Analysis
 
 **Module:** `engine/intelligence/correlation_engine.py`
 
-Invoked lazily only when an alert fires, the `CorrelationEngine` cross-references three data sources:
-1. **Bottleneck Identification:** Determines whether CPU, Memory, or Disk is the primary stressor.
-2. **Suspect Identification:** Cross-references against the `ProcessTracker` to find the top-impact process.
-3. **Trigger Identification:** Cross-references against the `EventLogger` to find the causal system event.
+The `CorrelationEngine` attempts to explain why degradation is occurring.
 
-The resulting `RootCauseAnalysis` is attached to the `Alert` and broadcast via WebSocket to the dashboard.
+When alerts are triggered, the engine correlates:
+- process activity
+- resource contention
+- event timing
+- system pressure changes
+
+The engine identifies:
+- likely bottlenecks
+- high-impact processes
+- correlated system events
+
+Outputs are probability-based explanations rather than absolute causality claims.
+
+---
+
+# Alert Pipeline
+
+**Module:** `engine/alerts/alert_manager.py`
+
+The `AlertManager` evaluates:
+- sustained stress conditions
+- anomaly escalation
+- predictive risk thresholds
+
+When thresholds are exceeded:
+- alerts are generated
+- root cause summaries are attached
+- dashboard notifications are triggered
+- events are stored in alert history
+
+---
+
+# Design Principles
+
+The intelligence pipeline is designed around several core principles:
+
+1. Time-Based Understanding  
+   System behavior is analyzed over time rather than through isolated snapshots.
+
+2. Adaptive Modeling  
+   Behavior is evaluated relative to machine-specific baselines.
+
+3. Statistical Interpretation  
+   Signals are interpreted probabilistically rather than through fixed assumptions.
+
+4. Explainability  
+   Outputs prioritize understandable diagnostics instead of opaque scoring.
+
+5. Predictive Awareness  
+   The system estimates future degradation risk before severe instability occurs.
+
+---
+
+# Summary
+
+SentraCore transforms low-level telemetry into layered behavioral intelligence through:
+
+- normalization
+- historical modeling
+- anomaly detection
+- trend analysis
+- forecasting
+- correlation analysis
+- explainable diagnostics
+
+This enables a deeper understanding of system behavior than traditional real-time monitoring alone.

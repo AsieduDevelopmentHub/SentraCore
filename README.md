@@ -157,8 +157,8 @@ SentraCore is built around five principles:
 2. Behavioral Modeling  
 3. Anomaly Detection  
 4. Correlation Analysis  
-5. Predictive Awareness  
-
+5. Predictive Awareness
+6. Forecasting
 ---
 
 ## License

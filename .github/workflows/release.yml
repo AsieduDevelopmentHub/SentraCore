@@ -622,10 +622,49 @@ jobs:
       - name: List artifacts
         run: ls -R artifacts
 
+      # Re-pushing the same pre-release tag fails here if a GitHub Release
+      # already exists for that tag. Remove the old release (tag ref stays).
+      - name: Remove existing pre-release (same tag) if present
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          case "$TAG" in *alpha*|*beta*|*rc*) ;; *)
+            echo "Not a pre-release tag pattern; skip release delete."
+            exit 0
+            ;;
+          esac
+          CODE=$(curl -sS -o /tmp/rel.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}")
+          if [ "$CODE" = "404" ]; then
+            echo "No existing GitHub Release for ${TAG}."
+            exit 0
+          fi
+          if [ "$CODE" != "200" ]; then
+            echo "Unexpected HTTP ${CODE} when looking up release for ${TAG}"
+            cat /tmp/rel.json || true
+            exit 1
+          fi
+          RID=$(jq -r '.id // empty' /tmp/rel.json)
+          if [ -z "$RID" ] || [ "$RID" = "null" ]; then
+            echo "No release id in response."
+            exit 0
+          fi
+          echo "Deleting GitHub Release id=${RID} for tag ${TAG} (tag ref is unchanged)."
+          curl -sS -X DELETE \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/${RID}"
+
       - name: Create GitHub Release (attach assets)
         uses: softprops/action-gh-release@v2
         with:
           name: SentraCore ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          make_latest: ${{ !(contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc')) }}
           body: |
             ## Highlights
             - Updated dashboard UI with new home page and settings page.

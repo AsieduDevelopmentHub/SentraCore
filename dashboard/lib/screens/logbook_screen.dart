@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,6 +50,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   _customRange = null;
                 }),
                 onPickCustomRange: () => _pickDateRange(context),
+                onExport: filtered.isEmpty
+                    ? null
+                    : () => _exportMenu(
+                          context,
+                          filtered,
+                        ),
                 onClear: all.isEmpty
                     ? null
                     : () async {
@@ -157,6 +166,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 ),
               ),
             ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              sliver: SliverToBoxAdapter(
+                child: _HistoryTable(samples: filtered),
+              ),
+            ),
             // Processes section: small viewport when charts visible; becomes full
             // height once user scrolls charts offscreen.
             SliverPadding(
@@ -247,6 +262,108 @@ class _LogbookScreenState extends State<LogbookScreen> {
     );
     return res == true;
   }
+
+  Future<void> _exportMenu(
+      BuildContext context, List<HistorySample> samples) async {
+    final fmt = await showModalBottomSheet<_ExportFormat>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => _ExportSheet(count: samples.length),
+    );
+    if (fmt == null) return;
+    if (!context.mounted) return;
+    await _export(samples, fmt);
+  }
+
+  Future<void> _export(List<HistorySample> samples, _ExportFormat fmt) async {
+    final dir = _downloadsDir();
+    await dir.create(recursive: true);
+    final ts = DateTime.now();
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    final stamp =
+        '${ts.year}${two(ts.month)}${two(ts.day)}-${two(ts.hour)}${two(ts.minute)}${two(ts.second)}';
+
+    final name = fmt == _ExportFormat.csv
+        ? 'sentracore-history-$stamp.csv'
+        : 'sentracore-history-$stamp.json';
+    final path = '${dir.path}${Platform.pathSeparator}$name';
+
+    final bytes = fmt == _ExportFormat.csv
+        ? utf8.encode(_toCsv(samples))
+        : utf8.encode(_toJson(samples));
+    await File(path).writeAsBytes(bytes, flush: true);
+
+    if (!mounted) return;
+    final snack = SnackBar(
+      content: Text('Exported ${samples.length} rows to $path'),
+      action: SnackBarAction(
+        label: 'Open folder',
+        onPressed: () => _openFolder(dir.path),
+      ),
+      duration: const Duration(seconds: 6),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snack);
+  }
+
+  Directory _downloadsDir() {
+    final home = Platform.environment['USERPROFILE'] ??
+        Platform.environment['HOME'] ??
+        '.';
+    return Directory('$home${Platform.pathSeparator}Downloads');
+  }
+
+  Future<void> _openFolder(String path) async {
+    try {
+      if (Platform.isWindows) {
+        await Process.start(
+          'explorer',
+          [path],
+          mode: ProcessStartMode.detached,
+        );
+      } else if (Platform.isMacOS) {
+        await Process.start(
+          'open',
+          [path],
+          mode: ProcessStartMode.detached,
+        );
+      } else {
+        await Process.start(
+          'xdg-open',
+          [path],
+          mode: ProcessStartMode.detached,
+        );
+      }
+    } catch (_) {
+      // Best effort.
+    }
+  }
+
+  String _toCsv(List<HistorySample> samples) {
+    final b = StringBuffer();
+    b.writeln('at,cpu_percent,mem_percent,disk_pressure_percent,top_process');
+    for (final s in samples) {
+      final top = s.topProcesses.isNotEmpty ? s.topProcesses.first.name : '';
+      final at = s.at.toIso8601String();
+      b.writeln(
+        '${_csv(at)},${s.cpuPercent.toStringAsFixed(2)},${s.memPercent.toStringAsFixed(2)},${s.diskPressurePercent.toStringAsFixed(2)},${_csv(top)}',
+      );
+    }
+    return b.toString();
+  }
+
+  String _toJson(List<HistorySample> samples) {
+    final rows = samples.map((s) => s.toJson()).toList();
+    return const JsonEncoder.withIndent('  ').convert(rows);
+  }
+
+  String _csv(String s) {
+    final needs = s.contains(',') ||
+        s.contains('\n') ||
+        s.contains('\r') ||
+        s.contains('"');
+    if (!needs) return s;
+    return '"${s.replaceAll('"', '""')}"';
+  }
 }
 
 enum _HistoryRange { day, week, month, quarter }
@@ -257,6 +374,7 @@ class _HistoryHeader extends StatelessWidget {
   final bool hasAnyData;
   final ValueChanged<_HistoryRange> onSelectRange;
   final VoidCallback onPickCustomRange;
+  final VoidCallback? onExport;
   final VoidCallback? onClear;
 
   const _HistoryHeader({
@@ -265,6 +383,7 @@ class _HistoryHeader extends StatelessWidget {
     required this.hasAnyData,
     required this.onSelectRange,
     required this.onPickCustomRange,
+    required this.onExport,
     required this.onClear,
   });
 
@@ -322,6 +441,15 @@ class _HistoryHeader extends StatelessWidget {
               ),
               icon: const Icon(Icons.date_range_outlined),
             ),
+            IconButton.filledTonal(
+              tooltip: 'Export filtered history',
+              onPressed: onExport,
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.surfaceLightFor(context),
+                foregroundColor: AppTheme.textPrimaryFor(context),
+              ),
+              icon: const Icon(Icons.download_outlined),
+            ),
             IconButton(
               tooltip: 'Clear history',
               onPressed: onClear,
@@ -365,6 +493,202 @@ class _HistoryHeader extends StatelessWidget {
     String two(int v) => v < 10 ? '0$v' : '$v';
     return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
   }
+}
+
+enum _ExportFormat { csv, json }
+
+class _ExportSheet extends StatelessWidget {
+  const _ExportSheet({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Export history',
+              style: TextStyle(
+                color: AppTheme.textPrimaryFor(context),
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '$count rows from the currently selected range.',
+              style: TextStyle(
+                color: AppTheme.textMutedFor(context),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context, _ExportFormat.csv),
+              icon: const Icon(Icons.table_chart_outlined),
+              label: const Text('Export as CSV'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context, _ExportFormat.json),
+              icon: const Icon(Icons.data_object_outlined),
+              label: const Text('Export as JSON'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryTable extends StatefulWidget {
+  const _HistoryTable({required this.samples});
+  final List<HistorySample> samples;
+
+  @override
+  State<_HistoryTable> createState() => _HistoryTableState();
+}
+
+class _HistoryTableState extends State<_HistoryTable> {
+  int _rowsPerPage = 12;
+  int _sortColumnIndex = 0;
+  bool _sortAscending = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final src = _HistoryTableSource(widget.samples);
+    return Card(
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+        ),
+        child: PaginatedDataTable(
+          header: Text(
+            'History table',
+            style: TextStyle(
+              color: AppTheme.textPrimaryFor(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          rowsPerPage: _rowsPerPage.clamp(5, 25),
+          availableRowsPerPage: const [5, 10, 12, 15, 20, 25],
+          onRowsPerPageChanged: (v) => setState(() => _rowsPerPage = v ?? 12),
+          sortAscending: _sortAscending,
+          sortColumnIndex: _sortColumnIndex,
+          showFirstLastButtons: true,
+          columns: [
+            DataColumn(
+              label: const Text('Time'),
+              onSort: (i, asc) => setState(() {
+                _sortColumnIndex = i;
+                _sortAscending = asc;
+                src.sortBy((s) => s.at.millisecondsSinceEpoch, asc);
+              }),
+            ),
+            DataColumn(
+              numeric: true,
+              label: const Text('CPU %'),
+              onSort: (i, asc) => setState(() {
+                _sortColumnIndex = i;
+                _sortAscending = asc;
+                src.sortBy((s) => s.cpuPercent, asc);
+              }),
+            ),
+            DataColumn(
+              numeric: true,
+              label: const Text('Mem %'),
+              onSort: (i, asc) => setState(() {
+                _sortColumnIndex = i;
+                _sortAscending = asc;
+                src.sortBy((s) => s.memPercent, asc);
+              }),
+            ),
+            DataColumn(
+              numeric: true,
+              label: const Text('Disk %'),
+              onSort: (i, asc) => setState(() {
+                _sortColumnIndex = i;
+                _sortAscending = asc;
+                src.sortBy((s) => s.diskPressurePercent, asc);
+              }),
+            ),
+            const DataColumn(label: Text('Top process')),
+          ],
+          source: src,
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryTableSource extends DataTableSource {
+  _HistoryTableSource(List<HistorySample> src) : _rows = List.of(src) {
+    // Default sort: newest-first.
+    _rows.sort((a, b) => b.at.compareTo(a.at));
+  }
+
+  final List<HistorySample> _rows;
+
+  void sortBy(num Function(HistorySample s) key, bool asc) {
+    _rows.sort((a, b) {
+      final ka = key(a);
+      final kb = key(b);
+      final cmp = ka.compareTo(kb);
+      return asc ? cmp : -cmp;
+    });
+    notifyListeners();
+  }
+
+  @override
+  DataRow? getRow(int index) {
+    if (index < 0 || index >= _rows.length) return null;
+    final s = _rows[index];
+    final top = s.topProcesses.isNotEmpty ? s.topProcesses.first.name : '—';
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(Text(_fmt(s.at))),
+        DataCell(Text(s.cpuPercent.toStringAsFixed(1))),
+        DataCell(Text(s.memPercent.toStringAsFixed(1))),
+        DataCell(Text(s.diskPressurePercent.toStringAsFixed(1))),
+        DataCell(
+          SizedBox(
+            width: 240,
+            child: Text(
+              top,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _fmt(DateTime dt) {
+    String two(int v) => v < 10 ? '0$v' : '$v';
+    final local = dt.toLocal();
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => _rows.length;
+
+  @override
+  int get selectedRowCount => 0;
 }
 
 class _CompactRangePickerSheet extends StatefulWidget {

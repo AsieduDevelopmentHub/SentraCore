@@ -176,6 +176,88 @@ class EngineService {
     return _post('/api/v1/state/reset/baseline');
   }
 
+  // ── Cleanup scan + large file finder ──
+
+  Future<Map<String, dynamic>?> getCleanupCategories() async {
+    return _get('/api/v1/cleanup/categories');
+  }
+
+  /// Run a cleanup scan; pass [categoryIds] to limit which buckets are walked.
+  Future<Map<String, dynamic>?> runCleanupScan({
+    List<String>? categoryIds,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/cleanup/scan');
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              if (categoryIds != null) 'category_ids': categoryIds,
+            }),
+          )
+          .timeout(const Duration(seconds: 120));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
+  /// Apply a previously recorded scan. [mode] is "recycle" or "permanent".
+  Future<Map<String, dynamic>?> applyCleanup({
+    required String scanId,
+    required List<String> categoryIds,
+    String mode = 'recycle',
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/cleanup/apply');
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'scan_id': scanId,
+              'category_ids': categoryIds,
+              'mode': mode,
+            }),
+          )
+          .timeout(const Duration(seconds: 180));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>?> findLargeFiles({
+    required String path,
+    double minMb = 100.0,
+    int limit = 200,
+  }) async {
+    final qs = {
+      'path': path,
+      'min_mb': minMb.toStringAsFixed(2),
+      'limit': limit.toString(),
+    };
+    final uri = Uri.parse('$_baseUrl/api/v1/storage/large')
+        .replace(queryParameters: qs);
+    try {
+      final response =
+          await http.get(uri).timeout(const Duration(seconds: 120));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
   // ── WebSocket Live Stream ──
 
   Stream<SystemState> connectLive() {

@@ -540,6 +540,36 @@ class EngineProvider extends ChangeNotifier {
     await _history?.refreshFromEngine(_service);
   }
 
+  // ── Disk cleanup + large file finder ──
+
+  Future<Map<String, dynamic>?> getCleanupCategories() {
+    return _service.getCleanupCategories();
+  }
+
+  Future<Map<String, dynamic>?> runCleanupScan({List<String>? categoryIds}) {
+    return _service.runCleanupScan(categoryIds: categoryIds);
+  }
+
+  Future<Map<String, dynamic>?> applyCleanup({
+    required String scanId,
+    required List<String> categoryIds,
+    String mode = 'recycle',
+  }) {
+    return _service.applyCleanup(
+      scanId: scanId,
+      categoryIds: categoryIds,
+      mode: mode,
+    );
+  }
+
+  Future<Map<String, dynamic>?> findLargeFiles({
+    required String path,
+    double minMb = 100.0,
+    int limit = 200,
+  }) {
+    return _service.findLargeFiles(path: path, minMb: minMb, limit: limit);
+  }
+
   // ── Cleanup ──
 
   @override

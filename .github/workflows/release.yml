@@ -173,6 +173,21 @@ jobs:
           Copy-Item $cfg "dist\engine-config.json" -Force
           Write-Host "engine-config.json -> Release + dist"
 
+      - name: Code sign engine + dashboard (optional)
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_PFX_BASE64 }}
+          WINDOWS_CODESIGN_PFX_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PFX_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PFX_BASE64)) {
+            Write-Host "Skipping Authenticode signing (set repo secret WINDOWS_CODESIGN_PFX_BASE64 + WINDOWS_CODESIGN_PFX_PASSWORD; see docs/architecture/building.md)."
+            exit 0
+          }
+          $pfxPath = Join-Path $env:RUNNER_TEMP "sentracore-codesign.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_PFX_BASE64))
+          & ".\scripts\sign-windows-artifacts.ps1" -PfxPath $pfxPath -RepoRoot (Get-Location).Path
+          Remove-Item -LiteralPath $pfxPath -Force
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -185,6 +200,21 @@ jobs:
           if (!(Test-Path $iscc)) { throw "ISCC not found at $iscc" }
           & $iscc "installer\\sentracore.iss"
           Get-ChildItem "dist" -Filter "SentraCore_Setup_v*.exe" | Select-Object -First 1 | ForEach-Object { $_.FullName }
+
+      - name: Code sign installer (optional)
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_PFX_BASE64 }}
+          WINDOWS_CODESIGN_PFX_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PFX_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PFX_BASE64)) {
+            Write-Host "Skipping installer signing (same secrets as engine/dashboard step)."
+            exit 0
+          }
+          $pfxPath = Join-Path $env:RUNNER_TEMP "sentracore-codesign-installer.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_PFX_BASE64))
+          & ".\scripts\sign-windows-artifacts.ps1" -PfxPath $pfxPath -RepoRoot (Get-Location).Path -InstallerOnly
+          Remove-Item -LiteralPath $pfxPath -Force
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

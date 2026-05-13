@@ -2,6 +2,12 @@
 AppName=SentraCore
 AppVersion=0.0.1
 AppPublisher=SentraCore Development Team
+AppPublisherURL=https://github.com/AsieduDevelopmentHub/SentraCore
+AppSupportURL=https://github.com/AsieduDevelopmentHub/SentraCore/issues
+AppUpdatesURL=https://github.com/AsieduDevelopmentHub/SentraCore/releases
+AppCopyright=Copyright (C) SentraCore contributors
+; "Unknown publisher" in Windows SmartScreen is resolved by Authenticode signing
+; (see docs/architecture/building.md), not by metadata alone.
 DefaultDirName={autopf}\SentraCore
 DefaultGroupName=SentraCore
 OutputDir=..\dist

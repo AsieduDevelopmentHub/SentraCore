@@ -224,7 +224,7 @@ Install:
 
 Official website:
 
-[Inno Setup](https://jrsoftware.org/isinfo.php?utm_source=chatgpt.com)
+[Inno Setup](https://jrsoftware.org/isinfo.php)
 
 ---
 
@@ -237,6 +237,32 @@ The installer may:
 - register uninstall information
 - launch the engine after installation
 - clean up runtime files during uninstall
+
+---
+
+## Windows SmartScreen and "Unknown publisher"
+
+Windows Defender SmartScreen and the UAC prompt show **Unknown publisher** when the installer (or the executables inside it) are **not signed** with a **publicly trusted** Authenticode (code signing) certificate.  
+`AppPublisher` and related Inno Setup fields improve **Add/Remove Programs** and installer metadata, but they **do not** replace a digital signature.
+
+What actually fixes the warning:
+
+1. Obtain a **code signing certificate** from a CA that chains to the Microsoft Trusted Root Program (for example standard **OV** or **EV** code signing). **EV** certificates are often associated with faster SmartScreen reputation for brand-new binaries.
+2. Sign **`SentraCoreEngine.exe`**, **`sentracore_dashboard.exe`**, and the **setup `.exe`** with `signtool` (Windows SDK), including an **RFC 3161 timestamp** so signatures stay valid after the cert expires.
+3. For releases built in GitHub Actions, add repository secrets (see below) so the workflow can sign before uploading artifacts.
+
+Local signing (PFX on your machine):
+
+```powershell
+$env:WINDOWS_CODESIGN_PFX_PASSWORD = '<your-pfx-password>'
+.\scripts\sign-windows-artifacts.ps1 -PfxPath C:\path\to\codesign.pfx
+# After Inno Setup produces dist\SentraCore_Setup_v*.exe:
+.\scripts\sign-windows-artifacts.ps1 -PfxPath C:\path\to\codesign.pfx -InstallerOnly
+```
+
+GitHub Actions (optional): create secrets **`WINDOWS_CODESIGN_PFX_BASE64`** (base64-encoded `.pfx` file) and **`WINDOWS_CODESIGN_PFX_PASSWORD`**. When `WINDOWS_CODESIGN_PFX_BASE64` is set, the release workflow signs the engine and dashboard before packaging, then signs the installer afterward. Protect these secrets with restricted **environments** / branch policies where possible.
+
+References: [Microsoft: Sign Windows apps](https://learn.microsoft.com/en-us/windows/win32/appxpkg/how-to-sign-a-package-using-signtool), [Introduction to code signing](https://learn.microsoft.com/en-us/windows/win32/seccrypto/cryptography-tools).
 
 ---
 
@@ -288,6 +314,7 @@ Before publishing a release, verify:
 - notifications operate correctly
 - installer shortcuts work
 - uninstall removes runtime artifacts cleanly
+- Windows release: setup and shipped `.exe` files show a trusted publisher after code signing (see **Windows SmartScreen and "Unknown publisher"** above)
 
 ---
 

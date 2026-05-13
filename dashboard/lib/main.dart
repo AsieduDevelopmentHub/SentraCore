@@ -120,7 +120,6 @@ class _StartupSplash extends StatelessWidget {
   }
 }
 
-
 class SentraCoreApp extends StatefulWidget {
   const SentraCoreApp({
     super.key,

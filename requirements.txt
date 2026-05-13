@@ -3,8 +3,12 @@ psutil>=6.0.0
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 websockets>=13.0
+# Recycle-bin / Trash support used by engine.storage_scan.cleaner.
+# Optional at import time (cleaner falls back to permanent delete when missing).
+send2trash>=1.8.3
 
 # Development Dependencies
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
 httpx>=0.27.0
+ruff>=0.6.0

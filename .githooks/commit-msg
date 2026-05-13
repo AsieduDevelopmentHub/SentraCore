@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Strip Cursor co-author trailer(s) from commit message.
+# Strip AI co-author/trailer lines from commit message.
 # Runs after the message is composed, before the commit is finalized.
 #
 # Usage: enable repo hooks with:
@@ -14,12 +14,14 @@ fi
 
 tmp="${MSG_FILE}.tmp.$$"
 
-# Remove any "Co-authored-by: Cursor ..." trailer lines (case-insensitive).
-# Keep all other co-authors intact.
+# Remove:
+# - ALL "Co-authored-by:" trailer lines (case-insensitive)
+# - ANY git trailer line mentioning Cursor/cursoragent (case-insensitive)
 awk '
 BEGIN { IGNORECASE = 1 }
-/^[[:space:]]*Co-authored-by:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
-/^[[:space:]]*Co-Authored-By:[[:space:]]*Cursor([[:space:]]|<|$)/ { next }
+NR==1 { print; next }
+/^[[:space:]]*Co-authored-by:[[:space:]]*/ { next }
+/^[[:space:]]*[A-Za-z0-9-]+:[[:space:]]+.*(cursoragent|cursor).*/ { next }
 { print }
 ' "$MSG_FILE" > "$tmp"
 

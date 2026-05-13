@@ -7,18 +7,18 @@ the same file via REST sync.
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from engine.config import DATASTORE_DIR
+from engine.config import CONFIG_SUBDIR
+from engine.storage.atomic import read_json, write_json_atomic
 
 logger = logging.getLogger(__name__)
 
-PREFS_PATH: Path = DATASTORE_DIR / "user_preferences.json"
+PREFS_PATH: Path = CONFIG_SUBDIR / "user_preferences.json"
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
@@ -94,22 +94,16 @@ class UserPreferences:
         )
 
     def save(self) -> None:
-        PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        PREFS_PATH.write_text(
-            json.dumps(self.to_dict(), indent=2),
-            encoding="utf-8",
-        )
+        write_json_atomic(PREFS_PATH, self.to_dict())
 
     @classmethod
     def load(cls) -> UserPreferences:
-        if not PREFS_PATH.is_file():
+        raw = read_json(PREFS_PATH)
+        if not isinstance(raw, dict):
             return cls.default()
         try:
-            raw = json.loads(PREFS_PATH.read_text(encoding="utf-8"))
-            if not isinstance(raw, dict):
-                return cls.default()
             return cls.from_dict(raw)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — never let bad prefs crash the engine
             logger.warning("Failed to load user preferences: %s", exc)
             return cls.default()
 

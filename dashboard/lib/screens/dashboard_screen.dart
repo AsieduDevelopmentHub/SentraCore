@@ -8,6 +8,8 @@ import 'package:sentracore_dashboard/screens/processes_screen.dart';
 import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/screens/settings_screen.dart';
 import 'package:sentracore_dashboard/screens/logbook_screen.dart';
+import 'package:sentracore_dashboard/screens/hardware_screen.dart';
+import 'package:sentracore_dashboard/screens/storage_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
@@ -29,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     DashboardNavigation.selectMainTab = (i) {
       if (!mounted) return;
-      setState(() => _selectedIndex = i.clamp(0, 5));
+      setState(() => _selectedIndex = i.clamp(0, 7));
     };
   }
 
@@ -45,6 +47,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ProcessesScreen(),
     LogbookScreen(),
     DiagnosticsScreen(),
+    HardwareScreen(),
+    StorageScreen(),
     SettingsScreen(),
   ];
 
@@ -122,141 +126,159 @@ class _SentraNavRail extends StatelessWidget {
           ),
         ),
       ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          // Logo — flat frame, no gradient (design.md calm tone)
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Theme.of(context).dividerColor,
-              ),
-              color: AppTheme.surfaceLightFor(context),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(9),
-              child: Image.asset(
-                'assets/brandmark.jpeg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Icons.shield_outlined,
-                  color: AppTheme.textMutedFor(context),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            // Logo — flat frame, no gradient (design.md calm tone)
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor,
                 ),
+                color: AppTheme.surfaceLightFor(context),
               ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 4),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: expanded ? 'Collapse' : 'Expand',
-                  onPressed: onToggleExpanded,
-                  icon: Icon(
-                    expanded ? Icons.chevron_left_rounded : Icons.menu_rounded,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Image.asset(
+                  'assets/brandmark.jpeg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.shield_outlined,
                     color: AppTheme.textMutedFor(context),
-                    size: 22,
                   ),
                 ),
-                if (expanded) ...[
-                  const SizedBox(width: 2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: expanded ? 'Collapse' : 'Expand',
+                    onPressed: onToggleExpanded,
+                    icon: Icon(
+                      expanded
+                          ? Icons.chevron_left_rounded
+                          : Icons.menu_rounded,
+                      color: AppTheme.textMutedFor(context),
+                      size: 22,
+                    ),
+                  ),
+                  if (expanded) ...[
+                    const SizedBox(width: 2),
+                    Text(
+                      'SentraCore',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Stability mini-score
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              decoration: BoxDecoration(
+                color: stabilityColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: stabilityColor.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
                   Text(
-                    'SentraCore',
+                    stabilityScore,
                     style: TextStyle(
-                      color: AppTheme.textPrimaryFor(context),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      letterSpacing: -0.2,
+                      color: stabilityColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'STABILITY',
+                    style: TextStyle(
+                      color: stabilityColor.withValues(alpha: 0.7),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Stability mini-score
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-            decoration: BoxDecoration(
-              color: stabilityColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: stabilityColor.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  stabilityScore,
-                  style: TextStyle(
-                    color: stabilityColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'STABILITY',
-                  style: TextStyle(
-                    color: stabilityColor.withValues(alpha: 0.7),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Divider(color: Theme.of(context).dividerColor),
-          ),
-          const SizedBox(height: 8),
-          // Nav items
-          _navItem(context, 0, Icons.grid_view_outlined,
-              Icons.grid_view_rounded, 'Overview'),
-          _navItem(context, 1, Icons.analytics_outlined,
-              Icons.analytics_rounded, 'Performance'),
-          _navItem(context, 2, Icons.layers_outlined, Icons.layers_rounded,
-              'Processes'),
-          _navItem(
-              context, 3, Icons.book_outlined, Icons.book_rounded, 'Logbook'),
-          _navItem(context, 4, Icons.troubleshoot_outlined,
-              Icons.troubleshoot_rounded, 'Diagnostics'),
-          _navItem(context, 5, Icons.settings_outlined, Icons.settings_rounded,
-              'Settings'),
-          const Spacer(),
-          // Theme Toggle
-          Consumer<SettingsProvider>(
-            builder: (context, settings, _) => IconButton.filledTonal(
-              tooltip: 'Toggle light / dark',
-              style: IconButton.styleFrom(
-                backgroundColor: AppTheme.surfaceLightFor(context),
-                foregroundColor: AppTheme.primary,
-              ),
-              onPressed: () => settings.toggleTheme(),
-              icon: Icon(
-                settings.isDarkMode
-                    ? Icons.light_mode_outlined
-                    : Icons.dark_mode_outlined,
-                size: 20,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Connection status dot
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              color: provider.connected ? AppTheme.success : AppTheme.error,
-              shape: BoxShape.circle,
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Divider(color: Theme.of(context).dividerColor),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            // Nav items — scroll when the window is short to avoid RenderFlex
+            // overflow at the bottom.
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  children: [
+                    _navItem(context, 0, Icons.grid_view_outlined,
+                        Icons.grid_view_rounded, 'Overview'),
+                    _navItem(context, 1, Icons.analytics_outlined,
+                        Icons.analytics_rounded, 'Performance'),
+                    _navItem(context, 2, Icons.layers_outlined,
+                        Icons.layers_rounded, 'Processes'),
+                    _navItem(context, 3, Icons.book_outlined,
+                        Icons.book_rounded, 'Logbook'),
+                    _navItem(context, 4, Icons.troubleshoot_outlined,
+                        Icons.troubleshoot_rounded, 'Diagnostics'),
+                    _navItem(context, 5, Icons.monitor_heart_outlined,
+                        Icons.monitor_heart_rounded, 'Hardware'),
+                    _navItem(context, 6, Icons.cleaning_services_outlined,
+                        Icons.cleaning_services_rounded, 'Storage'),
+                    _navItem(context, 7, Icons.settings_outlined,
+                        Icons.settings_rounded, 'Settings'),
+                  ],
+                ),
+              ),
+            ),
+            // Theme Toggle
+            Consumer<SettingsProvider>(
+              builder: (context, settings, _) => IconButton.filledTonal(
+                tooltip: 'Toggle light / dark',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppTheme.surfaceLightFor(context),
+                  foregroundColor: AppTheme.primary,
+                ),
+                onPressed: () => settings.toggleTheme(),
+                icon: Icon(
+                  settings.isDarkMode
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Connection status dot
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: provider.connected ? AppTheme.success : AppTheme.error,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

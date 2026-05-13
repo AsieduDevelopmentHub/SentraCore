@@ -55,8 +55,21 @@ def _writable_datastore_dir() -> Path:
 # Persistent data storage directory (writable)
 DATASTORE_DIR = _writable_datastore_dir()
 
-# Baseline model persistence file
-BASELINE_FILE = DATASTORE_DIR / "baseline.json"
+# Grouped on-disk layout. The concrete directories are created lazily by
+# engine.storage.paths.ensure_layout() during engine startup. We keep these
+# constants here so existing modules can import paths without dragging in the
+# whole storage helper module.
+CONFIG_SUBDIR: Path = DATASTORE_DIR / "config"
+STATE_SUBDIR: Path = DATASTORE_DIR / "state"
+HISTORY_SUBDIR: Path = DATASTORE_DIR / "history"
+LOGS_SUBDIR: Path = DATASTORE_DIR / "logs"
+CACHE_SUBDIR: Path = DATASTORE_DIR / "cache"
+REPORTS_SUBDIR: Path = DATASTORE_DIR / "reports"
+
+# Baseline model persistence file (new layout). The legacy flat-layout file at
+# ``DATASTORE_DIR/baseline.json`` is moved into place on first startup by
+# engine.storage.migrate.run_migrations.
+BASELINE_FILE = STATE_SUBDIR / "baseline.json"
 
 # ---------------------------------------------------------------------------
 # Collection Engine
@@ -184,6 +197,57 @@ ALERT_CONSECUTIVE_COUNT: int = 5  # 5 readings × 2s = 10 seconds
 
 # Cooldown period after an alert fires (seconds)
 ALERT_COOLDOWN_SEC: float = 60.0
+
+# ---------------------------------------------------------------------------
+# Persistence — history retention, log rotation, runtime checkpoint cadence
+# ---------------------------------------------------------------------------
+
+# How long history JSONL files are retained on disk (days). Old daily files are
+# pruned by engine.history.history_store on append.
+try:
+    HISTORY_RETENTION_DAYS: int = max(
+        1, int(os.environ.get("SENTRACORE_HISTORY_RETENTION_DAYS", "30"))
+    )
+except ValueError:
+    HISTORY_RETENTION_DAYS = 30
+
+# Minimum spacing between two persisted history samples (seconds). The engine
+# collects every COLLECTION_INTERVAL_SEC but persists at this coarser cadence
+# so disk pressure and file size stay bounded.
+try:
+    HISTORY_SAMPLE_INTERVAL_SEC: float = max(
+        COLLECTION_INTERVAL_SEC,
+        float(os.environ.get("SENTRACORE_HISTORY_SAMPLE_INTERVAL_SEC", "30.0")),
+    )
+except ValueError:
+    HISTORY_SAMPLE_INTERVAL_SEC = max(COLLECTION_INTERVAL_SEC, 30.0)
+
+# Rotating log handler: each engine.log file is capped at this many bytes and
+# kept for this many rotations.
+try:
+    LOG_MAX_BYTES: int = max(
+        128 * 1024,
+        int(os.environ.get("SENTRACORE_LOG_MAX_BYTES", str(2 * 1024 * 1024))),
+    )
+except ValueError:
+    LOG_MAX_BYTES = 2 * 1024 * 1024
+try:
+    LOG_BACKUP_COUNT: int = max(
+        0, int(os.environ.get("SENTRACORE_LOG_BACKUP_COUNT", "5"))
+    )
+except ValueError:
+    LOG_BACKUP_COUNT = 5
+
+# Runtime checkpoint cadence — how often we persist a small snapshot of the
+# engine's in-memory state (recent alerts, last stress/stability) so a crash or
+# external kill resumes with the previous values instead of empty fields.
+try:
+    RUNTIME_CHECKPOINT_INTERVAL_SEC: float = max(
+        2.0 * COLLECTION_INTERVAL_SEC,
+        float(os.environ.get("SENTRACORE_RUNTIME_CHECKPOINT_INTERVAL_SEC", "30.0")),
+    )
+except ValueError:
+    RUNTIME_CHECKPOINT_INTERVAL_SEC = max(2.0 * COLLECTION_INTERVAL_SEC, 30.0)
 
 # ---------------------------------------------------------------------------
 # API Server

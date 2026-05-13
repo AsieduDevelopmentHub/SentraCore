@@ -10,12 +10,24 @@ by the main orchestrator using uvicorn.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import TYPE_CHECKING
 
 from fastapi import Body, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+
+from engine.hardware import collect_health
+from engine.storage.paths import CACHE_DIR, storage_summary
+from engine.storage_scan import (
+    apply_cleanup,
+    available_categories,
+    find_large_files,
+    run_scan,
+)
+from engine.storage_scan.cleaner import HAS_SEND2TRASH
+from engine.storage_scan.scanner import scan_registry
 
 if TYPE_CHECKING:
     pass
@@ -216,6 +228,233 @@ def create_app() -> FastAPI:
 
         return {
             "alerts": [a.to_dict() for a in _engine.alert_manager.get_recent_alerts()],
+        }
+
+    # ----- History & storage ----------------------------------------------
+
+    @app.get("/api/v1/history")
+    async def get_history(
+        from_ts: float | None = Query(
+            default=None,
+            alias="from",
+            description="Inclusive POSIX timestamp; default: now - 24h.",
+        ),
+        to_ts: float | None = Query(
+            default=None,
+            alias="to",
+            description="Inclusive POSIX timestamp; default: now.",
+        ),
+        granularity_sec: float | None = Query(
+            default=None,
+            alias="granularity",
+            ge=0,
+            description="Minimum spacing between returned samples (seconds).",
+        ),
+        limit: int | None = Query(
+            default=None,
+            ge=1,
+            le=10000,
+            description="Cap on returned samples after downsampling.",
+        ),
+    ):
+        """Persisted telemetry samples between ``from`` and ``to``."""
+        if _engine is None:
+            return {"error": "Engine not initialized"}
+        samples = _engine.history_store.query(
+            from_ts=from_ts,
+            to_ts=to_ts,
+            granularity_sec=granularity_sec,
+            limit=limit,
+        )
+        return {
+            "samples": samples,
+            "summary": _engine.history_store.summary(),
+        }
+
+    @app.delete("/api/v1/history")
+    async def delete_history():
+        """Wipe the persisted history archive (local action)."""
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+        removed = _engine.history_store.clear()
+        return {"ok": True, "files_removed": removed}
+
+    @app.get("/api/v1/storage/info")
+    async def get_storage_info():
+        """Return on-disk layout, sizes, and retention for the datastore."""
+        info: dict = storage_summary()
+        if _engine is not None:
+            info["history"] = _engine.history_store.summary()
+            info["runtime_checkpoint"] = {
+                "path": str(_engine.runtime_checkpoint.path),
+                "previous_run_unclean": bool(
+                    getattr(_engine, "_unclean_previous_shutdown", False)
+                ),
+            }
+        return info
+
+    @app.post("/api/v1/storage/cache/clear")
+    async def post_clear_cache():
+        """Delete files under ``cache/``. Never touches config/state/history."""
+        removed = 0
+        bytes_freed = 0
+        try:
+            for f in CACHE_DIR.rglob("*"):
+                if f.is_file():
+                    try:
+                        bytes_freed += f.stat().st_size
+                    except OSError:
+                        pass
+                    try:
+                        f.unlink()
+                        removed += 1
+                    except OSError:
+                        continue
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "files_removed": removed, "bytes_freed": bytes_freed}
+
+    @app.post("/api/v1/state/reset/baseline")
+    async def post_reset_baseline():
+        """Reset the behavioral baseline. Engine continues running."""
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+        try:
+            _engine.baseline.reset()
+            _engine.baseline.persist()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Baseline reset failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True}
+
+    # ----- Cleanup scan + large file finder -------------------------------
+
+    @app.get("/api/v1/cleanup/categories")
+    async def get_cleanup_categories():
+        """Available cleanup categories for this machine's OS."""
+        return {
+            "os_supports_recycle_bin": HAS_SEND2TRASH,
+            "categories": [
+                {
+                    "id": c.id,
+                    "label": c.label,
+                    "description": c.description,
+                    "roots": [str(r) for r in c.roots],
+                    "min_age_days": c.min_age_days,
+                    "requires_admin": c.requires_admin,
+                }
+                for c in available_categories()
+            ],
+        }
+
+    @app.post("/api/v1/cleanup/scan")
+    async def post_cleanup_scan(body: dict = Body(default_factory=dict)):
+        """Run a (synchronous) cleanup scan.
+
+        Returns a scan_id and per-category totals/samples that the dashboard
+        uses to preview before applying.
+        """
+        raw_ids = body.get("category_ids")
+        category_ids: list[str] | None
+        if isinstance(raw_ids, list):
+            category_ids = [str(x) for x in raw_ids if str(x).strip()]
+            if not category_ids:
+                category_ids = None
+        else:
+            category_ids = None
+
+        try:
+            result = await asyncio.to_thread(run_scan, category_ids)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("cleanup scan failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, **result.to_dict()}
+
+    @app.get("/api/v1/cleanup/scan/{scan_id}")
+    async def get_cleanup_scan(scan_id: str):
+        """Retrieve a previously executed scan by id."""
+        result = scan_registry().get(scan_id)
+        if result is None:
+            return {"ok": False, "error": "Unknown or expired scan_id"}
+        return {"ok": True, **result.to_dict()}
+
+    @app.post("/api/v1/cleanup/apply")
+    async def post_cleanup_apply(body: dict = Body(default_factory=dict)):
+        """Apply a previously recorded scan.
+
+        Body: ``{"scan_id": "...", "category_ids": [...], "mode": "recycle"|"permanent"}``.
+
+        The scan_id handshake guarantees we only touch paths the user has
+        already previewed; arbitrary path arguments are not accepted.
+        """
+        scan_id = str(body.get("scan_id") or "").strip()
+        if not scan_id:
+            return {"ok": False, "error": "Missing scan_id"}
+        mode = str(body.get("mode") or "recycle").strip().lower()
+        raw_ids = body.get("category_ids")
+        category_ids: list[str] | None
+        if isinstance(raw_ids, list):
+            category_ids = [str(x) for x in raw_ids if str(x).strip()]
+        else:
+            category_ids = None
+        try:
+            result = await asyncio.to_thread(
+                apply_cleanup,
+                scan_id=scan_id,
+                category_ids=category_ids,
+                mode=mode,
+            )
+        except KeyError as exc:
+            return {"ok": False, "error": str(exc)}
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("cleanup apply failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, **result.to_dict()}
+
+    @app.get("/api/v1/hardware/health")
+    async def get_hardware_health(
+        refresh: bool = Query(False, description="Bypass the 30s probe cache."),
+    ):
+        """Aggregated CPU / memory / disk health snapshot."""
+        try:
+            payload = await asyncio.to_thread(collect_health, refresh=refresh)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("hardware health probe failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, **payload}
+
+    @app.get("/api/v1/storage/large")
+    async def get_storage_large(
+        path: str = Query(..., description="Directory to walk; absolute path."),
+        min_mb: float = Query(100.0, ge=0.0, description="Minimum file size in MiB."),
+        limit: int = Query(200, ge=1, le=2000, description="Max results returned."),
+        max_files_scanned: int = Query(
+            200_000,
+            ge=1000,
+            le=2_000_000,
+            description="Hard cap on file inspections; narrow the path if you hit it.",
+        ),
+    ):
+        """Largest files under ``path`` (system directories excluded)."""
+        try:
+            items = await asyncio.to_thread(
+                find_large_files,
+                path,
+                min_size_mb=min_mb,
+                limit=limit,
+                max_files_scanned=max_files_scanned,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("storage/large failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {
+            "ok": True,
+            "path": str(path),
+            "min_mb": min_mb,
+            "limit": limit,
+            "results": [i.to_dict() for i in items],
         }
 
     # ----- WebSocket Endpoints -----

@@ -4,7 +4,7 @@ import 'package:flutter/scheduler.dart';
 class DashboardNavigation {
   DashboardNavigation._();
 
-  /// Switch main rail: 0 Overview … 4 Diagnostics, 5 Hardware, 6 Settings.
+  /// Switch main rail: 0 Overview … 4 Diagnostics, 5 Hardware, 6 Storage, 7 Settings.
   static void Function(int index)? selectMainTab;
 
   /// Switches Diagnostics inner tab to "Alerts & RCA" (index 1).

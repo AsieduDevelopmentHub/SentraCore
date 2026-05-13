@@ -33,16 +33,29 @@ from engine.api.server import create_app, set_engine, ws_manager
 from engine.baseline.baseline_model import BaselineModel
 from engine.buffer.time_series_buffer import TimeSeriesBuffer
 from engine.collector.system_collector import ProcessInfo, SystemCollector
-from engine.config import COLLECTION_INTERVAL_SEC, DATASTORE_DIR
+from engine.config import (
+    COLLECTION_INTERVAL_SEC,
+    LOG_BACKUP_COUNT,
+    LOG_MAX_BYTES,
+    RUNTIME_CHECKPOINT_INTERVAL_SEC,
+)
 from engine.engine_config import (
     EngineConfig,
     read_engine_config,
     write_engine_config_atomic,
 )
+from engine.history.history_store import (
+    HistoryProcessSample,
+    HistoryStore,
+    build_history_sample,
+)
 from engine.runtime_info import allocate_listen_port
 from engine.events.event_logger import EventLogger
 from engine.normalization.normalizer import NormalizedSnapshot, Normalizer
 from engine.process.process_tracker import ProcessImpact, ProcessTracker
+from engine.state.runtime_state import RuntimeCheckpoint
+from engine.storage.migrate import run_migrations
+from engine.storage.paths import LOGS_DIR, ensure_layout
 from engine.stress.stress_engine import StressEngine, StressResult
 from engine.user_preferences import UserPreferences, canonical_process_name
 from engine.intelligence.trend_analyzer import TrendAnalyzer, TrendResult
@@ -74,6 +87,8 @@ class SentraCoreEngine:
         self.stress_engine = StressEngine()
         self.stability_calculator = StabilityCalculator()
         self.alert_manager = AlertManager()
+        self.history_store = HistoryStore()
+        self.runtime_checkpoint = RuntimeCheckpoint()
 
         # Current state (updated each cycle)
         self._current_stress: StressResult | None = None
@@ -84,13 +99,85 @@ class SentraCoreEngine:
         self._current_stability: StabilityIndex | None = None
         self._last_alert: Alert | None = None
 
+        # Warm cache from the previous run's checkpoint. Surfaced via
+        # get_current_state() until the engine produces its first fresh values
+        # after restart so the dashboard never shows empty cards.
+        warm = self.runtime_checkpoint.load()
+        self._warm_state: dict = warm
+        self._restored_alerts: list[dict] = [
+            a for a in warm.get("alerts_recent", []) if isinstance(a, dict)
+        ]
+        if not warm.get("last_clean_shutdown", False):
+            self._unclean_previous_shutdown = True
+        else:
+            self._unclean_previous_shutdown = False
+        # Flip the on-disk flag back to "dirty" for the duration of this run.
+        self.runtime_checkpoint.mark_dirty_startup()
+
         # Control
         self._running = False
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._last_checkpoint_at: float = 0.0
 
     def get_current_state(self) -> dict:
-        """Return current system state for the API."""
+        """Return current system state for the API.
+
+        Falls back to the warm cache loaded from the runtime checkpoint when
+        the engine has not yet computed fresh values after a restart, so the
+        dashboard renders the previous reading instead of empty fields.
+        """
         latest = self.buffer.get_latest()
+
+        normalized = (
+            self._current_normalized.to_dict()
+            if self._current_normalized
+            else self._warm_state.get("last_normalized")
+        )
+        trend = self._current_trend.to_dict() if self._current_trend else None
+        anomaly = (
+            self._current_anomaly.to_dict()
+            if self._current_anomaly
+            else self._warm_state.get("last_anomaly")
+        )
+        prediction = (
+            self._current_prediction.to_dict()
+            if self._current_prediction
+            else self._warm_state.get("last_prediction")
+        )
+        stress = (
+            self._current_stress.to_dict()
+            if self._current_stress
+            else self._warm_state.get("last_stress")
+        )
+        stability = (
+            self._current_stability.to_dict()
+            if self._current_stability
+            else self._warm_state.get("last_stability")
+        )
+
+        in_memory_alerts = [
+            a.to_summary_dict() for a in self.alert_manager.get_recent_alerts(50)
+        ]
+        # While the alert manager's ring is empty (early after restart), show
+        # the persisted alerts from the previous run so the UI is not blank.
+        if in_memory_alerts:
+            recent_alerts = in_memory_alerts
+        elif self._restored_alerts:
+            recent_alerts = [
+                {
+                    "timestamp": a.get("timestamp"),
+                    "stress_score": a.get("stress_score"),
+                    "level": a.get("level"),
+                    "message": a.get("message"),
+                }
+                for a in self._restored_alerts[:50]
+            ]
+        else:
+            recent_alerts = []
+
+        last_alert = self._last_alert.to_dict() if self._last_alert else None
+        if last_alert is None and self._restored_alerts:
+            last_alert = self._restored_alerts[0]
 
         state = {
             "engine": {
@@ -98,22 +185,18 @@ class SentraCoreEngine:
                 "uptime_samples": self.buffer.long_count,
                 "baseline_ready": self.baseline.is_ready,
                 "baseline_samples": self.baseline.sample_count,
+                "previous_run_unclean": self._unclean_previous_shutdown,
+                "warm_started": (
+                    self._current_normalized is None and bool(self._warm_state)
+                ),
             },
             "snapshot": latest.to_dict() if latest else None,
-            "normalized": self._current_normalized.to_dict()
-            if self._current_normalized
-            else None,
-            "trend": self._current_trend.to_dict() if self._current_trend else None,
-            "anomaly": self._current_anomaly.to_dict()
-            if self._current_anomaly
-            else None,
-            "prediction": self._current_prediction.to_dict()
-            if self._current_prediction
-            else None,
-            "stress": self._current_stress.to_dict() if self._current_stress else None,
-            "stability": self._current_stability.to_dict()
-            if self._current_stability
-            else None,
+            "normalized": normalized,
+            "trend": trend,
+            "anomaly": anomaly,
+            "prediction": prediction,
+            "stress": stress,
+            "stability": stability,
             "alert": {
                 "total_fired": self.alert_manager.total_alerts,
                 "in_cooldown": self.alert_manager.is_in_cooldown,
@@ -122,11 +205,8 @@ class SentraCoreEngine:
                     self.alert_manager.cooldown_remaining_sec, 2
                 ),
                 "consecutive_high": self.alert_manager.consecutive_high_count,
-                "last_alert": self._last_alert.to_dict() if self._last_alert else None,
-                "recent_alerts": [
-                    a.to_summary_dict()
-                    for a in self.alert_manager.get_recent_alerts(50)
-                ],
+                "last_alert": last_alert,
+                "recent_alerts": recent_alerts,
             },
             "buffers": {
                 "short": {
@@ -400,7 +480,18 @@ class SentraCoreEngine:
                         prefs, snapshot.processes, tracked_for_safeguard
                     )
 
-                # 11. Broadcast via WebSocket
+                # 11. Persist a downsampled history sample (debounced inside
+                # HistoryStore by HISTORY_SAMPLE_INTERVAL_SEC).
+                self._record_history(normalized, stress, stability, top_procs)
+
+                # 12. Periodic in-flight checkpoint so an unclean stop resumes
+                # with the last known state instead of empty fields.
+                now = time.time()
+                if now - self._last_checkpoint_at >= RUNTIME_CHECKPOINT_INTERVAL_SEC:
+                    self._write_checkpoint(clean_shutdown=False)
+                    self._last_checkpoint_at = now
+
+                # 13. Broadcast via WebSocket
                 await self._broadcast_state()
 
                 # Periodic log
@@ -426,30 +517,119 @@ class SentraCoreEngine:
             if sleep_time > 0:
                 await asyncio.sleep(sleep_time)
 
-        # Persist baseline on shutdown
+        # Persist baseline + final runtime checkpoint on shutdown
         self.baseline.persist()
-        logger.info("Engine stopped. Baseline persisted.")
+        self._write_checkpoint(clean_shutdown=True)
+        logger.info("Engine stopped. Baseline and runtime state persisted.")
 
     def stop(self) -> None:
         """Signal the engine to stop."""
         self._running = False
         logger.info("Engine stop requested.")
 
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+
+    def _record_history(
+        self,
+        normalized: NormalizedSnapshot,
+        stress: StressResult,
+        stability: StabilityIndex,
+        top_procs: list[ProcessImpact],
+    ) -> None:
+        """Append a compact history sample (no-op if within debounce window)."""
+        try:
+            samples = tuple(
+                HistoryProcessSample(
+                    name=p.name,
+                    pid=p.pid,
+                    cpu_percent=float(p.cpu_impact),
+                    mem_percent=float(p.memory_percent),
+                    impact=float(p.impact_score),
+                )
+                for p in top_procs[:5]
+            )
+            sample = build_history_sample(
+                at=normalized.timestamp,
+                cpu_percent=normalized.cpu_percent_smoothed,
+                mem_percent=normalized.memory_percent_smoothed,
+                disk_pressure_percent=float(stress.disk_pressure),
+                stability_score=float(stability.score) if stability else None,
+                stress_score=float(stress.score) if stress else None,
+                top_processes=samples,
+            )
+            self.history_store.record(sample)
+        except Exception as exc:  # noqa: BLE001 — history is best-effort
+            logger.debug("history record failed: %s", exc)
+
+    def _write_checkpoint(self, *, clean_shutdown: bool) -> None:
+        """Persist a small slice of in-memory state to ``state/runtime.json``."""
+        try:
+            alerts_recent = [
+                a.to_dict() for a in self.alert_manager.get_recent_alerts(50)
+            ]
+            # If the alert manager hasn't fired anything yet this run, retain
+            # whatever we restored from disk so the dashboard still has context.
+            if not alerts_recent and self._restored_alerts:
+                alerts_recent = list(self._restored_alerts)
+
+            self.runtime_checkpoint.write(
+                alerts_recent=alerts_recent,
+                last_stress=(
+                    self._current_stress.to_dict() if self._current_stress else None
+                ),
+                last_stability=(
+                    self._current_stability.to_dict()
+                    if self._current_stability
+                    else None
+                ),
+                last_normalized=(
+                    self._current_normalized.to_dict()
+                    if self._current_normalized
+                    else None
+                ),
+                last_prediction=(
+                    self._current_prediction.to_dict()
+                    if self._current_prediction
+                    else None
+                ),
+                last_anomaly=(
+                    self._current_anomaly.to_dict() if self._current_anomaly else None
+                ),
+                clean_shutdown=clean_shutdown,
+            )
+        except Exception as exc:  # noqa: BLE001 — never let checkpointing crash the engine
+            logger.debug("runtime checkpoint failed: %s", exc)
+
 
 def _configure_logging() -> None:
-    """Configure structured logging for the engine."""
-    # When packaged with PyInstaller + --noconsole, sys.stdout/sys.stderr can be None.
-    # In that case, log to a file so the engine can still start and we can diagnose issues.
+    """Configure structured logging for the engine.
+
+    When packaged with PyInstaller + ``--noconsole``, ``sys.stdout`` /
+    ``sys.stderr`` can be ``None``. In that case we log to a rotating file in
+    ``logs/`` so the engine can still start and operators can diagnose issues
+    without runaway log growth.
+    """
+    from logging.handlers import RotatingFileHandler
+
+    ensure_layout()
     log_format = "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
-    datefmt = "%H:%M:%S"
+    datefmt = "%Y-%m-%d %H:%M:%S"
 
     handlers: list[logging.Handler] = []
     if getattr(sys, "stdout", None) is not None:
         handlers.append(logging.StreamHandler(sys.stdout))
-    else:
-        log_dir = DATASTORE_DIR / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(log_dir / "engine.log", encoding="utf-8"))
+    # Always tee to a rotating file so we keep a forensic trail even with a
+    # console; small rotation cap (see engine.config) keeps disk usage bounded.
+    handlers.append(
+        RotatingFileHandler(
+            LOGS_DIR / "engine.log",
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+    )
 
     logging.basicConfig(
         level=logging.INFO,
@@ -466,6 +646,14 @@ def _configure_logging() -> None:
 def main() -> None:
     """Entry point for SentraCore engine."""
     _configure_logging()
+    # Materialize the grouped datastore (config/, state/, history/, logs/, …)
+    # and migrate any legacy flat-layout files. Both calls are idempotent and
+    # safe to run on every startup.
+    ensure_layout()
+    try:
+        run_migrations()
+    except Exception as exc:  # noqa: BLE001 — never let migration crash the engine
+        logging.getLogger(__name__).warning("Datastore migration failed: %s", exc)
 
     # Avoid print() in packaged --noconsole builds (stdout may be None).
     listen_host, listen_port = allocate_listen_port()

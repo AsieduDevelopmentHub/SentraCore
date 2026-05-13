@@ -10,7 +10,6 @@ Tracked metrics: CPU%, memory%, disk ops/sec.
 
 from __future__ import annotations
 
-import json
 import logging
 import math
 from dataclasses import dataclass, field
@@ -21,9 +20,9 @@ from engine.config import (
     BASELINE_FILE,
     BASELINE_MIN_SAMPLES,
     BASELINE_PERSIST_INTERVAL,
-    DATASTORE_DIR,
 )
 from engine.normalization.normalizer import NormalizedSnapshot
+from engine.storage.atomic import read_json, write_json_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -247,11 +246,9 @@ class BaselineModel:
         }
 
     def persist(self) -> None:
-        """Save baseline statistics to disk."""
+        """Save baseline statistics to disk atomically."""
         try:
-            DATASTORE_DIR.mkdir(parents=True, exist_ok=True)
-            data = self._stats.to_dict()
-            self._file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            write_json_atomic(self._file, self._stats.to_dict())
             logger.debug(
                 "Baseline persisted to %s (%d samples)", self._file, self.sample_count
             )
@@ -260,19 +257,20 @@ class BaselineModel:
 
     def _load(self) -> BaselineStats:
         """Load baseline from disk, or return empty stats."""
-        if self._file.exists():
-            try:
-                data = json.loads(self._file.read_text(encoding="utf-8"))
-                stats = BaselineStats.from_dict(data)
-                logger.info(
-                    "Loaded baseline from %s (%d global samples)",
-                    self._file,
-                    stats.segments["global"].cpu_percent.count,
-                )
-                return stats
-            except (json.JSONDecodeError, KeyError, OSError) as exc:
-                logger.warning("Failed to load baseline, starting fresh: %s", exc)
-        return BaselineStats()
+        data = read_json(self._file)
+        if not isinstance(data, dict):
+            return BaselineStats()
+        try:
+            stats = BaselineStats.from_dict(data)
+        except (KeyError, TypeError, ValueError) as exc:
+            logger.warning("Failed to parse baseline, starting fresh: %s", exc)
+            return BaselineStats()
+        logger.info(
+            "Loaded baseline from %s (%d global samples)",
+            self._file,
+            stats.segments["global"].cpu_percent.count,
+        )
+        return stats
 
     def _get_metric_stats(
         self, metric: str, segment: str = "global"

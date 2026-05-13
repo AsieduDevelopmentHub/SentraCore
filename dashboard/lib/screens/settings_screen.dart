@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/storage_settings_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -454,6 +455,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: settings.setDesktopNotifications,
                 ),
               ),
+              const SizedBox(height: 24),
+              Text(
+                'Storage',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The engine keeps preferences, baseline, history, and logs on '
+                'this PC so monitoring continues across restarts. Clearing '
+                'cache is always safe; the other actions are destructive.',
+                style: TextStyle(
+                  color: AppTheme.textMutedFor(context),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const StorageSettingsSection(),
             ],
           ),
         ),

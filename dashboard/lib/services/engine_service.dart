@@ -105,6 +105,77 @@ class EngineService {
     }
   }
 
+  // ── History & storage ──
+
+  /// Fetch persisted history samples. Returns an empty list on any failure;
+  /// callers should fall back to the local offline cache if needed.
+  ///
+  /// [granularitySec] sets the minimum spacing between returned samples so
+  /// long ranges can render without overloading the chart.
+  Future<List<Map<String, dynamic>>> getHistory({
+    DateTime? from,
+    DateTime? to,
+    double? granularitySec,
+    int? limit,
+  }) async {
+    final qs = <String, String>{};
+    if (from != null) {
+      qs['from'] = (from.millisecondsSinceEpoch / 1000).toStringAsFixed(3);
+    }
+    if (to != null) {
+      qs['to'] = (to.millisecondsSinceEpoch / 1000).toStringAsFixed(3);
+    }
+    if (granularitySec != null) {
+      qs['granularity'] = granularitySec.toStringAsFixed(2);
+    }
+    if (limit != null) {
+      qs['limit'] = limit.toString();
+    }
+    final uri = Uri.parse('$_baseUrl/api/v1/history').replace(
+      queryParameters: qs.isEmpty ? null : qs,
+    );
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return const [];
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return const [];
+      final samples = decoded['samples'];
+      if (samples is! List) return const [];
+      return samples
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> deleteHistory() async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/history');
+      final response =
+          await http.delete(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStorageInfo() async {
+    return _get('/api/v1/storage/info');
+  }
+
+  Future<Map<String, dynamic>?> clearCache() async {
+    return _post('/api/v1/storage/cache/clear');
+  }
+
+  Future<Map<String, dynamic>?> resetBaseline() async {
+    return _post('/api/v1/state/reset/baseline');
+  }
+
   // ── WebSocket Live Stream ──
 
   Stream<SystemState> connectLive() {
@@ -151,5 +222,19 @@ class EngineService {
       return null;
     }
     return null;
+  }
+
+  Future<Map<String, dynamic>?> _post(String path) async {
+    try {
+      final response = await http
+          .post(Uri.parse('$_baseUrl$path'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
   }
 }

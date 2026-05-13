@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 from fastapi import Body, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from engine.storage.paths import CACHE_DIR, storage_summary
+
 if TYPE_CHECKING:
     pass
 
@@ -217,6 +219,103 @@ def create_app() -> FastAPI:
         return {
             "alerts": [a.to_dict() for a in _engine.alert_manager.get_recent_alerts()],
         }
+
+    # ----- History & storage ----------------------------------------------
+
+    @app.get("/api/v1/history")
+    async def get_history(
+        from_ts: float | None = Query(
+            default=None,
+            alias="from",
+            description="Inclusive POSIX timestamp; default: now - 24h.",
+        ),
+        to_ts: float | None = Query(
+            default=None,
+            alias="to",
+            description="Inclusive POSIX timestamp; default: now.",
+        ),
+        granularity_sec: float | None = Query(
+            default=None,
+            alias="granularity",
+            ge=0,
+            description="Minimum spacing between returned samples (seconds).",
+        ),
+        limit: int | None = Query(
+            default=None,
+            ge=1,
+            le=10000,
+            description="Cap on returned samples after downsampling.",
+        ),
+    ):
+        """Persisted telemetry samples between ``from`` and ``to``."""
+        if _engine is None:
+            return {"error": "Engine not initialized"}
+        samples = _engine.history_store.query(
+            from_ts=from_ts,
+            to_ts=to_ts,
+            granularity_sec=granularity_sec,
+            limit=limit,
+        )
+        return {
+            "samples": samples,
+            "summary": _engine.history_store.summary(),
+        }
+
+    @app.delete("/api/v1/history")
+    async def delete_history():
+        """Wipe the persisted history archive (local action)."""
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+        removed = _engine.history_store.clear()
+        return {"ok": True, "files_removed": removed}
+
+    @app.get("/api/v1/storage/info")
+    async def get_storage_info():
+        """Return on-disk layout, sizes, and retention for the datastore."""
+        info: dict = storage_summary()
+        if _engine is not None:
+            info["history"] = _engine.history_store.summary()
+            info["runtime_checkpoint"] = {
+                "path": str(_engine.runtime_checkpoint.path),
+                "previous_run_unclean": bool(
+                    getattr(_engine, "_unclean_previous_shutdown", False)
+                ),
+            }
+        return info
+
+    @app.post("/api/v1/storage/cache/clear")
+    async def post_clear_cache():
+        """Delete files under ``cache/``. Never touches config/state/history."""
+        removed = 0
+        bytes_freed = 0
+        try:
+            for f in CACHE_DIR.rglob("*"):
+                if f.is_file():
+                    try:
+                        bytes_freed += f.stat().st_size
+                    except OSError:
+                        pass
+                    try:
+                        f.unlink()
+                        removed += 1
+                    except OSError:
+                        continue
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "files_removed": removed, "bytes_freed": bytes_freed}
+
+    @app.post("/api/v1/state/reset/baseline")
+    async def post_reset_baseline():
+        """Reset the behavioral baseline. Engine continues running."""
+        if _engine is None:
+            return {"ok": False, "error": "Engine not initialized"}
+        try:
+            _engine.baseline.reset()
+            _engine.baseline.persist()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Baseline reset failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True}
 
     # ----- WebSocket Endpoints -----
 

@@ -230,10 +230,10 @@ class EngineProvider extends ChangeNotifier {
       // Keep alert channel failures from bubbling as uncaught async errors.
       // Live telemetry drives overall connectivity/reconnects.
       _alertSub = _service.connectAlerts().listen(
-        _onAlertPayload,
-        onError: (_) {},
-        onDone: () {},
-      );
+            _onAlertPayload,
+            onError: (_) {},
+            onDone: () {},
+          );
 
       _processFetchTimer = Timer.periodic(
         const Duration(seconds: 5),
@@ -446,6 +446,10 @@ class EngineProvider extends ChangeNotifier {
     if (!_connected) {
       _connected = true;
       _connectionError = '';
+      // Once we are talking to the engine, pull the authoritative history
+      // archive so charts survive a dashboard restart even if SharedPreferences
+      // is empty (e.g. after `flutter clean` or a fresh install).
+      _history?.startPeriodicRefresh(_service);
     }
 
     _currentState = state;
@@ -502,6 +506,40 @@ class EngineProvider extends ChangeNotifier {
     return r ?? {'ok': false, 'error': 'No response'};
   }
 
+  // ── Datastore (history, cache, baseline) ──
+
+  /// Fetch on-disk layout + history summary from the engine.
+  Future<Map<String, dynamic>?> getStorageInfo() {
+    return _service.getStorageInfo();
+  }
+
+  /// Delete every file under the engine's cache/ directory.
+  Future<Map<String, dynamic>?> clearEngineCache() async {
+    final r = await _service.clearCache();
+    notifyListeners();
+    return r;
+  }
+
+  /// Wipe the engine-side history archive AND the dashboard's offline mirror.
+  Future<Map<String, dynamic>?> clearAllHistory() async {
+    final r = await _service.deleteHistory();
+    _history?.clear();
+    notifyListeners();
+    return r;
+  }
+
+  /// Reset the behavioral baseline (engine continues running).
+  Future<Map<String, dynamic>?> resetEngineBaseline() async {
+    final r = await _service.resetBaseline();
+    notifyListeners();
+    return r;
+  }
+
+  /// Pull the latest history window from the engine immediately.
+  Future<void> refreshHistoryNow() async {
+    await _history?.refreshFromEngine(_service);
+  }
+
   // ── Cleanup ──
 
   @override
@@ -514,6 +552,7 @@ class EngineProvider extends ChangeNotifier {
     _eventFetchTimer?.cancel();
     _reconnectTimer?.cancel();
     _cooldownTicker?.cancel();
+    _history?.stopPeriodicRefresh();
     _service.dispose();
     // Do NOT kill the engine on app close. The engine is designed to be a
     // background component and should survive dashboard restarts.

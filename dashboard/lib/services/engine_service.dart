@@ -234,6 +234,16 @@ class EngineService {
     }
   }
 
+  // ── Hardware health ──
+
+  /// Aggregated CPU / memory / disk health report from the engine.
+  /// Set [refresh] true to bypass the engine's 30 s probe cache.
+  Future<Map<String, dynamic>?> getHardwareHealth(
+      {bool refresh = false}) async {
+    final qs = refresh ? '?refresh=true' : '';
+    return _get('/api/v1/hardware/health$qs');
+  }
+
   Future<Map<String, dynamic>?> findLargeFiles({
     required String path,
     double minMb = 100.0,

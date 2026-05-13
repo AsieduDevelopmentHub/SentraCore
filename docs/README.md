@@ -36,6 +36,7 @@ For a high-level product overview and feature list, start with the [repository R
 |---|---|
 | [Intelligence Pipeline](architecture/intelligence_layer.md) | Detailed overview of the telemetry intelligence pipeline |
 | [Persistence Layout](architecture/persistence.md) | Where the engine keeps preferences, baseline, history, and logs |
+| [Hardware Health](architecture/hardware_health.md) | CPU / RAM / disk SMART probes and the overall status taxonomy |
 | [Storage Scanning & Cleanup](architecture/storage_scan.md) | Disk cleanup categories, scan-id safety model, large file finder |
 | [Building SentraCore](architecture/building.md) | Desktop build, packaging, and release workflow |
 

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from fastapi import Body, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from engine.hardware import collect_health
 from engine.storage.paths import CACHE_DIR, storage_summary
 from engine.storage_scan import (
     apply_cleanup,
@@ -411,6 +412,18 @@ def create_app() -> FastAPI:
             logger.warning("cleanup apply failed: %s", exc)
             return {"ok": False, "error": str(exc)}
         return {"ok": True, **result.to_dict()}
+
+    @app.get("/api/v1/hardware/health")
+    async def get_hardware_health(
+        refresh: bool = Query(False, description="Bypass the 30s probe cache."),
+    ):
+        """Aggregated CPU / memory / disk health snapshot."""
+        try:
+            payload = await asyncio.to_thread(collect_health, refresh=refresh)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("hardware health probe failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, **payload}
 
     @app.get("/api/v1/storage/large")
     async def get_storage_large(

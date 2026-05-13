@@ -570,6 +570,11 @@ class EngineProvider extends ChangeNotifier {
     return _service.findLargeFiles(path: path, minMb: minMb, limit: limit);
   }
 
+  /// Hardware health (CPU / memory / disks) from the engine.
+  Future<Map<String, dynamic>?> getHardwareHealth({bool refresh = false}) {
+    return _service.getHardwareHealth(refresh: refresh);
+  }
+
   // ── Cleanup ──
 
   @override

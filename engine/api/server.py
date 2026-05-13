@@ -17,8 +17,9 @@ from typing import TYPE_CHECKING
 
 from fastapi import Body, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from engine.hardware import collect_health
+from engine.hardware import collect_component, collect_health
 from engine.storage.paths import CACHE_DIR, storage_summary
 from engine.storage_scan import (
     apply_cleanup,
@@ -422,6 +423,26 @@ def create_app() -> FastAPI:
             payload = await asyncio.to_thread(collect_health, refresh=refresh)
         except Exception as exc:  # noqa: BLE001
             logger.warning("hardware health probe failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, **payload}
+
+    @app.get("/api/v1/hardware/test")
+    async def get_hardware_test(
+        target: str = Query(
+            ...,
+            description="One of: cpu, memory, disk (runs the storage probe).",
+        ),
+    ):
+        """Run a single hardware probe and merge into the shared health cache."""
+        try:
+            payload = await asyncio.to_thread(collect_component, target)
+        except ValueError as exc:
+            return JSONResponse(
+                status_code=422,
+                content={"ok": False, "error": str(exc)},
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("hardware test probe failed: %s", exc)
             return {"ok": False, "error": str(exc)}
         return {"ok": True, **payload}
 

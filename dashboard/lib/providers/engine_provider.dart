@@ -575,6 +575,11 @@ class EngineProvider extends ChangeNotifier {
     return _service.getHardwareHealth(refresh: refresh);
   }
 
+  /// Single-component probe: [target] is `cpu`, `memory`, or `disk`.
+  Future<Map<String, dynamic>?> runHardwareTest(String target) {
+    return _service.getHardwareTest(target);
+  }
+
   // ── Cleanup ──
 
   @override

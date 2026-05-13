@@ -251,6 +251,22 @@ class EngineService {
     }
   }
 
+  /// Run one hardware probe (cpu / memory / disk); same long timeout as full health.
+  Future<Map<String, dynamic>?> getHardwareTest(String target) async {
+    final t = Uri.encodeQueryComponent(target);
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/hardware/test?target=$t');
+      final response =
+          await http.get(uri).timeout(const Duration(seconds: 120));
+      if (response.statusCode == 200 || response.statusCode == 422) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>?> findLargeFiles({
     required String path,
     double minMb = 100.0,

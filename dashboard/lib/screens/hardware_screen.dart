@@ -21,6 +21,7 @@ class HardwareScreen extends StatefulWidget {
 class _HardwareScreenState extends State<HardwareScreen> {
   Map<String, dynamic>? _report;
   bool _loading = false;
+  String? _testing;
   String? _error;
   String? _softWarning;
   Timer? _ticker;
@@ -30,6 +31,7 @@ class _HardwareScreenState extends State<HardwareScreen> {
     super.initState();
     unawaited(_bootstrap());
     _ticker = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (_testing != null) return;
       unawaited(_refresh(refresh: false));
     });
   }
@@ -63,6 +65,7 @@ class _HardwareScreenState extends State<HardwareScreen> {
   }
 
   Future<void> _refresh({required bool refresh}) async {
+    if (_testing != null) return;
     setState(() {
       _loading = true;
       _softWarning = null;
@@ -99,6 +102,55 @@ class _HardwareScreenState extends State<HardwareScreen> {
     });
   }
 
+  Future<void> _runTest(String target) async {
+    setState(() {
+      _testing = target;
+      _softWarning = null;
+    });
+    final engine = context.read<EngineProvider>();
+    final data = await engine.runHardwareTest(target);
+    if (!mounted) return;
+
+    if (data != null && data['ok'] == true) {
+      final stored = await HardwareHealthCache.write(data);
+      if (!mounted) return;
+      setState(() {
+        _report = stored ?? data;
+        _testing = null;
+        _error = null;
+        _softWarning = null;
+      });
+      return;
+    }
+
+    final err = (data?['error'] as String?) ?? 'Component test failed.';
+    final hasDisplayable = _report != null && _report!['ok'] == true;
+    setState(() {
+      _testing = null;
+      if (hasDisplayable) {
+        _error = null;
+        _softWarning =
+            '$err (${_hwTestFriendly(target)} test). Showing last good data below.';
+      } else {
+        _error = err;
+        _softWarning = null;
+      }
+    });
+  }
+
+  static String _hwTestFriendly(String target) {
+    switch (target) {
+      case 'cpu':
+        return 'CPU';
+      case 'memory':
+        return 'Memory';
+      case 'disk':
+        return 'Storage';
+      default:
+        return target;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final report = _report;
@@ -117,17 +169,10 @@ class _HardwareScreenState extends State<HardwareScreen> {
         children: [
           _HardwareHeader(
             overall: overall,
-            loading: _loading,
+            loading: _loading || _testing != null,
             staleLabel: _headerSubtitle(report),
             onRefresh: () => _refresh(refresh: true),
           ),
-          if (showHardError) ...[
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: TextStyle(color: AppTheme.error, fontSize: 12),
-            ),
-          ],
           if (_softWarning != null &&
               report != null &&
               report['ok'] == true) ...[
@@ -142,25 +187,63 @@ class _HardwareScreenState extends State<HardwareScreen> {
           ],
           const SizedBox(height: 12),
           Expanded(
-            child: report == null || report['ok'] != true
+            child: showHardError
                 ? Center(
                     child: _loading
                         ? LoadingSkeleton.hardwareList(context)
                         : Text(
-                            'No hardware data yet. Tap refresh.',
+                            _error!,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppTheme.textMutedFor(context),
+                              color: AppTheme.error,
+                              fontSize: 12,
                             ),
                           ),
                   )
                 : ListView(
+                    padding: const EdgeInsets.only(bottom: 24),
                     children: [
-                      _CpuCard(data: cpu),
+                      if (report == null || report['ok'] != true) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Use refresh to probe all components, or run one test below.',
+                            style: TextStyle(
+                              color: AppTheme.textMutedFor(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                      _CpuCard(
+                        data: (report != null && report['ok'] == true)
+                            ? cpu
+                            : null,
+                        onRunTest: () => _runTest('cpu'),
+                        testing: _testing == 'cpu',
+                        globalBusy: _loading ||
+                            (_testing != null && _testing != 'cpu'),
+                      ),
                       const SizedBox(height: 12),
-                      _MemoryCard(data: memory),
+                      _MemoryCard(
+                        data: (report != null && report['ok'] == true)
+                            ? memory
+                            : null,
+                        onRunTest: () => _runTest('memory'),
+                        testing: _testing == 'memory',
+                        globalBusy: _loading ||
+                            (_testing != null && _testing != 'memory'),
+                      ),
                       const SizedBox(height: 12),
-                      _DisksCard(data: disks),
-                      const SizedBox(height: 24),
+                      _DisksCard(
+                        data: (report != null && report['ok'] == true)
+                            ? disks
+                            : null,
+                        onRunTest: () => _runTest('disk'),
+                        testing: _testing == 'disk',
+                        globalBusy: _loading ||
+                            (_testing != null && _testing != 'disk'),
+                      ),
                     ],
                   ),
           ),
@@ -170,6 +253,9 @@ class _HardwareScreenState extends State<HardwareScreen> {
   }
 
   String? _headerSubtitle(Map<String, dynamic>? r) {
+    if (_testing != null) {
+      return 'Running ${_hwTestFriendly(_testing!)} test…';
+    }
     if (r == null || r['ok'] != true) return null;
     if (_loading) return 'Refreshing…';
     if (r['cached_at_ms'] != null) return _cacheAgeLabel(r);
@@ -247,12 +333,59 @@ class _HardwareHeader extends StatelessWidget {
 // --------------------------------------------------------------------------- //
 
 class _CpuCard extends StatelessWidget {
-  const _CpuCard({required this.data});
+  const _CpuCard({
+    required this.data,
+    required this.onRunTest,
+    required this.testing,
+    required this.globalBusy,
+  });
+
   final Map<String, dynamic>? data;
+  final VoidCallback onRunTest;
+  final bool testing;
+  final bool globalBusy;
 
   @override
   Widget build(BuildContext context) {
-    if (data == null) return const _ComponentPlaceholder(label: 'CPU');
+    if (data == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.developer_board,
+                    color: AppTheme.textMutedFor(context),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'CPU',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _HardwareTestButton(
+                label: 'Test CPU',
+                testing: testing,
+                globalBusy: globalBusy,
+                onPressed: onRunTest,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final status = (data!['status'] as String?) ?? 'unknown';
     final m = (data!['metrics'] as Map?)?.cast<String, dynamic>() ?? const {};
     final issues = (data!['issues'] as List?) ?? const [];
@@ -271,6 +404,12 @@ class _CpuCard extends StatelessWidget {
       title: 'CPU',
       status: status,
       issues: issues,
+      footer: _HardwareTestButton(
+        label: 'Test CPU',
+        testing: testing,
+        globalBusy: globalBusy,
+        onPressed: onRunTest,
+      ),
       child: Wrap(
         spacing: 18,
         runSpacing: 10,
@@ -316,12 +455,59 @@ class _CpuCard extends StatelessWidget {
 // --------------------------------------------------------------------------- //
 
 class _MemoryCard extends StatelessWidget {
-  const _MemoryCard({required this.data});
+  const _MemoryCard({
+    required this.data,
+    required this.onRunTest,
+    required this.testing,
+    required this.globalBusy,
+  });
+
   final Map<String, dynamic>? data;
+  final VoidCallback onRunTest;
+  final bool testing;
+  final bool globalBusy;
 
   @override
   Widget build(BuildContext context) {
-    if (data == null) return const _ComponentPlaceholder(label: 'Memory');
+    if (data == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.memory,
+                    color: AppTheme.textMutedFor(context),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Memory',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _HardwareTestButton(
+                label: 'Test memory',
+                testing: testing,
+                globalBusy: globalBusy,
+                onPressed: onRunTest,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final status = (data!['status'] as String?) ?? 'unknown';
     final m = (data!['metrics'] as Map?)?.cast<String, dynamic>() ?? const {};
     final issues = (data!['issues'] as List?) ?? const [];
@@ -332,6 +518,12 @@ class _MemoryCard extends StatelessWidget {
       title: 'Memory',
       status: status,
       issues: issues,
+      footer: _HardwareTestButton(
+        label: 'Test memory',
+        testing: testing,
+        globalBusy: globalBusy,
+        onPressed: onRunTest,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -448,12 +640,59 @@ class _ModuleRow extends StatelessWidget {
 // --------------------------------------------------------------------------- //
 
 class _DisksCard extends StatelessWidget {
-  const _DisksCard({required this.data});
+  const _DisksCard({
+    required this.data,
+    required this.onRunTest,
+    required this.testing,
+    required this.globalBusy,
+  });
+
   final Map<String, dynamic>? data;
+  final VoidCallback onRunTest;
+  final bool testing;
+  final bool globalBusy;
 
   @override
   Widget build(BuildContext context) {
-    if (data == null) return const _ComponentPlaceholder(label: 'Disks');
+    if (data == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.storage,
+                    color: AppTheme.textMutedFor(context),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Storage devices',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _HardwareTestButton(
+                label: 'Test storage',
+                testing: testing,
+                globalBusy: globalBusy,
+                onPressed: onRunTest,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final status = (data!['status'] as String?) ?? 'unknown';
     final issues = (data!['issues'] as List?) ?? const [];
     final items = (data!['items'] as List?) ?? const [];
@@ -474,6 +713,12 @@ class _DisksCard extends StatelessWidget {
       title: 'Storage devices',
       status: status,
       issues: issues,
+      footer: _HardwareTestButton(
+        label: 'Test storage',
+        testing: testing,
+        globalBusy: globalBusy,
+        onPressed: onRunTest,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -675,6 +920,34 @@ class _VolumeRow extends StatelessWidget {
 // Shared widgets + helpers
 // --------------------------------------------------------------------------- //
 
+class _HardwareTestButton extends StatelessWidget {
+  const _HardwareTestButton({
+    required this.label,
+    required this.testing,
+    required this.globalBusy,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool testing;
+  final bool globalBusy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: OutlinedButton.icon(
+        onPressed: (testing || globalBusy) ? null : onPressed,
+        icon: testing
+            ? LoadingSkeleton.inlineSquare(context, size: 16)
+            : const Icon(Icons.science_outlined, size: 18),
+        label: Text(testing ? 'Running…' : label),
+      ),
+    );
+  }
+}
+
 class _ComponentCard extends StatelessWidget {
   const _ComponentCard({
     required this.icon,
@@ -682,6 +955,7 @@ class _ComponentCard extends StatelessWidget {
     required this.status,
     required this.issues,
     required this.child,
+    this.footer,
   });
 
   final IconData icon;
@@ -689,6 +963,7 @@ class _ComponentCard extends StatelessWidget {
   final String status;
   final List issues;
   final Widget child;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -715,6 +990,10 @@ class _ComponentCard extends StatelessWidget {
                 _StatusPill(status: status),
               ],
             ),
+            if (footer != null) ...[
+              const SizedBox(height: 8),
+              footer!,
+            ],
             const SizedBox(height: 12),
             child,
             if (issues.isNotEmpty) ...[
@@ -745,24 +1024,6 @@ class _ComponentCard extends StatelessWidget {
                 ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ComponentPlaceholder extends StatelessWidget {
-  const _ComponentPlaceholder({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(
-          'Waiting for $label data…',
-          style: TextStyle(color: AppTheme.textMutedFor(context), fontSize: 12),
         ),
       ),
     );

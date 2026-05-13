@@ -11,6 +11,7 @@ from engine.hardware import (
     STATUS_HEALTHY,
     STATUS_UNKNOWN,
     STATUS_WARNING,
+    collect_component,
     collect_health,
     reset_cache_for_tests,
     worst_status,
@@ -98,6 +99,79 @@ def test_failed_probe_does_not_crash() -> None:
     assert result["components"]["cpu"]["status"] == STATUS_UNKNOWN
     # Worst status is unknown when one probe failed but the others are healthy.
     assert result["overall"] in (STATUS_UNKNOWN, STATUS_HEALTHY)
+
+
+def test_collect_component_invalid_target() -> None:
+    reset_cache_for_tests()
+    with pytest.raises(ValueError, match="invalid hardware test target"):
+        collect_component("gpu")
+    with pytest.raises(ValueError, match="invalid hardware test target"):
+        collect_component("")
+
+
+def test_collect_component_disk_alias_runs_disks_probe() -> None:
+    reset_cache_for_tests()
+    payload = {"status": STATUS_HEALTHY, "metrics": {}, "issues": [], "items": []}
+    counts = {"n": 0}
+
+    def probe_disks():
+        counts["n"] += 1
+        return payload
+
+    with patch("engine.hardware.probe_disks", side_effect=probe_disks):
+        out = collect_component("disk")
+    assert counts["n"] == 1
+    assert out["components"]["disks"] == payload
+
+
+def test_collect_component_merges_other_fields_from_cache() -> None:
+    reset_cache_for_tests()
+    cpu = {"status": STATUS_HEALTHY, "metrics": {"k": 1}, "issues": [], "items": []}
+    mem = {"status": STATUS_WARNING, "metrics": {}, "issues": ["high"], "items": []}
+    disk = {"status": STATUS_HEALTHY, "metrics": {}, "issues": [], "items": []}
+    with (
+        patch("engine.hardware.probe_cpu", return_value=cpu),
+        patch("engine.hardware.probe_memory", return_value=mem),
+        patch("engine.hardware.probe_disks", return_value=disk),
+    ):
+        collect_health(refresh=True, ttl_sec=120)
+
+    new_cpu = {"status": STATUS_CRITICAL, "metrics": {}, "issues": [], "items": []}
+    counts = {"cpu": 0, "memory": 0, "disks": 0}
+
+    def track_cpu():
+        counts["cpu"] += 1
+        return new_cpu
+
+    def track_memory():
+        counts["memory"] += 1
+        return mem
+
+    def track_disks():
+        counts["disks"] += 1
+        return disk
+
+    with (
+        patch("engine.hardware.probe_cpu", side_effect=track_cpu),
+        patch("engine.hardware.probe_memory", side_effect=track_memory),
+        patch("engine.hardware.probe_disks", side_effect=track_disks),
+    ):
+        out = collect_component("cpu", ttl_sec=120)
+    assert counts == {"cpu": 1, "memory": 0, "disks": 0}
+    assert out["components"]["cpu"] == new_cpu
+    assert out["components"]["memory"] == mem
+    assert out["components"]["disks"] == disk
+    assert out["overall"] == STATUS_CRITICAL
+
+
+def test_collect_component_without_cache_seeds_unknown_peers() -> None:
+    reset_cache_for_tests()
+    payload = {"status": STATUS_HEALTHY, "metrics": {}, "issues": [], "items": []}
+    with patch("engine.hardware.probe_cpu", return_value=payload):
+        out = collect_component("cpu")
+    assert out["components"]["cpu"] == payload
+    assert out["components"]["memory"]["status"] == STATUS_UNKNOWN
+    assert out["components"]["disks"]["status"] == STATUS_UNKNOWN
 
 
 # --------------------------------------------------------------------------- #

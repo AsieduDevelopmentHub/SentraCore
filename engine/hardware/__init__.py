@@ -16,6 +16,7 @@ status ``unknown`` with a hint — it does **not** raise.
 
 from __future__ import annotations
 
+import copy
 import logging
 import threading
 import time
@@ -91,6 +92,67 @@ def collect_health(*, ttl_sec: float = _DEFAULT_TTL_SEC, refresh: bool = False) 
     return payload
 
 
+_EMPTY_COMPONENT: dict = {
+    "status": STATUS_UNKNOWN,
+    "issues": [],
+    "metrics": {},
+    "items": [],
+}
+
+
+def collect_component(target: str, *, ttl_sec: float = _DEFAULT_TTL_SEC) -> dict:
+    """Run one hardware probe and merge the result into the TTL cache.
+
+    ``target`` accepts ``cpu``, ``memory``, ``disk``, or ``disks`` (disk → disks).
+    Other components are preserved from the last cached full snapshot when
+    available; otherwise they start as *unknown* until refreshed.
+    """
+    global _cache
+    norm = target.strip().lower()
+    aliases = {"cpu": "cpu", "memory": "memory", "disks": "disks", "disk": "disks"}
+    key = aliases.get(norm)
+    if key is None:
+        raise ValueError(
+            f"invalid hardware test target {target!r}; use cpu, memory, or disk"
+        )
+
+    now = time.time()
+    with _cache_lock:
+        entry = _cache
+    if entry is not None:
+        payload = copy.deepcopy(entry.payload)
+        comps = payload.setdefault("components", {})
+        if not isinstance(comps, dict):
+            payload["components"] = {}
+            comps = payload["components"]
+        for attr in ("cpu", "memory", "disks"):
+            comps.setdefault(attr, copy.deepcopy(_EMPTY_COMPONENT))
+    else:
+        payload = {
+            "ts": now,
+            "overall": STATUS_UNKNOWN,
+            "components": {
+                "cpu": copy.deepcopy(_EMPTY_COMPONENT),
+                "memory": copy.deepcopy(_EMPTY_COMPONENT),
+                "disks": copy.deepcopy(_EMPTY_COMPONENT),
+            },
+        }
+
+    probes = {"cpu": probe_cpu, "memory": probe_memory, "disks": probe_disks}
+    payload["components"][key] = _safe(probes[key], key)
+    payload["overall"] = worst_status(
+        [
+            c.get("status", STATUS_UNKNOWN)
+            for c in payload["components"].values()
+            if isinstance(c, dict)
+        ]
+    )
+    payload["ts"] = time.time()
+    with _cache_lock:
+        _cache = _CacheEntry(payload=payload, expires_at=now + max(1.0, ttl_sec))
+    return payload
+
+
 def _safe(probe, name: str) -> dict:
     try:
         return probe()
@@ -117,6 +179,7 @@ __all__ = [
     "STATUS_UNKNOWN",
     "STATUS_WARNING",
     "collect_health",
+    "collect_component",
     "reset_cache_for_tests",
     "worst_status",
 ]

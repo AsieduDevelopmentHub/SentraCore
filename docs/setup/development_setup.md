@@ -1,6 +1,6 @@
 # Development Setup
 
-This guide explains how to configure a local SentraCore development environment across Windows, Linux, and macOS.
+This guide explains how to configure a local SentraCore development environment across Windows, Linux, and macOS. Use it together with the [documentation index](../README.md) for architecture and packaging context.
 
 ---
 

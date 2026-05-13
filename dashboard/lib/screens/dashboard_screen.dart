@@ -197,7 +197,7 @@ class _SentraNavRail extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'HEALTH',
+                  'STABILITY',
                   style: TextStyle(
                     color: stabilityColor.withValues(alpha: 0.7),
                     fontSize: 8,

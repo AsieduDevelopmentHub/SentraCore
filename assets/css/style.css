@@ -29,6 +29,33 @@
   box-sizing: border-box;
 }
 
+.skip-link {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fef08a;
+  border-radius: 0 0 10px 0;
+  border: 2px solid #0f172a;
+  text-decoration: none;
+  transform: translateY(-120%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus {
+  outline: none;
+  transform: translateY(0);
+}
+
+.skip-link:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -69,6 +96,22 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+a:focus-visible,
+.btn:focus-visible,
+.nav-toggle:focus-visible,
+.nav-desktop a:focus-visible,
+.nav-panel a:focus-visible,
+.footer-links a:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 3px;
+  text-decoration: none;
+}
+
+.nav-desktop a.is-active:focus-visible,
+.nav-panel a.is-active:focus-visible {
+  outline-color: #fef08a;
 }
 
 /* Matrix rain only inside hero bands (home .hero-wrap, inner .page-hero--mesh) */

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 import 'package:sentracore_dashboard/widgets/sentra_panel.dart';
 
 /// Panel displaying predictive forecasting and time-to-exhaustion.
@@ -47,14 +48,8 @@ class PredictionPanel extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        child: Text(
-          'Waiting for trend data…',
-          style: TextStyle(
-            color: AppTheme.textMutedFor(context),
-            fontSize: 13,
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: LoadingSkeleton.compactPlaceholder(context),
       ),
     );
   }

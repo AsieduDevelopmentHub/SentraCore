@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 
 /// Settings → Storage panel.
 ///
@@ -129,15 +130,7 @@ class _StorageSettingsSectionState extends State<StorageSettingsSection> {
                   ),
                 ),
                 if (_loading)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppTheme.primary),
-                    ),
-                  )
+                  LoadingSkeleton.inlineSquare(context, size: 18)
                 else
                   IconButton(
                     tooltip: 'Refresh',
@@ -148,15 +141,18 @@ class _StorageSettingsSectionState extends State<StorageSettingsSection> {
             ),
             if (root == null) ...[
               const SizedBox(height: 8),
-              Text(
-                engine.connected
-                    ? 'Loading storage details…'
-                    : 'Connect to the engine to view storage usage.',
-                style: TextStyle(
-                  color: AppTheme.textMutedFor(context),
-                  fontSize: 12,
+              if (_loading && engine.connected) ...[
+                LoadingSkeleton.storageSettingsBody(context),
+              ] else
+                Text(
+                  engine.connected
+                      ? 'Loading storage details…'
+                      : 'Connect to the engine to view storage usage.',
+                  style: TextStyle(
+                    color: AppTheme.textMutedFor(context),
+                    fontSize: 12,
+                  ),
                 ),
-              ),
             ] else ...[
               const SizedBox(height: 4),
               SelectableText(

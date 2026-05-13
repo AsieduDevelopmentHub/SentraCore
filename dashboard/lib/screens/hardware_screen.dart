@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/services/hardware_health_cache.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 
 /// Hardware health (CPU, RAM, and storage). Engine probes can take 10–20s;
 /// the screen shows the last successful snapshot from disk immediately, then
@@ -144,7 +145,7 @@ class _HardwareScreenState extends State<HardwareScreen> {
             child: report == null || report['ok'] != true
                 ? Center(
                     child: _loading
-                        ? const CircularProgressIndicator()
+                        ? LoadingSkeleton.hardwareList(context)
                         : Text(
                             'No hardware data yet. Tap refresh.',
                             style: TextStyle(
@@ -233,11 +234,7 @@ class _HardwareHeader extends StatelessWidget {
           tooltip: 'Refresh',
           onPressed: loading ? null : onRefresh,
           icon: loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? LoadingSkeleton.inlineSquare(context, size: 18)
               : const Icon(Icons.refresh),
         ),
       ],

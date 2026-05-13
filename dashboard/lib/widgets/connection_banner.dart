@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 
 /// Banner shown when the dashboard is not connected to the engine.
 class ConnectionBanner extends StatelessWidget {
@@ -30,11 +31,7 @@ class ConnectionBanner extends StatelessWidget {
                   height: 14,
                   child: Semantics(
                     label: 'Connecting',
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppTheme.warning),
-                    ),
+                    child: LoadingSkeleton.bannerLeading(context),
                   ),
                 ),
                 const SizedBox(width: 10),

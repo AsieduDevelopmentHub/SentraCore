@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 /// Screen 2: Full-page detailed performance charts.
@@ -229,10 +230,7 @@ class _DetailedChart extends StatelessWidget {
             SizedBox(
               height: 200,
               child: data.length < 2
-                  ? Center(
-                      child: Text('Collecting data...',
-                          style:
-                              TextStyle(color: AppTheme.textMutedFor(context))))
+                  ? LoadingSkeleton.chartArea(context)
                   : LineChart(
                       LineChartData(
                         minY: 0,

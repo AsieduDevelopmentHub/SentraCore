@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:sentracore_dashboard/providers/engine_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 
 /// Two-panel page: "Free up space" (cleanup scan) + "Largest files" (browser).
 ///
@@ -311,12 +312,7 @@ class _CleanupPanelState extends State<_CleanupPanel> {
                         onPressed:
                             _scanning || !engine.connected ? null : _scan,
                         icon: _scanning
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
+                            ? LoadingSkeleton.inlineSquare(context, size: 16)
                             : const Icon(Icons.refresh),
                         label: Text(_scanning ? 'Refreshing…' : 'Refresh'),
                       ),
@@ -327,12 +323,7 @@ class _CleanupPanelState extends State<_CleanupPanel> {
                                 ? () => _apply(permanent: false)
                                 : null,
                         icon: _applying
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
+                            ? LoadingSkeleton.inlineSquare(context, size: 16)
                             : const Icon(Icons.delete_sweep_outlined),
                         label: const Text('Move to Recycle Bin'),
                       ),
@@ -395,20 +386,7 @@ class _CleanupPanelState extends State<_CleanupPanel> {
               ),
             )
           else if (_scanning)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Text(
-                    'Scanning reclaimable locations…',
-                    style: TextStyle(
-                      color: AppTheme.textMutedFor(context),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            )
+            LoadingSkeleton.storagePanelBusy(context)
           else if (_firstScanFinished)
             Card(
               child: Padding(
@@ -844,11 +822,7 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
                     child: FilledButton.icon(
                       onPressed: _busy || !engine.connected ? null : _search,
                       icon: _busy
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                          ? LoadingSkeleton.inlineSquare(context, size: 16)
                           : const Icon(Icons.refresh),
                       label: Text(_busy ? 'Refreshing…' : 'Refresh'),
                     ),
@@ -895,20 +869,7 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
               ),
             )
           else if (_busy)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Text(
-                    'Scanning for large files…',
-                    style: TextStyle(
-                      color: AppTheme.textMutedFor(context),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            )
+            LoadingSkeleton.storagePanelBusy(context)
           else if (_firstSearchFinished)
             Card(
               child: Padding(

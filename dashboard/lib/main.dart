@@ -8,6 +8,7 @@ import 'package:sentracore_dashboard/navigation/dashboard_navigation.dart';
 import 'package:sentracore_dashboard/screens/dashboard_screen.dart';
 import 'package:sentracore_dashboard/services/desktop_notification_service.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,15 +99,7 @@ class _StartupSplash extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: 220,
-              child: LinearProgressIndicator(
-                backgroundColor:
-                    Theme.of(context).dividerColor.withValues(alpha: 0.25),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppTheme.primary),
-              ),
-            ),
+            LoadingSkeleton.startupBody(context),
             const SizedBox(height: 10),
             Text(
               'Starting engine…',

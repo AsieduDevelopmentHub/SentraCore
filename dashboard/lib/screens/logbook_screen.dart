@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:sentracore_dashboard/models/history_sample.dart';
 import 'package:sentracore_dashboard/providers/history_provider.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
+import 'package:sentracore_dashboard/widgets/loading_skeleton.dart';
 import 'package:sentracore_dashboard/widgets/responsive_builder.dart';
 
 class LogbookScreen extends StatefulWidget {
@@ -926,6 +927,9 @@ class _EmptyHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!loaded) {
+      return LoadingSkeleton.logbookEmpty(context);
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -939,7 +943,7 @@ class _EmptyHistory extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              loaded ? 'No history yet' : 'Loading…',
+              'No history yet',
               style: TextStyle(
                 color: AppTheme.textPrimaryFor(context),
                 fontWeight: FontWeight.w700,

@@ -9,10 +9,10 @@ import 'package:sentracore_dashboard/theme/app_theme.dart';
 
 /// Two-panel page: "Free up space" (cleanup scan) + "Largest files" (browser).
 ///
-/// Both panels are read-mostly: the engine produces the data; the UI lets the
-/// user preview before any deletion. The Free-up-space panel requires a
-/// successful scan before "Recycle / Permanently delete" can be invoked,
-/// because the API gates deletes on a server-side scan_id.
+/// Both panels load automatically once the engine is connected: reclaimable
+/// buckets (including user temp folders) and largest files under the home
+/// directory. **Refresh** re-runs the same queries to pick up new files.
+/// Deletes still require a current server-side `scan_id` from the latest scan.
 class StorageScreen extends StatefulWidget {
   const StorageScreen({super.key});
 
@@ -100,6 +100,40 @@ class _CleanupPanelState extends State<_CleanupPanel> {
   final Set<String> _selected = <String>{};
   String? _lastError;
   Map<String, dynamic>? _lastApply;
+  bool _firstScanFinished = false;
+  EngineProvider? _engine;
+  bool _engineWasConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _engine = context.read<EngineProvider>();
+      _engine!.addListener(_onEngineConnection);
+      _onEngineConnection();
+    });
+  }
+
+  @override
+  void dispose() {
+    _engine?.removeListener(_onEngineConnection);
+    super.dispose();
+  }
+
+  void _onEngineConnection() {
+    if (!mounted) return;
+    final eng = _engine ?? context.read<EngineProvider>();
+    final connected = eng.connected;
+    if (connected && !_engineWasConnected) {
+      _engineWasConnected = true;
+      if (!_scanning && !_applying) {
+        unawaited(_scan());
+      }
+    } else if (!connected) {
+      _engineWasConnected = false;
+    }
+  }
 
   Future<void> _scan() async {
     setState(() {
@@ -114,15 +148,32 @@ class _CleanupPanelState extends State<_CleanupPanel> {
     if (res == null || res['ok'] != true) {
       setState(() {
         _scanning = false;
+        _firstScanFinished = true;
         _lastError = (res?['error'] as String?) ?? 'Scan failed';
       });
       return;
     }
-    final cats = (res['categories'] as List?)
-            ?.whereType<Map>()
-            .map((m) => Map<String, dynamic>.from(m))
-            .toList() ??
-        const <Map<String, dynamic>>[];
+    final cats = List<Map<String, dynamic>>.from(
+      (res['categories'] as List?)
+              ?.whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m)) ??
+          const <Map<String, dynamic>>[],
+    );
+    cats.sort((a, b) {
+      int rank(String id) {
+        if (id == 'user_temp') return 0;
+        if (id == 'windows_temp') return 1;
+        if (id == 'user_cache' || id == 'trash') return 2;
+        return 10;
+      }
+
+      final ra = rank((a['id'] as String?) ?? '');
+      final rb = rank((b['id'] as String?) ?? '');
+      final c = ra.compareTo(rb);
+      if (c != 0) return c;
+      return ((a['label'] as String?) ?? '')
+          .compareTo((b['label'] as String?) ?? '');
+    });
 
     setState(() {
       _scanId = res['scan_id'] as String?;
@@ -135,6 +186,7 @@ class _CleanupPanelState extends State<_CleanupPanel> {
             .where((c) => ((c['bytes'] as num?) ?? 0) > 0)
             .map((c) => c['id'] as String));
       _scanning = false;
+      _firstScanFinished = true;
     });
   }
 
@@ -169,10 +221,7 @@ class _CleanupPanelState extends State<_CleanupPanel> {
         _lastError = (res?['error'] as String?) ?? 'Cleanup failed';
       } else {
         _lastApply = res;
-        // Force a re-scan to refresh the numbers shown.
-        _scanId = null;
-        _categories = const [];
-        _selected.clear();
+        unawaited(_scan());
       }
     });
   }
@@ -233,7 +282,9 @@ class _CleanupPanelState extends State<_CleanupPanel> {
                         child: Text(
                           hasResults
                               ? 'Reclaimable: ${_formatBytes(totalBytes)} • Selected: ${_formatBytes(selectedBytes)}'
-                              : 'Run a scan to find safe-to-clean files.',
+                              : _scanning
+                                  ? 'Scanning reclaimable folders (temp files, caches, …)…'
+                                  : 'Reclaimable space will appear here after the first scan.',
                           style: TextStyle(
                             color: AppTheme.textPrimaryFor(context),
                             fontSize: 14,
@@ -266,8 +317,8 @@ class _CleanupPanelState extends State<_CleanupPanel> {
                                 child:
                                     CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Icon(Icons.search),
-                        label: Text(_scanning ? 'Scanning…' : 'Scan now'),
+                            : const Icon(Icons.refresh),
+                        label: Text(_scanning ? 'Refreshing…' : 'Refresh'),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
@@ -328,15 +379,58 @@ class _CleanupPanelState extends State<_CleanupPanel> {
           const SizedBox(height: 12),
           if (hasResults)
             ..._categories.map(_categoryCard)
-          else if (!_scanning)
+          else if (!engine.connected)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Center(
                   child: Text(
-                    engine.connected
-                        ? 'No scan yet. Press "Scan now" to see what can be cleaned.'
-                        : 'Connect to the engine to scan for cleanup opportunities.',
+                    'Connect to the engine to scan temp folders and other reclaimable locations.',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (_scanning)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Scanning reclaimable locations…',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (_firstScanFinished)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Nothing matched the cleanup rules, or folders are empty. Try Refresh after new downloads or temp files appear.',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Preparing scan…',
                     style: TextStyle(
                       color: AppTheme.textMutedFor(context),
                       fontSize: 13,
@@ -544,11 +638,45 @@ class _LargeFilesPanel extends StatefulWidget {
 class _LargeFilesPanelState extends State<_LargeFilesPanel> {
   late final TextEditingController _pathCtrl =
       TextEditingController(text: _defaultPath());
-  double _minMb = 100;
+  double _minMb = 50;
   int _limit = 200;
   bool _busy = false;
   String? _error;
   List<Map<String, dynamic>> _results = const [];
+  bool _firstSearchFinished = false;
+  EngineProvider? _engine;
+  bool _engineWasConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _engine = context.read<EngineProvider>();
+      _engine!.addListener(_onEngineConnection);
+      _onEngineConnection();
+    });
+  }
+
+  @override
+  void dispose() {
+    _engine?.removeListener(_onEngineConnection);
+    _pathCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onEngineConnection() {
+    if (!mounted) return;
+    final eng = _engine ?? context.read<EngineProvider>();
+    if (eng.connected && !_engineWasConnected) {
+      _engineWasConnected = true;
+      if (!_busy) {
+        unawaited(_findLargeFiles());
+      }
+    } else if (!eng.connected) {
+      _engineWasConnected = false;
+    }
+  }
 
   String _defaultPath() {
     final home = Platform.environment['USERPROFILE'] ??
@@ -557,9 +685,16 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
     return home;
   }
 
-  Future<void> _search() async {
+  Future<void> _findLargeFiles({double? minMb, int? limit}) async {
     final path = _pathCtrl.text.trim();
-    if (path.isEmpty) return;
+    if (path.isEmpty) {
+      setState(() {
+        _firstSearchFinished = true;
+        _error = 'Set a folder path to search.';
+        _results = const [];
+      });
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -567,13 +702,14 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
     final engine = context.read<EngineProvider>();
     final res = await engine.findLargeFiles(
       path: path,
-      minMb: _minMb,
-      limit: _limit,
+      minMb: minMb ?? _minMb,
+      limit: limit ?? _limit,
     );
     if (!mounted) return;
     if (res == null || res['ok'] != true) {
       setState(() {
         _busy = false;
+        _firstSearchFinished = true;
         _error = (res?['error'] as String?) ?? 'Search failed';
         _results = const [];
       });
@@ -586,9 +722,12 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
         const <Map<String, dynamic>>[];
     setState(() {
       _busy = false;
+      _firstSearchFinished = true;
       _results = items;
     });
   }
+
+  Future<void> _search() => _findLargeFiles();
 
   Future<void> _openContaining(String parent) async {
     try {
@@ -607,12 +746,6 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
   }
 
   @override
-  void dispose() {
-    _pathCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final engine = context.watch<EngineProvider>();
     return SingleChildScrollView(
@@ -627,11 +760,21 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Search a folder',
+                    'Largest files',
                     style: TextStyle(
                       color: AppTheme.textPrimaryFor(context),
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Your home folder is scanned automatically using the sliders below '
+                    '(defaults favor a quick first pass). Change the path or thresholds '
+                    'and press Refresh to update.',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 12,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -706,8 +849,8 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.search),
-                      label: Text(_busy ? 'Searching…' : 'Find largest files'),
+                          : const Icon(Icons.refresh),
+                      label: Text(_busy ? 'Refreshing…' : 'Refresh'),
                     ),
                   ),
                   if (_error != null) ...[
@@ -722,22 +865,7 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
             ),
           ),
           const SizedBox(height: 12),
-          if (_results.isEmpty && !_busy)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Text(
-                    'No results yet. Pick a folder and press "Find largest files".',
-                    style: TextStyle(
-                      color: AppTheme.textMutedFor(context),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            )
-          else
+          if (_results.isNotEmpty)
             Card(
               child: Column(
                 children: [
@@ -749,6 +877,70 @@ class _LargeFilesPanelState extends State<_LargeFilesPanel> {
                       isLast: i == _results.length - 1,
                     ),
                 ],
+              ),
+            )
+          else if (!engine.connected)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Connect to the engine to discover large files under the folder above.',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (_busy)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Scanning for large files…',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (_firstSearchFinished)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    _error != null
+                        ? _error!
+                        : 'No files matched the current minimum size in this folder. Lower the MB slider or pick another path, then Refresh.',
+                    style: TextStyle(
+                      color: _error != null
+                          ? AppTheme.error
+                          : AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Preparing search…',
+                    style: TextStyle(
+                      color: AppTheme.textMutedFor(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ),
             ),
         ],

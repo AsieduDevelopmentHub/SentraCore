@@ -1,0 +1,8 @@
+{
+  "alert_cpu_percent": 90.0,
+  "alert_memory_percent": 90.0,
+  "alert_disk_pressure": 95.0,
+  "safeguard_enabled": false,
+  "safeguard_process_names": [],
+  "anomaly_sensitivity": "normal"
+}

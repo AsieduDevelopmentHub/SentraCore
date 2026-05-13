@@ -105,6 +105,23 @@ class EngineService {
     }
   }
 
+  /// Hardware health probe; engine can take 10–20s (PowerShell / sensors).
+  Future<Map<String, dynamic>?> getHardwareHealth(
+      {bool refresh = false}) async {
+    final qs = refresh ? '?refresh=true' : '';
+    try {
+      final uri = Uri.parse('$_baseUrl/api/v1/hardware/health$qs');
+      final response =
+          await http.get(uri).timeout(const Duration(seconds: 120));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'ok': false, 'error': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    }
+  }
+
   // ── WebSocket Live Stream ──
 
   Stream<SystemState> connectLive() {

@@ -230,10 +230,10 @@ class EngineProvider extends ChangeNotifier {
       // Keep alert channel failures from bubbling as uncaught async errors.
       // Live telemetry drives overall connectivity/reconnects.
       _alertSub = _service.connectAlerts().listen(
-        _onAlertPayload,
-        onError: (_) {},
-        onDone: () {},
-      );
+            _onAlertPayload,
+            onError: (_) {},
+            onDone: () {},
+          );
 
       _processFetchTimer = Timer.periodic(
         const Duration(seconds: 5),
@@ -500,6 +500,11 @@ class EngineProvider extends ChangeNotifier {
     await _fetchProcesses();
     notifyListeners();
     return r ?? {'ok': false, 'error': 'No response'};
+  }
+
+  /// Aggregated CPU / memory / disk health (slow probe — caller should cache).
+  Future<Map<String, dynamic>?> getHardwareHealth({bool refresh = false}) {
+    return _service.getHardwareHealth(refresh: refresh);
   }
 
   // ── Cleanup ──

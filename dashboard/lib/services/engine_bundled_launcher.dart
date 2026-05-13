@@ -96,8 +96,8 @@ class EngineBundledLauncher {
     final httpHealthy =
         !forceRestart && await _strictHealth(cfg.host, cfg.port);
     if (httpHealthy) {
-      final dirty = cfg.status != EngineStatus.running ||
-          cfg.lastError.isNotEmpty;
+      final dirty =
+          cfg.status != EngineStatus.running || cfg.lastError.isNotEmpty;
       if (dirty) {
         cfg = cfg.copyWith(
           status: EngineStatus.running,
@@ -233,7 +233,8 @@ class EngineBundledLauncher {
       );
       await EngineConfigStore.writeAtomic(cfg);
 
-      final runningCfg = await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
+      final runningCfg =
+          await _waitRunningOnDiskWithin(cfg.host, _healthWindow);
       if (runningCfg != null &&
           runningCfg.status == EngineStatus.running &&
           await _strictHealth(runningCfg.host, runningCfg.port)) {

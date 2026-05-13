@@ -8,6 +8,7 @@ import 'package:sentracore_dashboard/screens/processes_screen.dart';
 import 'package:sentracore_dashboard/screens/diagnostics_screen.dart';
 import 'package:sentracore_dashboard/screens/settings_screen.dart';
 import 'package:sentracore_dashboard/screens/logbook_screen.dart';
+import 'package:sentracore_dashboard/screens/hardware_screen.dart';
 import 'package:sentracore_dashboard/theme/app_theme.dart';
 import 'package:sentracore_dashboard/widgets/connection_banner.dart';
 import 'package:sentracore_dashboard/providers/settings_provider.dart';
@@ -29,7 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     DashboardNavigation.selectMainTab = (i) {
       if (!mounted) return;
-      setState(() => _selectedIndex = i.clamp(0, 5));
+      setState(() => _selectedIndex = i.clamp(0, 6));
     };
   }
 
@@ -45,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ProcessesScreen(),
     LogbookScreen(),
     DiagnosticsScreen(),
+    HardwareScreen(),
     SettingsScreen(),
   ];
 
@@ -225,7 +227,9 @@ class _SentraNavRail extends StatelessWidget {
               context, 3, Icons.book_outlined, Icons.book_rounded, 'Logbook'),
           _navItem(context, 4, Icons.troubleshoot_outlined,
               Icons.troubleshoot_rounded, 'Diagnostics'),
-          _navItem(context, 5, Icons.settings_outlined, Icons.settings_rounded,
+          _navItem(context, 5, Icons.monitor_heart_outlined,
+              Icons.monitor_heart_rounded, 'Hardware'),
+          _navItem(context, 6, Icons.settings_outlined, Icons.settings_rounded,
               'Settings'),
           const Spacer(),
           // Theme Toggle

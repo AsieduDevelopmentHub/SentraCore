@@ -1,0 +1,117 @@
+{
+  "global": {
+    "cpu_percent": {
+      "count": 1650,
+      "mean": 24.7417,
+      "std_dev": 11.0481,
+      "min": 6.7835,
+      "max": 72.3126
+    },
+    "memory_percent": {
+      "count": 1650,
+      "mean": 55.1842,
+      "std_dev": 2.9352,
+      "min": 47.7333,
+      "max": 63.4319
+    },
+    "disk_ops_per_sec": {
+      "count": 1650,
+      "mean": 47.65,
+      "std_dev": 193.4421,
+      "min": 0.0,
+      "max": 3811.2141
+    }
+  },
+  "night": {
+    "cpu_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "memory_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "disk_ops_per_sec": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    }
+  },
+  "morning": {
+    "cpu_percent": {
+      "count": 1650,
+      "mean": 24.7417,
+      "std_dev": 11.0481,
+      "min": 6.7835,
+      "max": 72.3126
+    },
+    "memory_percent": {
+      "count": 1650,
+      "mean": 55.1842,
+      "std_dev": 2.9352,
+      "min": 47.7333,
+      "max": 63.4319
+    },
+    "disk_ops_per_sec": {
+      "count": 1650,
+      "mean": 47.65,
+      "std_dev": 193.4421,
+      "min": 0.0,
+      "max": 3811.2141
+    }
+  },
+  "afternoon": {
+    "cpu_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "memory_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "disk_ops_per_sec": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    }
+  },
+  "evening": {
+    "cpu_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "memory_percent": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    },
+    "disk_ops_per_sec": {
+      "count": 0,
+      "mean": 0.0,
+      "std_dev": 0.0,
+      "min": null,
+      "max": null
+    }
+  }
+}

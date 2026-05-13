@@ -127,7 +127,7 @@ flutter run -d windows
 
 ### Installer
 
-Download the latest installer from the [Releases](../../releases) page.
+Download the latest installer from the [GitHub Releases](https://github.com/AsieduDevelopmentHub/SentraCore/releases) page.
 
 The installer:
 - installs SentraCore
@@ -151,14 +151,25 @@ The installer:
 
 ## Philosophy
 
-SentraCore is built around five principles:
+SentraCore is built around six principles:
 
 1. Observation  
-2. Behavioral Modeling  
-3. Anomaly Detection  
-4. Correlation Analysis  
-5. Predictive Awareness
-6. Forecasting
+2. Behavioral modeling  
+3. Anomaly detection  
+4. Correlation analysis  
+5. Predictive awareness  
+6. Forecasting  
+
+---
+
+## Prerequisites (quick glance)
+
+| Requirement | Notes |
+|---|---|
+| Python | 3.11+ (see `requirements.txt` / `pyproject.toml`) |
+| Flutter | Stable channel, 3.x+ for the desktop dashboard |
+| OS | Windows is the primary packaging target; Linux and macOS are supported for development |
+
 ---
 
 ## License

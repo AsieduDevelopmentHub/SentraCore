@@ -2,6 +2,22 @@
 
 This directory contains the technical documentation for the SentraCore project, including setup guides, architecture references, development workflows, and packaging instructions.
 
+For a high-level product overview and feature list, start with the [repository README](../README.md).
+
+---
+
+# Repository map
+
+| Path | Purpose |
+|---|---|
+| `engine/` | Python telemetry service, intelligence pipeline, and local API |
+| `dashboard/` | Flutter desktop client |
+| `docs/` | Setup and architecture documentation (this tree) |
+| `installer/` | Windows installer definitions (Inno Setup) |
+| `pages/` | Static marketing and docs HTML (GitHub Pages) |
+| `assets/` | Shared site styles, scripts, and images for `pages/` |
+| `tests/` | Engine and API unit tests |
+
 ---
 
 # Setup Guides
@@ -99,3 +115,12 @@ docs/
 - The documentation is designed for contributors, developers, and advanced users.
 - Platform-specific behavior may vary depending on operating system capabilities.
 - Additional documentation may be expanded as the project evolves.
+
+---
+
+# Typical development loop
+
+1. Create or activate a Python virtual environment and install engine dependencies (see [Development Setup](setup/development_setup.md)).
+2. Run the engine from the repo root (for example `python -m engine.main` or your documented entrypoint).
+3. In another terminal, run the Flutter dashboard against the local engine (see [Dashboard Setup](setup/dashboard_setup.md)).
+4. Run `pytest` from the repo root before pushing changes that touch the engine or tests.

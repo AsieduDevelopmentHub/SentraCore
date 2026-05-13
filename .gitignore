@@ -258,3 +258,11 @@ release.md
 
 # Pages
 landingpage.md
+
+# Datastore
+/engine/datastore/*.json
+/engine/datastore/state/*.json
+/engine/datastore/history/**
+/engine/datastore/logs/**
+/engine/datastore/cache/**
+/engine/datastore/reports/**

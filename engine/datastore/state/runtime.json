@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "last_clean_shutdown": false,
-  "last_checkpoint_at": 1778661640.1319637,
+  "last_checkpoint_at": 1778661910.5524902,
   "alerts_recent": [
     {
       "timestamp": 1778661159.7646666,
@@ -91,12 +91,12 @@
     }
   ],
   "last_stress": {
-    "score": 39.56,
-    "level": "moderate",
+    "score": 27.38,
+    "level": "low",
     "pressures": {
-      "cpu": 17.18,
-      "memory": 57.45,
-      "disk": 50.32
+      "cpu": 24.14,
+      "memory": 50.03,
+      "disk": 0.84
     },
     "weights": {
       "cpu": 0.4,
@@ -105,37 +105,37 @@
     }
   },
   "last_stability": {
-    "score": 60.2,
-    "state": "degraded",
+    "score": 86.3,
+    "state": "stable",
     "components": {
-      "stress_penalty": 19.8,
+      "stress_penalty": 13.7,
       "risk_penalty": 0.0,
-      "anomaly_penalty": 20.0
+      "anomaly_penalty": 0.0
     }
   },
   "last_normalized": {
-    "timestamp": 1778661640.1319637,
+    "timestamp": 1778661910.5511475,
     "cpu": {
-      "raw": 19.91,
-      "smoothed": 17.18,
+      "raw": 31.05,
+      "smoothed": 24.14,
       "spiking": false
     },
     "memory": {
-      "raw": 56.5,
-      "smoothed": 56.35,
-      "used": 9590566912,
-      "available": 7386173440,
+      "raw": 49.1,
+      "smoothed": 48.27,
+      "used": 8330756096,
+      "available": 8645984256,
       "total": 16976740352,
       "spiking": false
     },
     "swap_percent": 2.4,
     "disk_io": {
-      "read_bytes_per_sec": 3247973.92,
-      "write_bytes_per_sec": 3893332.66,
-      "read_ops_per_sec": 312.5,
-      "write_ops_per_sec": 192.88,
-      "total_bytes_per_sec": 7141306.58,
-      "total_ops_per_sec": 505.38,
+      "read_bytes_per_sec": 0.0,
+      "write_bytes_per_sec": 236042.28,
+      "read_ops_per_sec": 0.0,
+      "write_ops_per_sec": 10.44,
+      "total_bytes_per_sec": 236042.28,
+      "total_ops_per_sec": 10.44,
       "spiking": false
     }
   },
@@ -145,12 +145,12 @@
     "risk_score": 0.0
   },
   "last_anomaly": {
-    "score": 100.0,
-    "level": "severe",
+    "score": 0.0,
+    "level": "normal",
     "z_scores": {
       "cpu": 0.0,
-      "memory": 1.09,
-      "disk": 5.18
+      "memory": 0.0,
+      "disk": 0.0
     },
     "is_sustained": false
   }

@@ -1,25 +1,25 @@
 {
   "global": {
     "cpu_percent": {
-      "count": 450,
-      "mean": 32.7439,
-      "std_dev": 10.9968,
-      "min": 21.025,
+      "count": 600,
+      "mean": 30.2763,
+      "std_dev": 11.9666,
+      "min": 6.7835,
       "max": 72.3126
     },
     "memory_percent": {
-      "count": 450,
-      "mean": 52.3552,
-      "std_dev": 3.2626,
+      "count": 600,
+      "mean": 53.1682,
+      "std_dev": 3.2224,
       "min": 48.9,
       "max": 63.4319
     },
     "disk_ops_per_sec": {
-      "count": 450,
-      "mean": 31.0956,
-      "std_dev": 86.0896,
+      "count": 600,
+      "mean": 38.5185,
+      "std_dev": 102.6872,
       "min": 0.0,
-      "max": 828.1209
+      "max": 948.8098
     }
   },
   "night": {
@@ -47,25 +47,25 @@
   },
   "morning": {
     "cpu_percent": {
-      "count": 450,
-      "mean": 32.7439,
-      "std_dev": 10.9968,
-      "min": 21.025,
+      "count": 600,
+      "mean": 30.2763,
+      "std_dev": 11.9666,
+      "min": 6.7835,
       "max": 72.3126
     },
     "memory_percent": {
-      "count": 450,
-      "mean": 52.3552,
-      "std_dev": 3.2626,
+      "count": 600,
+      "mean": 53.1682,
+      "std_dev": 3.2224,
       "min": 48.9,
       "max": 63.4319
     },
     "disk_ops_per_sec": {
-      "count": 450,
-      "mean": 31.0956,
-      "std_dev": 86.0896,
+      "count": 600,
+      "mean": 38.5185,
+      "std_dev": 102.6872,
       "min": 0.0,
-      "max": 828.1209
+      "max": 948.8098
     }
   },
   "afternoon": {

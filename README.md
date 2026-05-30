@@ -1,4 +1,6 @@
-# SentraCore
+# SentraCore 
+
+[![RepoRanker](https://reporanker.com/badge/AsieduDevelopmentHub/SentraCore)](https://reporanker.com/repos/AsieduDevelopmentHub/SentraCore)
 
 SentraCore is a local system behavior intelligence platform for Windows that continuously analyzes system telemetry to understand performance behavior, detect anomalies, explain system slowdowns, and estimate future resource pressure before it impacts usability.
 

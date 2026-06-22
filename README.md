@@ -1,84 +1,121 @@
-# SentraCore 
+<div align="center">
 
-[![RepoRanker](https://reporanker.com/badge/AsieduDevelopmentHub/SentraCore)](https://reporanker.com/repos/AsieduDevelopmentHub/SentraCore)
+# SentraCore
 
-SentraCore is a local system behavior intelligence platform for Windows that continuously analyzes system telemetry to understand performance behavior, detect anomalies, explain system slowdowns, and estimate future resource pressure before it impacts usability.
+### System Behavior Intelligence Platform
 
-Unlike traditional monitoring tools that focus on raw snapshots, SentraCore interprets system behavior over time — helping users understand what is happening, why it is happening, and how it may affect overall system responsiveness.
+SentraCore is a local **system behavior intelligence platform** designed to continuously analyze telemetry, understand performance behavior, detect anomalies, explain slowdowns, and estimate future system pressure before it impacts responsiveness.
+
+Rather than focusing on isolated resource snapshots, SentraCore interprets system activity over time to answer three critical questions:
+
+**What is happening?**  
+**Why is it happening?**  
+**What is likely to happen next?**
+
+Built for intelligent desktop observability and explainable operational insight.
+
+</div>
 
 ---
 
-## Current Status
+## Overview
+
+SentraCore combines telemetry collection, behavioral modeling, anomaly detection, predictive analytics, and explainable diagnostics into a unified local intelligence system.
+
+The platform continuously learns machine-specific operating patterns and transforms raw system measurements into actionable insights.
+
+---
+
+## Current Capabilities
 
 SentraCore currently includes:
 
 - Real-time telemetry monitoring
-- Behavioral baseline learning
+- Adaptive behavioral baseline learning
 - Statistical anomaly detection
 - Root cause analysis
 - Predictive risk estimation
-- Historical monitoring (Logbook)
+- Historical monitoring and logbook tracking
 - Flutter desktop dashboard
-- Windows installer and packaging system
+- Desktop packaging and installer workflow
 
 ---
 
 ## Core Features
 
 ### System Stability Index
-Unified system health scoring based on:
-- resource pressure
-- anomaly deviation
-- sustained stress trends
-- predictive degradation risk
+
+Unified system health scoring generated from:
+
+- Resource pressure
+- Behavioral deviation
+- Sustained stress trends
+- Predictive degradation indicators
 
 ---
 
 ### Behavioral Intelligence
-Learns normal system behavior per machine, including:
-- CPU usage patterns
-- memory behavior
-- disk activity trends
-- time-of-day workload patterns
+
+Learns normal operating behavior per machine, including:
+
+- CPU utilization patterns
+- Memory behavior
+- Disk activity trends
+- Time-based workload characteristics
+
+The objective is to detect meaningful deviation rather than isolated spikes.
 
 ---
 
 ### Root Cause Analysis
-Analyzes:
-- process activity
-- resource contention
-- event timing
-- system degradation patterns
 
-Provides ranked likely contributors instead of raw metrics alone.
+Correlates multiple signals to identify likely contributors to degradation.
+
+Analysis includes:
+
+- Process activity
+- Resource contention
+- Event timing
+- Performance degradation patterns
+
+Outputs ranked probable causes instead of raw metric streams.
 
 ---
 
 ### Predictive Forecasting
-Estimates future resource exhaustion using trend analysis:
-- memory saturation forecasting
+
+Forecasts future pressure using historical and trend-based analysis.
+
+Includes:
+
+- Memory saturation estimation
 - CPU trend projection
-- disk pressure estimation
-- ETA-style degradation warnings
+- Disk pressure forecasting
+- Estimated degradation warnings
 
 ---
 
 ### Historical Monitoring
-Automatically records and visualizes:
+
+Continuously records and visualizes:
+
 - CPU pressure
-- memory pressure
-- disk pressure
-- long-term behavior trends
+- Memory pressure
+- Disk pressure
+- Long-term behavioral trends
+- Historical intelligence events
 
 ---
 
 ### Alerts & Diagnostics
+
 Includes:
-- live alerts
-- alert history
-- diagnostics timeline
+
+- Live alerts
+- Alert history
+- Diagnostics timeline
 - Windows notifications
-- root cause summaries
+- Root cause summaries
 
 ---
 
@@ -86,14 +123,17 @@ Includes:
 
 ```text
 Flutter Dashboard
-        ↕ WebSocket / REST API
+        ↕
+ WebSocket / REST API
+        ↕
 Python Intelligence Engine
-    ├── Telemetry Collection
-    ├── Baseline Learning
-    ├── Anomaly Detection
-    ├── Correlation Engine
-    ├── Prediction Engine
-    └── Alert System
+│
+├── Telemetry Collection
+├── Baseline Learning
+├── Anomaly Detection
+├── Correlation Engine
+├── Prediction Engine
+└── Alert System
 ```
 
 ---
@@ -102,40 +142,51 @@ Python Intelligence Engine
 
 | Layer | Technology |
 |---|---|
-| Engine | Python 3.11, psutil |
-| API | FastAPI, WebSockets |
+| Engine | Python 3.11 · psutil |
+| API | FastAPI · WebSockets |
 | Dashboard | Flutter Desktop |
-| Packaging | PyInstaller, Inno Setup |
-| CI/CD | GitHub Actions |
+| Packaging | PyInstaller · Inno Setup |
+| Automation | GitHub Actions |
 
 ---
 
 ## Getting Started
 
-### Development
+### Development Environment
 
-See the setup documentation below for full instructions.
+See project documentation for full setup instructions.
+
+Start the engine:
 
 ```powershell
-# Start engine
 .venv\Scripts\python -m engine.main
+```
 
-# Run dashboard
+Launch dashboard:
+
+```powershell
 cd dashboard
+
 flutter run -d windows
 ```
 
 ---
 
-### Installer
+## Installer
 
-Download the latest installer from the [GitHub Releases](https://github.com/AsieduDevelopmentHub/SentraCore/releases) page.
+Download the latest desktop release from:
 
-The installer:
-- installs SentraCore
-- creates shortcuts
-- configures optional startup launch
-- sets up the monitoring engine automatically
+```text
+GitHub Releases
+```
+
+Installer capabilities:
+
+- Installs SentraCore
+- Creates application shortcuts
+- Configures optional startup behavior
+- Deploys the monitoring engine
+- Prepares runtime dependencies
 
 ---
 
@@ -143,37 +194,69 @@ The installer:
 
 | Document | Description |
 |---|---|
-| [Development Setup](docs/setup/development_setup.md) | Full local development setup |
-| [Engine Setup](docs/setup/engine_setup.md) | Engine configuration and setup |
-| [Dashboard Setup](docs/setup/dashboard_setup.md) | Flutter dashboard setup |
-| [Intelligence Pipeline](docs/architecture/intelligence_layer.md) | Internal intelligence architecture |
-| [Building SentraCore](docs/architecture/building.md) | Packaging and installer process |
+| `docs/setup/development_setup.md` | Development environment setup |
+| `docs/setup/engine_setup.md` | Engine installation and configuration |
+| `docs/setup/dashboard_setup.md` | Dashboard build and execution |
+| `docs/architecture/intelligence_layer.md` | Intelligence pipeline internals |
+| `docs/architecture/building.md` | Packaging and release workflow |
 
 ---
 
-## Philosophy
+## Design Principles
 
-SentraCore is built around six principles:
+SentraCore is built around six guiding principles:
 
 1. Observation  
-2. Behavioral modeling  
-3. Anomaly detection  
-4. Correlation analysis  
-5. Predictive awareness  
-6. Forecasting  
+2. Behavioral Modeling  
+3. Pattern Recognition  
+4. Correlation Analysis  
+5. Predictive Awareness  
+6. Explainable Intelligence  
 
 ---
 
-## Prerequisites (quick glance)
+## Requirements
 
-| Requirement | Notes |
+| Requirement | Version |
 |---|---|
-| Python | 3.11+ (see `requirements.txt` / `pyproject.toml`) |
-| Flutter | Stable channel, 3.x+ for the desktop dashboard |
-| OS | Windows is the primary packaging target; Linux and macOS are supported for development |
+| Python | 3.11+ |
+| Flutter | Stable 3.x+ |
+| Platform | Windows (Primary) |
+
+Linux and macOS currently support development workflows but Windows remains the primary runtime and packaging target.
+
+---
+
+## Repository Structure
+
+```text
+engine/
+dashboard/
+docs/
+installer/
+pages/
+assets/
+tests/
+```
 
 ---
 
 ## License
 
-Apache License 2.0
+Licensed under the Apache License 2.0.
+
+See:
+
+[LICENSE](./LICENSE)
+
+---
+
+<div align="center">
+
+### SentraCore
+
+Observe • Understand • Predict
+
+Intelligence Beyond Monitoring
+
+</div>

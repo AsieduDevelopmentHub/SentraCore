@@ -12,28 +12,48 @@ Run the following command once after cloning the repository:
 
 ```bash
 git config core.hooksPath .githooks
-
 ```
 
-Verify:
+Verify the configuration:
 
+```bash
 git config core.hooksPath
+```
 
 Expected output:
 
+```text
 .githooks
+```
 
 ---
 
-Installed Hooks
+### Installed Hooks
 
-Hook| Purpose
-"commit-msg"| Removes automatically generated "Co-authored-by: Cursor ..." trailers before commit finalization
-"prepare-commit-msg"| Performs the same cleanup earlier in the commit creation flow (best effort)
+| Hook | Purpose |
+|---|---|
+| `commit-msg` | Removes automatically generated `Co-authored-by: Cursor ...` trailers before commit finalization |
+| `prepare-commit-msg` | Performs the same cleanup earlier in the commit creation flow (best effort) |
 
 ---
 
-Why This Exists
+### Hook Workflow
+
+```text
+Create Commit
+      ↓
+prepare-commit-msg
+      ↓
+Edit Commit Message
+      ↓
+commit-msg
+      ↓
+Commit Finalized
+```
+
+---
+
+### Why This Exists
 
 These hooks help maintain:
 
@@ -41,30 +61,51 @@ These hooks help maintain:
 - Cleaner repository metadata
 - Reduced commit message noise
 - Predictable contributor workflows
+- Repository-wide commit standards
 
-The hooks only modify commit message metadata and do not alter source files.
+The hooks only modify commit message metadata and never alter project source files.
 
 ---
 
-Disable Hooks
+### Disable Hooks
 
-To revert to Git’s default hook location:
+To restore Git’s default hook location:
 
+```bash
 git config --unset core.hooksPath
+```
 
 ---
 
-Repository Structure
+### Repository Structure
 
+```text
 .githooks/
 ├── commit-msg
 └── prepare-commit-msg
+```
 
 ---
 
-Notes
+### Notes
 
-- Hooks are executed locally by Git.
+- Hooks run locally and are executed by Git.
 - Hooks are not automatically enabled after cloning.
 - Each contributor must enable hooks once per local repository clone.
-- Hook execution behavior may vary slightly across operating systems and Git versions.
+- Hook execution may vary slightly across operating systems and Git versions.
+
+---
+
+### Validation
+
+You can confirm hooks are active using:
+
+```bash
+git config --get core.hooksPath
+```
+
+Expected result:
+
+```text
+.githooks
+```

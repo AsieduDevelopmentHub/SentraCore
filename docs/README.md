@@ -1,106 +1,135 @@
 # SentraCore Documentation
 
-This directory contains the technical documentation for the SentraCore project, including setup guides, architecture references, development workflows, and packaging instructions.
+Central documentation hub for **SentraCore** — a local system behavior intelligence platform designed to transform system telemetry into explainable operational insights through analytics, prediction, and real-time observability.
 
-For a high-level product overview and feature list, start with the [repository README](../README.md).
+This documentation provides architecture references, setup instructions, development workflows, and deployment guidance for contributors, maintainers, and advanced users.
+
+For product overview, capabilities, and repository onboarding, begin with the [main repository README](../README.md).
 
 ---
 
-# Repository map
+## Documentation Overview
 
-| Path | Purpose |
+This directory contains technical resources for understanding, building, extending, and operating SentraCore.
+
+### Contents
+
+- Development and environment setup
+- Engine runtime configuration
+- Dashboard build instructions
+- Architecture references
+- Intelligence pipeline internals
+- Persistence and storage behavior
+- Packaging and release workflows
+
+---
+
+## Repository Structure
+
+The SentraCore repository is organized into modular system boundaries.
+
+| Path | Responsibility |
 |---|---|
-| `engine/` | Python telemetry service, intelligence pipeline, and local API |
-| `dashboard/` | Flutter desktop client |
-| `docs/` | Setup and architecture documentation (this tree) |
-| `installer/` | Windows installer definitions (Inno Setup) |
-| `pages/` | Static marketing and docs HTML (GitHub Pages) |
-| `assets/` | Shared site styles, scripts, and images for `pages/` |
-| `tests/` | Engine and API unit tests |
+| `engine/` | Telemetry engine, intelligence processing, runtime services, and local API |
+| `dashboard/` | Flutter desktop application and user interface |
+| `docs/` | Technical documentation and implementation references |
+| `installer/` | Windows packaging and installation definitions |
+| `pages/` | Static website and public documentation |
+| `assets/` | Shared frontend assets used across documentation pages |
+| `tests/` | Automated testing for engine and API components |
 
 ---
 
-# Setup Guides
+## Setup Guides
+
+Use these guides to configure a local development environment.
 
 | Guide | Description |
 |---|---|
-| [Development Setup](setup/development_setup.md) | Complete multi-platform development environment setup |
-| [Engine Setup](setup/engine_setup.md) | Python engine installation and runtime guide |
-| [Dashboard Setup](setup/dashboard_setup.md) | Flutter desktop dashboard setup and build guide |
+| [Development Setup](setup/development_setup.md) | Complete environment setup for local development |
+| [Engine Setup](setup/engine_setup.md) | Engine installation, configuration, and execution |
+| [Dashboard Setup](setup/dashboard_setup.md) | Flutter dashboard development and build workflow |
 
 ---
 
-# Architecture & Technical Reference
+## Architecture & Technical Reference
+
+Detailed implementation references for internal platform components.
 
 | Document | Description |
 |---|---|
-| [Intelligence Pipeline](architecture/intelligence_layer.md) | Detailed overview of the telemetry intelligence pipeline |
-| [Persistence Layout](architecture/persistence.md) | Where the engine keeps preferences, baseline, history, and logs |
-| [Hardware Health](architecture/hardware_health.md) | CPU / RAM / disk SMART probes and the overall status taxonomy |
-| [Storage Scanning & Cleanup](architecture/storage_scan.md) | Disk cleanup categories, scan-id safety model, large file finder |
-| [Building SentraCore](architecture/building.md) | Desktop build, packaging, and release workflow |
+| [Intelligence Pipeline](architecture/intelligence_layer.md) | Telemetry ingestion, analysis, prediction, and insight generation |
+| [Persistence Architecture](architecture/persistence.md) | Storage layout for preferences, baselines, logs, and history |
+| [Hardware Health Monitoring](architecture/hardware_health.md) | CPU, memory, SMART monitoring, and health classification |
+| [Storage Analysis & Cleanup](architecture/storage_scan.md) | Storage scanning, cleanup rules, and scan safety mechanisms |
+| [Build & Packaging](architecture/building.md) | Desktop packaging, installer generation, and release workflow |
 
 ---
 
-# Project Overview
+## Project Overview
 
-SentraCore is a local system behavior intelligence platform that transforms raw system telemetry into explainable performance insights through:
+SentraCore is an **intelligence-driven desktop observability platform** that converts raw telemetry into actionable system understanding.
 
-- behavioral modeling
-- anomaly detection
-- predictive risk analysis
-- root cause correlation
-- real-time monitoring
-- historical system analysis
+Core platform capabilities include:
 
-The project is structured around a modular engine and desktop dashboard architecture.
+- Behavioral modeling
+- Performance intelligence
+- Real-time monitoring
+- Anomaly detection
+- Predictive risk analysis
+- Root cause correlation
+- Historical trend analysis
+
+The platform follows a **modular engine + dashboard architecture** to separate intelligence processing from user interaction.
 
 ---
 
-# Core Components
+## System Components
 
 | Component | Description |
 |---|---|
-| Engine | Python-based telemetry and intelligence service |
-| Dashboard | Flutter desktop application |
+| Engine | Python runtime responsible for telemetry and intelligence |
+| Dashboard | Flutter-based desktop interface |
 | API Layer | Local REST and WebSocket communication |
-| Intelligence Pipeline | Trend, anomaly, prediction, and correlation systems |
-| Packaging System | Desktop build and installer workflow |
+| Intelligence Layer | Detection, prediction, and correlation engine |
+| Packaging Layer | Build and installer workflow |
 
 ---
 
-# Platform Support
+## Supported Platforms
 
-| Platform | Status |
+| Platform | Support Level |
 |---|---|
-| Windows | Primary Support |
+| Windows | Full Support |
 | Linux | Development Support |
 | macOS | Development Support |
 
-Windows currently provides the most complete packaging and deployment workflow.
+> Windows currently provides the most complete installation and packaging experience.
 
 ---
 
-# Development Scope
+## Development Scope
 
-The project currently includes:
+Current platform capabilities include:
 
-- real-time telemetry collection
-- adaptive baseline learning
-- anomaly detection
-- predictive degradation analysis
-- root cause analysis
-- historical monitoring
-- desktop notifications
-- dashboard diagnostics
-- desktop packaging workflow
+- Real-time telemetry collection
+- Adaptive baseline learning
+- Behavioral analysis
+- Anomaly detection
+- Predictive degradation analysis
+- Root cause investigation
+- Historical system monitoring
+- Desktop notifications
+- Diagnostic dashboards
+- Desktop packaging workflow
 
 ---
 
-# Documentation Structure
+## Documentation Layout
 
 ```text
 docs/
+│
 ├── setup/
 │   ├── development_setup.md
 │   ├── engine_setup.md
@@ -108,22 +137,104 @@ docs/
 │
 ├── architecture/
 │   ├── intelligence_layer.md
+│   ├── persistence.md
+│   ├── hardware_health.md
+│   ├── storage_scan.md
 │   └── building.md
+│
+└── README.md
 ```
 
 ---
 
-# Notes
+## Typical Development Workflow
 
-- The documentation is designed for contributors, developers, and advanced users.
-- Platform-specific behavior may vary depending on operating system capabilities.
-- Additional documentation may be expanded as the project evolves.
+### 1. Prepare Environment
+
+Create and activate a Python virtual environment.
+
+Install engine dependencies.
+
+See:
+
+```text
+setup/development_setup.md
+```
 
 ---
 
-# Typical development loop
+### 2. Start Engine
 
-1. Create or activate a Python virtual environment and install engine dependencies (see [Development Setup](setup/development_setup.md)).
-2. Run the engine from the repo root (for example `python -m engine.main` or your documented entrypoint).
-3. In another terminal, run the Flutter dashboard against the local engine (see [Dashboard Setup](setup/dashboard_setup.md)).
-4. Run `pytest` from the repo root before pushing changes that touch the engine or tests.
+Launch the telemetry engine.
+
+```bash
+python -m engine.main
+```
+
+Or use the documented project entrypoint.
+
+---
+
+### 3. Launch Dashboard
+
+Open a second terminal.
+
+Run the Flutter dashboard against the local engine.
+
+See:
+
+```text
+setup/dashboard_setup.md
+```
+
+---
+
+### 4. Run Validation
+
+Execute automated tests before committing changes.
+
+```bash
+pytest
+```
+
+---
+
+## Contributing Notes
+
+Before opening pull requests:
+
+- Follow documented setup procedures
+- Validate local builds
+- Run test suites
+- Keep architecture documentation updated
+- Maintain cross-platform compatibility where applicable
+
+---
+
+## Documentation Principles
+
+SentraCore documentation is designed around:
+
+- Developer onboarding
+- Maintainable architecture
+- Operational clarity
+- Reproducible workflows
+- Long-term maintainability
+
+---
+
+## Additional Notes
+
+- Platform behavior may vary across operating systems
+- Documentation evolves alongside implementation
+- Architecture documents are considered the source of technical truth
+
+---
+
+<div align="center">
+
+### SentraCore Documentation
+
+Build • Understand • Extend
+
+</div>
